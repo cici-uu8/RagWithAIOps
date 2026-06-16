@@ -1,0 +1,124 @@
+{
+  "generated_at": "2026-06-13T18:56:28+0800",
+  "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+  "checks": {
+    "health_root": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "服务运行正常",
+        "data": {
+          "service": "SuperBizAgent",
+          "version": "1.0.0",
+          "status": "healthy",
+          "milvus": {
+            "status": "connected",
+            "message": "Milvus 连接正常"
+          }
+        }
+      }
+    },
+    "health_api": {
+      "status_code": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    "documents_list": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "documents": [],
+          "total": 0,
+          "page": 1,
+          "limit": 10,
+          "offset": 0,
+          "has_next": false,
+          "kb_ids": []
+        }
+      }
+    },
+    "document_detail": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+          "kb_id": "process_digital_dept",
+          "filename": "acceptance_1781348132.md",
+          "file_name": "acceptance_1781348132.md",
+          "parser_engine": "plain_text",
+          "status": "indexed",
+          "status_detail": "plain-text chunks and vector rows were written successfully",
+          "status_source": "VectorIndexService.index_document_record",
+          "status_evidence": {
+            "child_chunk_count": 1,
+            "parent_chunk_count": 0,
+            "vector_document_count": 1,
+            "original_path": "/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21/uploads/documents/process_digital_dept/doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44/original/acceptance_1781348132.md"
+          },
+          "status_confirmed_at": "2026-06-13T18:55:39.843813",
+          "error_message": "",
+          "artifact_dir": "/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21/uploads/documents/process_digital_dept/doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44/artifacts",
+          "updated_at": "2026-06-13T18:55:39.843813"
+        }
+      }
+    },
+    "document_health": {
+      "status_code": 404,
+      "body": {
+        "detail": "文档不存在: doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44"
+      }
+    },
+    "document_status_batch": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "documents": [
+            {
+              "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+              "kb_id": "process_digital_dept",
+              "filename": "acceptance_1781348132.md",
+              "file_name": "acceptance_1781348132.md",
+              "parser_engine": "plain_text",
+              "status": "indexed",
+              "status_detail": "plain-text chunks and vector rows were written successfully",
+              "status_source": "VectorIndexService.index_document_record",
+              "status_evidence": {
+                "child_chunk_count": 1,
+                "parent_chunk_count": 0,
+                "vector_document_count": 1,
+                "original_path": "/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21/uploads/documents/process_digital_dept/doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44/original/acceptance_1781348132.md"
+              },
+              "status_confirmed_at": "2026-06-13T18:55:39.843813",
+              "error_message": "",
+              "artifact_dir": "/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21/uploads/documents/process_digital_dept/doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44/artifacts",
+              "updated_at": "2026-06-13T18:55:39.843813"
+            }
+          ],
+          "missing_doc_ids": [],
+          "reconciliation": {
+            "reconciled_count": 0,
+            "reconciled_documents": [],
+            "stale_after_seconds": 1800
+          },
+          "worker_health": {
+            "queue_enabled": true,
+            "redis_connected": true,
+            "worker_seen_recently": "unknown",
+            "failed_job_count": 0,
+            "queue_name": "document_processing",
+            "stale_processing_count": 0,
+            "oldest_processing_age_seconds": 0,
+            "stale_after_seconds": 1800
+          }
+        }
+      }
+    }
+  }
+}

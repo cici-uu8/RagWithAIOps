@@ -1,0 +1,435 @@
+(function () {
+    "use strict";
+
+    const TYPE_DEFAULTS = {
+        debug: { stage: "debug", status: "running", message: "调试事件" },
+        tool_call: { stage: "tool", status: "running", message: "工具调用中" },
+        search_results: { stage: "retrieval", status: "completed", message: "检索结果已返回" },
+        content: { stage: "content", status: "running", message: "内容生成中" },
+        complete: { stage: "done", status: "completed", message: "执行完成" },
+        done: { stage: "done", status: "completed", message: "执行完成" },
+        plan: { stage: "plan", status: "completed", message: "计划已生成" },
+        step_complete: { stage: "tool", status: "completed", message: "步骤已完成" },
+        report: { stage: "report", status: "completed", message: "报告已生成" },
+        blocked: { stage: "request_blocked", status: "blocked", message: "请求已阻断" },
+        error: { stage: "error", status: "failed", message: "执行失败" },
+    };
+
+    const RESERVED_KEYS = new Set(["type", "trace_id", "request_id", "stage", "status", "message", "data"]);
+    const AUTH_TOKEN_STORAGE_KEY = "enterpriseAuthToken";
+    const enterpriseApiClient = window.EnterpriseApiClient || null;
+
+    function makeId(prefix) {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+            return `${prefix}-${window.crypto.randomUUID()}`;
+        }
+        return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function normalizeEvent(raw) {
+        const source = raw && typeof raw === "object" ? raw : { type: "content", data: raw };
+        const type = String(source.type || "message");
+        const defaults = TYPE_DEFAULTS[type] || { stage: type, status: "running", message: type };
+        const data = Object.prototype.hasOwnProperty.call(source, "data") ? source.data : {};
+        const normalizedData = data && typeof data === "object" && !Array.isArray(data) ? { ...data } : data;
+
+        if (normalizedData && typeof normalizedData === "object" && !Array.isArray(normalizedData)) {
+            Object.entries(source).forEach(([key, value]) => {
+                if (!RESERVED_KEYS.has(key)) {
+                    normalizedData[key] = value;
+                }
+            });
+        }
+
+        return {
+            type,
+            trace_id: source.trace_id || "",
+            request_id: source.request_id || "",
+            stage: source.stage || defaults.stage,
+            status: source.status || defaults.status,
+            message: source.message || defaults.message,
+            data: normalizedData,
+            raw: source,
+        };
+    }
+
+    function createSseParser(onEvent) {
+        let buffer = "";
+
+        function emitFrame(frame) {
+            const lines = frame.split(/\r?\n/);
+            const dataLines = [];
+            for (const line of lines) {
+                if (line.startsWith("data:")) {
+                    dataLines.push(line.slice(5).trimStart());
+                }
+            }
+            if (dataLines.length === 0) {
+                return;
+            }
+            const dataText = dataLines.join("\n");
+            if (dataText === "[DONE]") {
+                onEvent(normalizeEvent({ type: "done" }));
+                return;
+            }
+            try {
+                onEvent(normalizeEvent(JSON.parse(dataText)));
+            } catch (_error) {
+                onEvent(normalizeEvent({ type: "content", data: dataText }));
+            }
+        }
+
+        return {
+            feed(chunk) {
+                buffer += chunk;
+                const frames = buffer.split(/\r?\n\r?\n/);
+                buffer = frames.pop() || "";
+                frames.forEach((frame) => {
+                    if (frame.trim()) {
+                        emitFrame(frame);
+                    }
+                });
+            },
+            flush() {
+                if (buffer.trim()) {
+                    emitFrame(buffer);
+                    buffer = "";
+                }
+            },
+        };
+    }
+
+    function createRunState(route) {
+        return {
+            localId: makeId("run"),
+            route,
+            title: route === "aiops" ? "AIOps 诊断" : "Chat Stream",
+            traceId: "",
+            requestId: "",
+            finalStatus: "running",
+            contentText: "",
+            reportText: "",
+            timeline: [],
+            startedAt: new Date().toISOString(),
+            finishedAt: "",
+        };
+    }
+
+    function getStoredAuthToken() {
+        if (enterpriseApiClient?.getToken) {
+            return enterpriseApiClient.getToken();
+        }
+        try {
+            if (!window.localStorage) {
+                return "";
+            }
+            return window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || "";
+        } catch (_error) {
+            return "";
+        }
+    }
+
+    function buildRequestHeaders(traceId, requestId) {
+        const headers = enterpriseApiClient?.authHeaders
+            ? enterpriseApiClient.authHeaders({
+                "Content-Type": "application/json",
+                "X-Trace-Id": traceId,
+                "X-Request-Id": requestId,
+            })
+            : {
+            "Content-Type": "application/json",
+            "X-Trace-Id": traceId,
+            "X-Request-Id": requestId,
+        };
+        const token = getStoredAuthToken();
+        if (token && !headers.Authorization) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
+    function getPayloadText(event) {
+        const data = event.data;
+        if (typeof data === "string") {
+            return data;
+        }
+        if (!data || typeof data !== "object") {
+            return "";
+        }
+        return data.answer || data.response || data.message || "";
+    }
+
+    function applyEventToRun(run, event) {
+        if (event.trace_id) {
+            run.traceId = event.trace_id;
+        }
+        if (event.request_id) {
+            run.requestId = event.request_id;
+        }
+
+        run.timeline.push({
+            localId: makeId("event"),
+            type: event.type,
+            stage: event.stage,
+            status: event.status,
+            message: event.message,
+            raw: event.raw,
+        });
+
+        if (event.type === "content") {
+            run.contentText += getPayloadText(event);
+        } else if (event.type === "report") {
+            run.reportText = getPayloadText(event) || event.data.report || run.reportText;
+        } else if (event.type === "plan") {
+            const plan = event.data && Array.isArray(event.data.plan) ? event.data.plan : [];
+            if (plan.length > 0) {
+                run.reportText += `\n\n执行计划\n${plan.map((item, index) => `${index + 1}. ${item}`).join("\n")}`;
+            }
+        } else if (event.type === "step_complete") {
+            run.reportText += `\n\n${event.message}`;
+        } else if (event.type === "done" || event.type === "complete") {
+            const text = getPayloadText(event);
+            if (text && !run.contentText.includes(text)) {
+                run.contentText += text;
+            }
+            run.finalStatus = "done";
+            run.finishedAt = new Date().toISOString();
+        } else if (event.type === "blocked" || event.status === "blocked") {
+            run.finalStatus = "blocked";
+            run.finishedAt = new Date().toISOString();
+        } else if (event.type === "error" || event.status === "failed") {
+            const text = getPayloadText(event);
+            if (text) {
+                run.contentText += `\n${text}`;
+            }
+            run.finalStatus = "error";
+            run.finishedAt = new Date().toISOString();
+        }
+    }
+
+    function routeLabel(route) {
+        return route === "aiops" ? "AIOps" : "Chat";
+    }
+
+    function terminalLabel(status) {
+        const labels = {
+            running: "运行中",
+            done: "完成",
+            completed: "完成",
+            blocked: "阻断",
+            error: "错误",
+            failed: "错误",
+        };
+        return labels[status] || status;
+    }
+
+    function createDashboardApp() {
+        return Vue.createApp({
+            data() {
+                const initialRun = createRunState("chat_stream");
+                initialRun.finalStatus = "done";
+                initialRun.title = "等待运行";
+                return {
+                    route: "chat_stream",
+                    prompt: "请简要说明当前知识库里有哪些可用于 oncall 的信息",
+                    sessionId: `session_e11_${Date.now()}`,
+                    runs: [initialRun],
+                    activeRun: initialRun,
+                    capabilityHealth: {},
+                    isRunning: false,
+                    controller: null,
+                };
+            },
+            computed: {
+                canStart() {
+                    return !this.isRunning && this.sessionId.trim().length > 0;
+                },
+                capabilityHealthItems() {
+                    const labels = {
+                        profile: "Profile",
+                        knowledge_base_api: "KB",
+                        document_worker: "Worker",
+                        database_catalog: "DB",
+                        tool_gateway: "Tools",
+                    };
+                    return Object.entries(this.capabilityHealth || {}).map(([key, capability]) => ({
+                        key,
+                        label: labels[key] || key,
+                        status: capability?.status || "unknown",
+                        reason: capability?.reason || "",
+                    }));
+                },
+            },
+            mounted() {
+                this.loadCapabilityHealth();
+            },
+            methods: {
+                routeLabel,
+                terminalLabel,
+                capabilityStatusLabel(status) {
+                    const labels = {
+                        ok: "可用",
+                        degraded: "降级",
+                        unknown: "未知",
+                    };
+                    return labels[status] || status || "未知";
+                },
+                async loadCapabilityHealth() {
+                    if (!enterpriseApiClient?.loadCapabilityHealth) {
+                        this.capabilityHealth = {
+                            profile: {
+                                status: "unknown",
+                                reason: "enterprise_api_client_missing",
+                            },
+                        };
+                        return;
+                    }
+                    try {
+                        this.capabilityHealth = await enterpriseApiClient.loadCapabilityHealth();
+                    } catch (error) {
+                        this.capabilityHealth = {
+                            profile: {
+                                status: "unknown",
+                                reason: error.category || "health_load_failed",
+                            },
+                        };
+                    }
+                },
+                prettyJson(value) {
+                    return JSON.stringify(value, null, 2);
+                },
+                displayText(run) {
+                    const blocks = [];
+                    if (run.contentText.trim()) {
+                        blocks.push(run.contentText.trim());
+                    }
+                    if (run.reportText.trim()) {
+                        blocks.push(run.reportText.trim());
+                    }
+                    return blocks.join("\n\n");
+                },
+                selectRoute(route) {
+                    this.route = route;
+                    this.prompt = route === "aiops"
+                        ? "检查当前系统告警并生成诊断报告"
+                        : "请简要说明当前知识库里有哪些可用于 oncall 的信息";
+                },
+                requestBody() {
+                    if (this.route === "aiops") {
+                        return { session_id: this.sessionId };
+                    }
+                    return { Id: this.sessionId, Question: this.prompt };
+                },
+                async startRun() {
+                    const run = createRunState(this.route);
+                    run.title = this.prompt.trim() || routeLabel(this.route);
+                    run.traceId = makeId("trace-ui");
+                    run.requestId = makeId("request-ui");
+                    this.runs.unshift(run);
+                    this.activeRun = run;
+                    this.isRunning = true;
+                    this.controller = new AbortController();
+
+                    const parser = createSseParser((event) => {
+                        applyEventToRun(run, event);
+                    });
+
+                    try {
+                        const headers = buildRequestHeaders(run.traceId, run.requestId);
+                        if (!headers.Authorization) {
+                            throw new Error("请先在聊天页登录后再打开执行看板。");
+                        }
+                        const response = enterpriseApiClient?.rawRequest
+                            ? await enterpriseApiClient.rawRequest(`/${this.route === "aiops" ? "aiops" : "chat_stream"}`, {
+                                method: "POST",
+                                headers: {
+                                    "X-Trace-Id": run.traceId,
+                                    "X-Request-Id": run.requestId,
+                                },
+                                body: JSON.stringify(this.requestBody()),
+                                signal: this.controller.signal,
+                            })
+                            : await fetch(`/api/${this.route === "aiops" ? "aiops" : "chat_stream"}`, {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify(this.requestBody()),
+                            signal: this.controller.signal,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        if (!response.body) {
+                            throw new Error("SSE response body is empty");
+                        }
+
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                parser.flush();
+                                break;
+                            }
+                            parser.feed(decoder.decode(value, { stream: true }));
+                        }
+                        if (run.finalStatus === "running") {
+                            run.finalStatus = "done";
+                            run.finishedAt = new Date().toISOString();
+                        }
+                    } catch (error) {
+                        if (error.name === "AbortError") {
+                            applyEventToRun(run, normalizeEvent({
+                                type: "error",
+                                trace_id: run.traceId,
+                                request_id: run.requestId,
+                                message: "用户停止了当前流",
+                                data: "aborted",
+                            }));
+                        } else {
+                            applyEventToRun(run, normalizeEvent({
+                                type: "error",
+                                trace_id: run.traceId,
+                                request_id: run.requestId,
+                                message: error.message,
+                                data: error.message,
+                            }));
+                        }
+                    } finally {
+                        this.isRunning = false;
+                        this.controller = null;
+                    }
+                },
+                cancelRun() {
+                    if (this.controller) {
+                        this.controller.abort();
+                    }
+                },
+            },
+        });
+    }
+
+    window.EnterpriseE11Dashboard = {
+        normalizeEvent,
+        createSseParser,
+        createRunState,
+        getStoredAuthToken,
+        buildRequestHeaders,
+        applyEventToRun,
+        routeLabel,
+        terminalLabel,
+        createDashboardApp,
+    };
+
+    if (typeof document !== "undefined") {
+        document.addEventListener("DOMContentLoaded", () => {
+            const mountPoint = document.getElementById("e11-app");
+            if (mountPoint && window.Vue) {
+                createDashboardApp().mount(mountPoint);
+            } else if (mountPoint) {
+                mountPoint.removeAttribute("v-cloak");
+                mountPoint.innerHTML = "<main class=\"dashboard-main\"><section class=\"empty-state\">Vue3 runtime 未加载，无法启动执行看板。</section></main>";
+            }
+        });
+    }
+}());

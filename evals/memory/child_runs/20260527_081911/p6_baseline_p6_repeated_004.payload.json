@@ -1,0 +1,12 @@
+{
+  "samples_path": "evals/memory/p6_samples.jsonl",
+  "store_path": "uploads/_metadata/oncall_memory_p6_eval.sqlite3",
+  "sample_timeout_seconds": 120,
+  "eval_max_steps": 3,
+  "session_id": "p6_baseline_p6_repeated_004",
+  "query": "SlowResponse alert on service-d, p99 latency 5s",
+  "enable_memory_guidance": false,
+  "memory_store_path": null,
+  "sample_id": "p6_repeated_004",
+  "progress_path": "evals/memory/child_runs/20260527_081911/p6_baseline_p6_repeated_004.events.jsonl"
+}

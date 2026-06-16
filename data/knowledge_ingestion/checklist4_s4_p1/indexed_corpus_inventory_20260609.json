@@ -1,0 +1,140 @@
+{
+  "schema_version": "checklist4_s4_p1_indexed_corpus_inventory_v1",
+  "summary": {
+    "status": "s4_p1_import_index_complete_with_pdf_diversity_gap",
+    "generated_at": "2026-06-09T16:09:42.147238+00:00",
+    "owner_approved_rows": 10,
+    "new_indexed_documents": 10,
+    "indexed_document_count": 13,
+    "indexed_kb_count": 2,
+    "indexed_pdf_count": 1,
+    "artifact_missing_count": 0,
+    "source_ref_resolvable": true,
+    "source_ref_missing_count": 0,
+    "count_gate_passed": true,
+    "kb_gate_passed": true,
+    "pdf_diversity_gate_passed": false,
+    "defaults_unchanged_required": {
+      "rag_default_retrieval_mode": "dense_only",
+      "rag_query_rewrite_mode": "off",
+      "rerank_enabled": false
+    }
+  },
+  "new_documents": [
+    {
+      "doc_id": "doc_5bf080aa-1fda-5e71-8563-4c55c15d75de",
+      "kb_id": "process_digital_dept",
+      "file_name": "CPUThrottlingHigh.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 5,
+      "parent_chunk_count": 0,
+      "source_file": "CPUThrottlingHigh.md"
+    },
+    {
+      "doc_id": "doc_e0307122-ea4c-5459-82bb-9101ee7ab4f4",
+      "kb_id": "process_digital_dept",
+      "file_name": "KubeNodeNotReady.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 5,
+      "parent_chunk_count": 0,
+      "source_file": "KubeNodeNotReady.md"
+    },
+    {
+      "doc_id": "doc_13936d70-e931-53f7-9b5e-1e6aee0dff72",
+      "kb_id": "process_digital_dept",
+      "file_name": "KubePersistentVolumeFillingUp.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 7,
+      "parent_chunk_count": 1,
+      "source_file": "KubePersistentVolumeFillingUp.md"
+    },
+    {
+      "doc_id": "doc_67a5deac-6b7f-5598-bdc9-e8345ec539f6",
+      "kb_id": "process_digital_dept",
+      "file_name": "KubePodCrashLooping.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 5,
+      "parent_chunk_count": 0,
+      "source_file": "KubePodCrashLooping.md"
+    },
+    {
+      "doc_id": "doc_8ad1b6b2-93b5-50b2-90c9-78dbcb31301b",
+      "kb_id": "process_digital_dept",
+      "file_name": "KubePodNotReady.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 5,
+      "parent_chunk_count": 0,
+      "source_file": "KubePodNotReady.md"
+    },
+    {
+      "doc_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa",
+      "kb_id": "process_digital_dept",
+      "file_name": "cpu_high_usage.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 8,
+      "parent_chunk_count": 0,
+      "source_file": "cpu_high_usage.md"
+    },
+    {
+      "doc_id": "doc_83f63bdc-b99b-5e9e-aba4-d293764584a4",
+      "kb_id": "process_digital_dept",
+      "file_name": "disk_high_usage.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 12,
+      "parent_chunk_count": 1,
+      "source_file": "disk_high_usage.md"
+    },
+    {
+      "doc_id": "doc_31a0a4e4-d5a6-536e-8bfa-47ecd70bef85",
+      "kb_id": "process_digital_dept",
+      "file_name": "memory_high_usage.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 11,
+      "parent_chunk_count": 0,
+      "source_file": "memory_high_usage.md"
+    },
+    {
+      "doc_id": "doc_68714517-c470-55c9-b94d-b483ebc0e45c",
+      "kb_id": "process_digital_dept",
+      "file_name": "service_unavailable.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 12,
+      "parent_chunk_count": 0,
+      "source_file": "service_unavailable.md"
+    },
+    {
+      "doc_id": "doc_3c49ecb5-fc61-5869-a847-055176b07393",
+      "kb_id": "process_digital_dept",
+      "file_name": "slow_response.md",
+      "file_ext": "md",
+      "status": "indexed",
+      "parser_engine": "plain_text",
+      "child_chunk_count": 11,
+      "parent_chunk_count": 0,
+      "source_file": "slow_response.md"
+    }
+  ],
+  "gaps": {
+    "artifact_missing": [],
+    "source_ref_missing": [],
+    "pdf_diversity_gap": "Only one indexed PDF remains because the approved S4-P1 batch contains Markdown runbooks only."
+  }
+}

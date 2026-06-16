@@ -1,0 +1,85 @@
+{
+  "source": "design-fixture, NOT real session evidence",
+  "purpose": "Validate P2 lexical retrieval code paths and synonym handling; this is not Gate A.1 pain evidence.",
+  "threshold": {
+    "min_expected_hits": 7,
+    "total_queries": 10
+  },
+  "records": [
+    {
+      "memory_id": "mem_alert_cpu_high",
+      "schema_version": 1,
+      "owner_id": "default",
+      "namespace": "memory://oncall/alert-patterns",
+      "memory_type": "alert_pattern",
+      "content": "CPUHigh on user-service with sustained CPU usage and load spike after deployment.",
+      "summary": "CPUHigh CPU usage load spike after deploy",
+      "payload": {
+        "alert_name": "CPUHigh",
+        "service": "user-service",
+        "severity": "warning",
+        "signal_keys": ["cpu_usage", "load_average", "run_queue"],
+        "metric_patterns": ["cpu_usage > 90 for 5m", "load_average sustained above baseline"],
+        "log_patterns": ["thread pool queue growth"],
+        "root_cause": "suspected hot loop or traffic shift after rollout",
+        "fix": "check recent rollout, compare traffic distribution, capture top CPU threads",
+        "evidence_refs": [
+          {
+            "evidence_type": "synthetic_design_fixture",
+            "note": "Design fixture only; not real session evidence"
+          }
+        ]
+      },
+      "source": "design-fixture, NOT real session evidence",
+      "evidence": {
+        "evidence_type": "synthetic_design_fixture",
+        "case_id": "P2-LEX-001"
+      },
+      "status": "active",
+      "tags": ["cpu", "load", "spike"],
+      "access_count": 0
+    }
+  ],
+  "queries": [
+    {
+      "query": "CPUHigh",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "CPU 利用率告警",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "CPU 使用率过高",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "service A CPU spike",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "服务A处理器飙高",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "处理器负载过高",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "processor saturation",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "cpu load high after deploy",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "计算资源打满",
+      "expected_memory_id": "mem_alert_cpu_high"
+    },
+    {
+      "query": "用户服务 CPU 飙升",
+      "expected_memory_id": "mem_alert_cpu_high"
+    }
+  ]
+}

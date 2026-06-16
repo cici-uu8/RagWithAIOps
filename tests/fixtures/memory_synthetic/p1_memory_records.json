@@ -1,0 +1,101 @@
+[
+  {
+    "memory_id": "mem_alert_high_memory",
+    "schema_version": 1,
+    "owner_id": "default",
+    "namespace": "memory://oncall/alert-patterns",
+    "memory_type": "alert_pattern",
+    "content": "HighMemoryUsage with OOM and sustained GC pressure often needs heap dump capture before restart.",
+    "summary": "HighMemoryUsage OOM GC heap dump before restart",
+    "payload": {
+      "alert_name": "HighMemoryUsage",
+      "service": "checkout-api",
+      "severity": "critical",
+      "signal_keys": ["memory_usage", "oom_kill", "gc_overhead"],
+      "metric_patterns": ["memory_usage > 85 for 5m"],
+      "log_patterns": ["OutOfMemoryError", "GC overhead"],
+      "root_cause": "suspected JVM heap leak after deployment",
+      "fix": "capture heap dump, restart affected instance, inspect retained objects",
+      "evidence_refs": [
+        {
+          "evidence_type": "synthetic_design_fixture",
+          "note": "Design fixture only; not real session evidence"
+        }
+      ]
+    },
+    "source": "design-fixture, NOT real session evidence",
+    "evidence": {
+      "evidence_type": "synthetic_design_fixture",
+      "case_id": "P0-A2-001"
+    },
+    "status": "active",
+    "tags": ["memory", "oom", "gc"],
+    "access_count": 0
+  },
+  {
+    "memory_id": "mem_plan_slow_response",
+    "schema_version": 1,
+    "owner_id": "default",
+    "namespace": "memory://oncall/plan-templates",
+    "memory_type": "plan_template",
+    "content": "SlowResponse diagnosis should check metrics, application logs, downstream dependency latency, and recent rollout in order.",
+    "summary": "SlowResponse plan metrics logs dependency rollout",
+    "payload": {
+      "alert_type": "SlowResponse",
+      "plan_steps": [
+        "Check current p95 latency and error rate.",
+        "Query application logs for timeout and retry spikes.",
+        "Compare downstream dependency latency.",
+        "Check recent rollout or config changes."
+      ],
+      "tool_hints": [
+        {
+          "tool": "retrieve_knowledge",
+          "query": "SlowResponse response time too long"
+        }
+      ],
+      "success_criteria": ["Root-cause hypothesis has fresh metric or log evidence"],
+      "stop_conditions": ["No active latency anomaly in current metrics"],
+      "evidence_refs": [
+        {
+          "evidence_type": "synthetic_design_fixture",
+          "note": "Design fixture only; not real session evidence"
+        }
+      ]
+    },
+    "source": "design-fixture, NOT real session evidence",
+    "evidence": {
+      "evidence_type": "synthetic_design_fixture",
+      "case_id": "P0-A2-002"
+    },
+    "status": "candidate",
+    "tags": ["slow-response", "plan"],
+    "access_count": 0
+  },
+  {
+    "memory_id": "mem_preference_report_style",
+    "schema_version": 1,
+    "owner_id": "default",
+    "namespace": "memory://runtime/user-preferences",
+    "memory_type": "preference",
+    "content": "For oncall diagnosis, prefer concise Chinese reports with explicit evidence boundaries.",
+    "summary": "Chinese concise diagnosis report with evidence boundary",
+    "payload": {
+      "preference_scope": "oncall_diagnosis_report",
+      "preference": "Use concise Chinese and explicitly separate evidence from hypotheses.",
+      "applies_to": ["aiops_diagnosis", "incident_summary"],
+      "source_event": {
+        "evidence_type": "synthetic_design_fixture",
+        "note": "Design fixture only; not real session evidence"
+      }
+    },
+    "source": "design-fixture, NOT real session evidence",
+    "evidence": {
+      "evidence_type": "synthetic_design_fixture",
+      "case_id": "P0-A2-003"
+    },
+    "status": "active",
+    "tags": ["preference", "report-style"],
+    "access_count": 0
+  }
+]

@@ -1,0 +1,133 @@
+{
+  "generated_at": "2026-06-13T10:40:48.968505+00:00",
+  "summary": {
+    "status": "passed",
+    "check_count": 7,
+    "passed_count": 7,
+    "failed_count": 0,
+    "scope": "beta_readiness_minimum_loop",
+    "external_llm_called": false,
+    "external_vector_db_called": false
+  },
+  "baseline": {
+    "indexed_docs": 30,
+    "retrieval_evalset": "department_rag_mixed_markdown_pdf_54q_after_c6_p2",
+    "retrieval_passed": 45,
+    "retrieval_total": 54,
+    "wrong_scope_count": 0,
+    "citation_unresolvable_count": 0,
+    "all_source_ref_resolvable": true,
+    "answer_hard_gates_clean": true,
+    "answer_coverage": "limited"
+  },
+  "config_defaults": {
+    "rag_default_retrieval_mode": "dense_only",
+    "rag_query_rewrite_mode": "off",
+    "rerank_enabled": false,
+    "rag_top_k": 3
+  },
+  "checks": [
+    {
+      "name": "auth_login",
+      "status": "passed",
+      "evidence": {
+        "status_code": 200,
+        "user_id": "user_admin",
+        "department_id": "system",
+        "roles": [
+          "admin"
+        ],
+        "token_type": "bearer"
+      }
+    },
+    {
+      "name": "rag_qa_controlled",
+      "status": "passed",
+      "evidence": {
+        "query": "restart procedure",
+        "retrieved_doc_ids": [
+          "doc-visible"
+        ],
+        "answer": "根据 visible.md，当前可回答的处理步骤是 authorized restart procedure。",
+        "llm_called": false
+      }
+    },
+    {
+      "name": "source_ref_lookup",
+      "status": "passed",
+      "evidence": {
+        "resolvable": true,
+        "kb_id": "process_digital_dept",
+        "doc_id": "doc-visible",
+        "chunk_id": "doc-visible:c00001",
+        "source_file": "visible.md",
+        "content_preview": "authorized restart procedure"
+      }
+    },
+    {
+      "name": "permission_filtering",
+      "status": "passed",
+      "evidence": {
+        "allowed_doc_ids": [
+          "doc-visible"
+        ],
+        "blocked_doc_ids": [
+          "doc-hidden"
+        ],
+        "result_doc_ids": [
+          "doc-visible"
+        ]
+      }
+    },
+    {
+      "name": "audit_logging",
+      "status": "passed",
+      "evidence": {
+        "event_count": 5,
+        "event_types": [
+          "permission_checked",
+          "permission_checked",
+          "permission_checked",
+          "rag_retrieval",
+          "verification_result"
+        ],
+        "trace_id": "trace-beta-smoke"
+      }
+    },
+    {
+      "name": "feedback_schema",
+      "status": "passed",
+      "evidence": {
+        "required_fields": [
+          "timestamp",
+          "user_id",
+          "session_id",
+          "query",
+          "retrieved_docs",
+          "answer",
+          "answer_issue",
+          "missing_facts",
+          "source_refs",
+          "source_ref_resolvable",
+          "permission_scope_issue",
+          "followup_decision"
+        ],
+        "validation_errors": []
+      }
+    },
+    {
+      "name": "config_defaults",
+      "status": "passed",
+      "evidence": {
+        "rag_default_retrieval_mode": "dense_only",
+        "rag_query_rewrite_mode": "off",
+        "rerank_enabled": false,
+        "rag_top_k": 3
+      }
+    }
+  ],
+  "next_optimization_trigger": {
+    "source": "real_user_feedback_only",
+    "answer_revisit_rule": "If real feedback clusters around incomplete answers, reopen S5 Answer revisit with a narrow pilot first; do not jump directly to Answer 50q."
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "generated_at": "2026-06-13T18:57:38+0800",
+  "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+  "checks": {
+    "grant_preview": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "can_submit": true,
+          "checks": [
+            {
+              "check": "resource_exists",
+              "status": "passed",
+              "message": "Resource exists in catalog.",
+              "matched_grant_ids": []
+            },
+            {
+              "check": "action_supported",
+              "status": "passed",
+              "message": "Action is supported for this resource.",
+              "matched_grant_ids": []
+            },
+            {
+              "check": "principal_exists",
+              "status": "passed",
+              "message": "Principal exists.",
+              "matched_grant_ids": []
+            },
+            {
+              "check": "scope_allowed",
+              "status": "passed",
+              "message": "Request is inside department scope.",
+              "matched_grant_ids": []
+            },
+            {
+              "check": "duplicate_grant",
+              "status": "passed",
+              "message": "No duplicate grant found.",
+              "matched_grant_ids": []
+            },
+            {
+              "check": "direct_conflict",
+              "status": "passed",
+              "message": "No direct allow/deny conflict found.",
+              "matched_grant_ids": []
+            }
+          ]
+        }
+      }
+    },
+    "grant_create": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "grant": {
+            "grant_id": "d434b934-fa90-45ff-b48b-b85ad0065da3",
+            "resource_type": "document",
+            "resource_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+            "action": "read",
+            "principal_type": "user",
+            "principal_id": "user_demo_dept1",
+            "effect": "allow",
+            "reason": "acceptance document visibility contrast",
+            "created_at": "2026-06-13T10:57:38.209256Z"
+          }
+        }
+      }
+    },
+    "documents_list_after_grant": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "documents": [
+            {
+              "id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+              "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+              "kb_id": "process_digital_dept",
+              "filename": "acceptance_1781348132.md",
+              "file_name": "acceptance_1781348132.md",
+              "status": "indexed",
+              "status_detail": "plain-text chunks and vector rows were written successfully",
+              "parser_engine": "plain_text",
+              "created_at": "2026-06-13T18:55:38.383530",
+              "uploaded_at": "2026-06-13T18:55:38.383530",
+              "updated_at": "2026-06-13T18:55:39.843813",
+              "status_confirmed_at": "2026-06-13T18:55:39.843813",
+              "error_message": "",
+              "trace_id": null,
+              "health_check": {
+                "status": "passed",
+                "summary": "all diagnostics passed",
+                "checked_at": "2026-06-13T18:55:40.279225",
+                "marked_as_false_positive": false,
+                "false_positive_reason": ""
+              }
+            }
+          ],
+          "total": 1,
+          "page": 1,
+          "limit": 10,
+          "offset": 0,
+          "has_next": false,
+          "kb_ids": [
+            "process_digital_dept"
+          ]
+        }
+      }
+    },
+    "document_health_after_grant": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+          "kb_id": "process_digital_dept",
+          "status": "passed",
+          "summary": "all diagnostics passed",
+          "retrieval": {
+            "passed": true,
+            "queries": [
+              {
+                "query": "acceptance 1781348132",
+                "hit": true,
+                "rank": 1,
+                "top_doc_ids": [
+                  "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44"
+                ]
+              },
+              {
+                "query": "Acceptance Live Upload This is",
+                "hit": true,
+                "rank": 1,
+                "top_doc_ids": [
+                  "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+                  "doc_48d65565-db05-522e-9186-b76e6925370c"
+                ]
+              }
+            ]
+          },
+          "source_ref": {
+            "passed": true,
+            "errors": [],
+            "checked_chunk_count": 1
+          },
+          "pdf": {
+            "passed": true,
+            "skipped": "not a PDF",
+            "errors": []
+          },
+          "checked_at": "2026-06-13T18:55:40.279225",
+          "marked_as_false_positive": false,
+          "false_positive_reason": ""
+        }
+      }
+    },
+    "false_positive_after_grant": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "doc_id": "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+          "kb_id": "process_digital_dept",
+          "status": "passed",
+          "summary": "all diagnostics passed",
+          "retrieval": {
+            "passed": true,
+            "queries": [
+              {
+                "query": "acceptance 1781348132",
+                "hit": true,
+                "rank": 1,
+                "top_doc_ids": [
+                  "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44"
+                ]
+              },
+              {
+                "query": "Acceptance Live Upload This is",
+                "hit": true,
+                "rank": 1,
+                "top_doc_ids": [
+                  "doc_888ad607-2be4-5b4e-90cf-a78e6cfd5d44",
+                  "doc_48d65565-db05-522e-9186-b76e6925370c"
+                ]
+              }
+            ]
+          },
+          "source_ref": {
+            "passed": true,
+            "errors": [],
+            "checked_chunk_count": 1
+          },
+          "pdf": {
+            "passed": true,
+            "skipped": "not a PDF",
+            "errors": []
+          },
+          "checked_at": "2026-06-13T18:55:40.279225",
+          "marked_as_false_positive": true,
+          "false_positive_reason": "acceptance contrast marker"
+        }
+      }
+    },
+    "grant_cleanup": {
+      "status_code": 200,
+      "body": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "revoked": true
+        }
+      }
+    }
+  }
+}

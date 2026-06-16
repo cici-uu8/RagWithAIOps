@@ -1,0 +1,52 @@
+super_biz_agent_py
+==================
+
+This product includes software developed by third parties.
+
+
+Tencent / WeKnora
+-----------------
+
+Portions of `app/services/retrieval_metrics.py` are derived from the WeKnora
+project's IR metric implementations:
+
+  https://github.com/Tencent/WeKnora
+  internal/application/service/metric/{recall,precision,mrr,map,ndcg}.go
+
+Portions of `app/services/token_estimator.py` are derived from the WeKnora
+project's language-aware token approximation:
+
+  internal/infrastructure/chunker/tokens.go
+
+Original work copyright (c) Tencent.
+Licensed under the MIT License.
+
+The Python ports preserve WeKnora's semantics 1:1: per-set average for
+recall/precision/mrr/map and union for ndcg in the metrics module; per-
+language chars-per-token ratios with 0.9 safety factor in the token
+estimator. Upstream test expected values are reproduced verbatim in
+`tests/test_retrieval_metrics.py` and `tests/test_token_estimator.py`.
+
+A copy of the WeKnora MIT License follows.
+
+  MIT License
+
+  Copyright (c) Tencent.
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.

@@ -1,0 +1,56 @@
+{
+  "query": "Redis内存打满怎么办",
+  "kb_ids": [
+    "process_digital_dept"
+  ],
+  "retrieval_mode": "dense_only",
+  "top_k": 3,
+  "results_count": 3,
+  "results": [
+    {
+      "rank": 1,
+      "doc_id": "doc_4609992d-0697-513e-945d-7a3b0dae62f4",
+      "score": 0.5625,
+      "source_file": "redis_high_memory_runbook.md",
+      "kb_id": "process_digital_dept",
+      "chunk_id": "doc_4609992d-0697-513e-945d-7a3b0dae62f4:c00004",
+      "heading_path": [
+        "Redis 高内存使用告警处理手册",
+        "常见原因和处理"
+      ],
+      "content_preview": "## 常见原因和处理  \n### 原因 1：TTL 缺失或过长  \n特征：  \n- key 数量持续上升\n- `expired_keys` 增长很慢\n- 大量业务 key 没有过期时间  \n处理：  \n- 由业务 owner 确认正确 TTL\n- 对新写入逻辑补 TTL\n- 对历史 key 做分批清理方案\n- 清理必须走变更审批和灰度执行，不允许一次性删除全量 key  \n### 原因 2：大 k",
+      "content_length": 652
+    },
+    {
+      "rank": 2,
+      "doc_id": "doc_4609992d-0697-513e-945d-7a3b0dae62f4",
+      "score": 0.5708,
+      "source_file": "redis_high_memory_runbook.md",
+      "kb_id": "process_digital_dept",
+      "chunk_id": "doc_4609992d-0697-513e-945d-7a3b0dae62f4:c00005",
+      "heading_path": [
+        "Redis 高内存使用告警处理手册",
+        "应急措施"
+      ],
+      "content_preview": "## 应急措施  \n5 分钟内可执行：  \n- 通知业务 owner 和 on-call commander\n- 限流高写入接口\n- 暂停非核心缓存预热或批量导入任务\n- 临时扩容 Redis 容量或增加 shard\n- 如果写入失败影响核心链路，按应急变更流程切换降级策略  \n30 分钟内完成：  \n- 定位主要 key 前缀和增长来源\n- 给出 TTL、拆分、扩容或清理方案\n- 建立观察窗口，",
+      "content_length": 243
+    },
+    {
+      "rank": 3,
+      "doc_id": "doc_4609992d-0697-513e-945d-7a3b0dae62f4",
+      "score": 0.6023,
+      "source_file": "redis_high_memory_runbook.md",
+      "kb_id": "process_digital_dept",
+      "chunk_id": "doc_4609992d-0697-513e-945d-7a3b0dae62f4:c00001",
+      "heading_path": [
+        "Redis 高内存使用告警处理手册",
+        "告警定义"
+      ],
+      "content_preview": "## 告警定义  \n当 Redis 实例出现以下任一信号时，进入高内存告警处理流程：  \n- `redis_memory_used_ratio` 连续 5 分钟高于 85%\n- `used_memory` 接近 `maxmemory`\n- `evicted_keys` 持续增长\n- `mem_fragmentation_ratio` 异常升高并伴随可用内存下降\n- 业务侧出现缓存写入失败、缓存命中",
+      "content_length": 322
+    }
+  ],
+  "context_length": 1828,
+  "context_text": "【参考资料 1】\n标题: Redis 高内存使用告警处理手册 > 常见原因和处理\n来源: redis_high_memory_runbook.md\n定位: [来源: redis_high_memory_runbook.md, 章节: Redis 高内存使用告警处理手册 > 常见原因和处理, chunk: doc_4609992d-0697-513e-945d-7a3b0dae62f4:c00004]\n内容:\n## 常见原因和处理  \n### 原因 1：TTL 缺失或过长  \n特征：  \n- key 数量持续上升\n- `expired_keys` 增长很慢\n- 大量业务 key 没有过期时间  \n处理：  \n- 由业务 owner 确认正确 TTL\n- 对新写入逻辑补 TTL\n- 对历史 key 做分批清理方案\n- 清理必须走变更审批和灰度执行，不允许一次性删除全量 key  \n### 原因 2：大 key 写入  \n特征：  \n- 少数 key 占用大量内存\n- 接口响应时间升高\n- 网络出口或 Redis CPU 同时升高  \n处理：  \n- 将大 key 拆分为更小结构\n- 对列表、集合、哈希增加长度上限\n- 对历史大 key 做迁移或分批裁剪\n- 必要时临时扩容 Redis 规格  \n### 原因 3：热点流量导致缓存膨胀  \n特征：  \n- 内存上升与 QPS 上升同步\n- keyspace misses 上升\n- 数据库回源压力变大  \n处理：  \n- 对热点接口限流或降级\n- 增加本地缓存或多级缓存\n- 缩短非核心缓存字段\n- 扩容 shard 或实例  \n### 原因 4：淘汰策略不匹配  \n特征：  \n- `evicted_keys` 持续增长\n- 命中率下降\n- 业务频繁回源  \n处理：  \n- 评估 `volatile-lru`、`allkeys-lru`、`noeviction` 等策略是否匹配业务\n- 修改策略必须提交变更单\n- 修改后观察命中率、错误率和回源流量\n\n【参考资料 2】\n标题: Redis 高内存使用告警处理手册 > 应急措施\n来源: redis_high_memory_runbook.md\n定位: [来源: redis_high_memory_runbook.md, 章节: Redis 高内存使用告警处理手册 > 应急措施, chunk: doc_4609992d-0697-513e-945d-7a3b0dae62f4:c00005]\n内容:\n## 应急措施  \n5 分钟内可执行：  \n- 通知业务 owner 和 on-call commander\n- 限流高写入接口\n- 暂停非核心缓存预热或批量导入任务\n- 临时扩容 Redis 容量或增加 shard\n- 如果写入失败影响核心链路，按应急变更流程切换降级策略  \n30 分钟内完成：  \n- 定位主要 key 前缀和增长来源\n- 给出 TTL、拆分、扩容或清理方案\n- 建立观察窗口，持续看 `used_memory`、`evicted_keys`、命中率和接口 P99\n\n【参考资料 3】\n标题: Redis 高内存使用告警处理手册 > 告警定义\n来源: redis_high_memory_runbook.md\n定位: [来源: redis_high_memory_runbook.md, 章节: Redis 高内存使用告警处理手册 > 告警定义, chunk: doc_4609992d-0697-513e-945d-7a3b0dae62f4:c00001]\n内容:\n## 告警定义  \n当 Redis 实例出现以下任一信号时，进入高内存告警处理流程：  \n- `redis_memory_used_ratio` 连续 5 分钟高于 85%\n- `used_memory` 接近 `maxmemory`\n- `evicted_keys` 持续增长\n- `mem_fragmentation_ratio` 异常升高并伴随可用内存下降\n- 业务侧出现缓存写入失败、缓存命中率下降或请求延迟升高  \n该告警通常影响缓存命中、会话存储、队列缓冲和热点数据读取。如果 Redis 被设置为 noeviction 策略，内存打满后写入请求可能直接失败；如果使用淘汰策略，可能出现热点数据被驱逐、数据库回源放大和接口响应变慢。\n",
+  "generated_answer": "根据检索到的文档 redis_high_memory_runbook.md，回答如下：\n\n[基于文档内容的结构化回答会在这里生成]\n\n上下文来源：\n\n1. redis_high_memory_runbook.md (相关度: 0.5625)\n2. redis_high_memory_runbook.md (相关度: 0.5708)\n3. redis_high_memory_runbook.md (相关度: 0.6023)"
+}

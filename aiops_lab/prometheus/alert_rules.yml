@@ -1,0 +1,26 @@
+groups:
+  - name: aiops-lab
+    rules:
+      - alert: CPUHigh
+        expr: service_cpu_percent > 80
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "CPU usage is high on {{ $labels.service_name }}"
+
+      - alert: DBSlowQuery
+        expr: mysql_query_latency_seconds > 2
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database query latency is high on {{ $labels.service_name }}"
+
+      - alert: RedisQueueBacklog
+        expr: redis_queue_length > 100
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis queue backlog is high on {{ $labels.service_name }}"

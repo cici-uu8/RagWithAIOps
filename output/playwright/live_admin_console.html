@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业助手管理后台</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/enterprise-ui.css">
+    <link rel="stylesheet" href="/static/admin-console.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="/static/enterprise-api-client.js"></script>
+</head>
+<body>
+    <div id="admin-console-app" v-cloak>
+        <div v-if="authState !== 'ready'" class="admin-auth-state">
+            <section class="admin-auth-panel">
+                <h1>企业助手管理后台</h1>
+                <p class="admin-muted" v-if="authState === 'loading'">正在校验管理员身份...</p>
+                <template v-else-if="authState === 'login_required'">
+                    <p>请先回到聊天页登录管理员账号。</p>
+                    <p class="admin-muted">管理后台复用聊天页的企业登录 token。</p>
+                </template>
+                <template v-else>
+                    <p>你没有权限访问管理后台。</p>
+                    <p class="admin-muted">需要 admin 角色，后端 Admin API 仍会进行最终校验。</p>
+                </template>
+                <div class="admin-row-actions admin-panel-actions">
+                    <button class="ea-btn ea-btn-primary" type="button" @click="goChat">返回聊天页</button>
+                    <button class="ea-btn" type="button" @click="initialize">重新检查</button>
+                </div>
+            </section>
+        </div>
+
+        <div v-else class="admin-console">
+            <aside class="admin-sidebar">
+                <div class="admin-brand">
+                    <div class="admin-brand-mark">EA</div>
+                    <div>
+                        <h1>管理后台</h1>
+                        <p>Enterprise Admin</p>
+                    </div>
+                </div>
+
+                <nav class="admin-nav" aria-label="管理后台导航">
+                    <button v-for="item in visibleNavItems" :key="item.key" type="button" :class="{ active: route === item.key }" @click="setRoute(item.key)">
+                        <span>{{ item.label }}</span>
+                        <span v-if="item.key === 'permission-requests' && permissionRequestSummary.pending_count > 0" class="admin-nav-badge">
+                            {{ permissionRequestSummary.pending_count }}
+                        </span>
+                    </button>
+                </nav>
+
+                <div class="admin-sidebar-footer">
+                    <div>
+                        <strong>{{ currentUser.username }}</strong>
+                        <p class="admin-user-meta">{{ roleLabel }} · {{ currentUser.department_name }}</p>
+                        <p class="admin-section-note" v-if="isDepartmentAdmin">部门管理员</p>
+                    </div>
+                    <button class="ea-btn" type="button" @click="goChat">返回聊天</button>
+                </div>
+            </aside>
+
+            <main class="admin-main">
+                <header class="admin-header">
+                    <div>
+                        <p class="admin-section-note">E8 Admin API Console</p>
+                        <h2>{{ currentRouteLabel }}</h2>
+                    </div>
+                    <div class="admin-header-actions">
+                        <div class="capability-health-banner" aria-label="能力健康状态">
+                            <span
+                                v-for="item in capabilityHealthItems"
+                                :key="item.key"
+                                class="capability-health-item"
+                                :data-status="item.status"
+                            >
+                                {{ item.label }} · {{ capabilityStatusLabel(item.status) }}
+                            </span>
+                        </div>
+                        <span class="ea-badge admin-scope-badge" :data-tone="isGlobalAdmin ? 'success' : 'warning'">{{ scopeLabel }}</span>
+                        <button class="ea-btn" type="button" @click="refreshCurrent">刷新</button>
+                    </div>
+                </header>
+
+                <section class="admin-content">
+                    <section v-if="route === 'overview'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>系统概览</h3>
+                                <p class="admin-section-note">只展示当前 E8 API 已能稳定提供的管理数据。</p>
+                            </div>
+                        </div>
+                        <div class="admin-grid">
+                            <div class="admin-stat"><span class="admin-muted">用户</span><strong>{{ users.length }}</strong></div>
+                            <div class="admin-stat"><span class="admin-muted">角色</span><strong>{{ roles.length }}</strong></div>
+                            <div class="admin-stat"><span class="admin-muted">权限 Grant</span><strong>{{ grants.length }}</strong></div>
+                            <div class="admin-stat"><span class="admin-muted">权限申请</span><strong>{{ permissionRequestSummary.pending_count }}</strong></div>
+                            <div class="admin-stat"><span class="admin-muted">待审批任务</span><strong>{{ reviews.length }}</strong></div>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'users'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>创建用户</h3>
+                                <p class="admin-section-note">第一版只支持管理员创建用户，不开放自助注册。</p>
+                            </div>
+                        </div>
+                        <form class="admin-form-grid" @submit.prevent="createUser">
+                            <label class="ea-field">User ID<input v-model.trim="forms.user.user_id" required></label>
+                            <label class="ea-field">用户名<input v-model.trim="forms.user.username" required></label>
+                            <label class="ea-field">初始密码<input v-model="forms.user.password" type="password" required></label>
+                            <label class="ea-field">部门 ID<input v-model.trim="forms.user.department_id" required :disabled="busy || isDepartmentAdmin"></label>
+                            <label class="ea-field">部门名称<input v-model.trim="forms.user.department_name" required :disabled="busy || isDepartmentAdmin"></label>
+                            <label class="ea-field">角色（逗号分隔）<input v-model.trim="forms.user.roles" placeholder="user"></label>
+                            <button class="ea-btn ea-btn-primary" type="submit" :disabled="busy">创建用户</button>
+                        </form>
+                    </section>
+
+                    <section v-if="route === 'users'" class="admin-card">
+                        <div class="admin-card-header"><h3>用户列表</h3></div>
+                        <div class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>User ID</th><th>用户名</th><th>部门</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="user in users" :key="user.user_id">
+                                        <td><code>{{ user.user_id }}</code></td>
+                                        <td>{{ user.username }}</td>
+                                        <td>{{ user.department_id }} / {{ user.department_name }}</td>
+                                        <td>{{ (user.roles || []).join(', ') }}</td>
+                                        <td><span class="ea-badge" :data-tone="user.is_active ? 'success' : 'danger'">{{ user.is_active ? 'active' : 'disabled' }}</span></td>
+                                        <td><button class="ea-btn ea-btn-danger" type="button" @click="disableUser(user)" :disabled="busy || !user.is_active">禁用</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'roles' && isGlobalAdmin" class="admin-card">
+                        <div class="admin-card-header"><h3>角色管理</h3></div>
+                        <form class="admin-form-grid" @submit.prevent="createRole">
+                            <label class="ea-field">Role ID<input v-model.trim="forms.role.role_id" required></label>
+                            <label class="ea-field">名称<input v-model.trim="forms.role.name" required></label>
+                            <label class="ea-field">描述<input v-model.trim="forms.role.description"></label>
+                            <button class="ea-btn ea-btn-primary" type="submit" :disabled="busy">创建角色</button>
+                        </form>
+                    </section>
+
+                    <section v-if="route === 'roles' && isGlobalAdmin" class="admin-card">
+                        <div class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>Role ID</th><th>名称</th><th>描述</th><th>创建时间</th><th>操作</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="role in roles" :key="role.role_id">
+                                        <td><code>{{ role.role_id }}</code></td>
+                                        <td>{{ role.name }}</td>
+                                        <td>{{ role.description || '-' }}</td>
+                                        <td>{{ shortTime(role.created_at) }}</td>
+                                        <td><button class="ea-btn ea-btn-danger" type="button" @click="deleteRole(role)" :disabled="busy || builtInRoles.includes(role.role_id)">删除</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'departments' && isGlobalAdmin" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>部门资源 scope</h3>
+                                <p class="admin-section-note">仅 global admin 可以配置业务部门的 resource scope。</p>
+                            </div>
+                        </div>
+                        <form class="admin-form-grid admin-form-grid-wide" @submit.prevent="addDepartmentResourceToScope">
+                            <label class="ea-field">
+                                部门
+                                <select v-model="forms.departmentScope.department_id">
+                                    <option v-for="department in businessDepartments" :key="department.department_id" :value="department.department_id">
+                                        {{ department.name }} · {{ department.department_id }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="ea-field">
+                                Resource Type
+                                <select v-model="forms.departmentScope.resource_type" @change="onDepartmentScopeResourceTypeChanged">
+                                    <option v-for="resourceType in resourceTypes" :key="resourceType" :value="resourceType">
+                                        {{ resourceType }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="ea-field">
+                                Resource
+                                <select v-model="forms.departmentScope.resource_id" @change="onDepartmentScopeResourceChanged">
+                                    <option v-for="resource in scopeResourceOptions" :key="`${resource.resource_type}:${resource.resource_id}`" :value="resource.resource_id">
+                                        {{ resource.name }} · {{ resource.resource_id }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="ea-field">
+                                Action
+                                <select v-model="forms.departmentScope.action">
+                                    <option v-for="action in scopeActionOptions" :key="action" :value="action">{{ action }}</option>
+                                </select>
+                            </label>
+                            <button class="ea-btn ea-btn-primary" type="submit" :disabled="busy">加入 scope</button>
+                        </form>
+                    </section>
+
+                    <section v-if="route === 'departments' && isGlobalAdmin" class="admin-card">
+                        <div class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>部门</th><th>管理员</th><th>manageable_resources</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="department in departments" :key="department.department_id">
+                                        <td>
+                                            <strong>{{ department.name }}</strong><br>
+                                            <code>{{ department.department_id }}</code>
+                                        </td>
+                                        <td>{{ (department.admin_user_ids || []).join(', ') || '-' }}</td>
+                                        <td>
+                                            <div v-if="(department.manageable_resources || []).length > 0" class="admin-row-actions">
+                                                <div v-for="resource in department.manageable_resources" :key="`${department.department_id}:${resource.resource_type}:${resource.resource_id}`" class="admin-scope-resource">
+                                                    <div><code>{{ resource.resource_type }}:{{ resource.resource_id }}</code></div>
+                                                    <div class="admin-muted">{{ (resource.actions || []).join(', ') }}</div>
+                                                    <button class="ea-btn ea-btn-danger" type="button" @click="removeDepartmentResourceFromScope(department, resource)" :disabled="busy || department.department_id === 'system'">
+                                                        移出
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <span v-else class="admin-muted">-</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'resources'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>资源目录</h3>
+                                <p class="admin-section-note">第一版只列可权威枚举的 document、tool、database_table、database_column。</p>
+                                <p class="admin-section-note" v-if="isDepartmentAdmin">仅显示本部门可管理资源，范围由后端 /api/admin/resources 决定。</p>
+                            </div>
+                        </div>
+                        <div v-if="databaseResources.length > 0" class="admin-db-catalog">
+                            <div class="admin-db-catalog-header">
+                                <div>
+                                    <h4>数据库 Demo 资源</h4>
+                                    <p class="admin-section-note">sandbox_sales 当前只读；DML / DDL 始终由后端 SafeSqlKernel 拦截，前端只负责展示可授权的表和列 resource id。</p>
+                                </div>
+                            </div>
+                            <div v-for="table in databaseTables" :key="table.resource_id" class="admin-db-table-group">
+                                <div class="admin-db-table-header">
+                                    <div>
+                                        <strong>{{ table.metadata?.table_name || table.name }}</strong>
+                                        <div><code>{{ table.resource_id }}</code></div>
+                                    </div>
+                                    <div class="admin-row-actions">
+                                        <span class="ea-badge">database_table</span>
+                                        <button class="ea-btn" type="button" @click="applyResourceToGrant(table)">用于授权</button>
+                                    </div>
+                                </div>
+                                <div class="admin-table-wrap" v-if="(databaseColumnsByTable[table.metadata?.table_name] || []).length > 0">
+                                    <table class="ea-table">
+                                        <thead><tr><th>列</th><th>Resource ID</th><th>类型</th><th>敏感</th><th>授权</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="column in databaseColumnsByTable[table.metadata?.table_name] || []" :key="column.resource_id">
+                                                <td>{{ column.metadata?.column_name || column.name }}</td>
+                                                <td><code>{{ column.resource_id }}</code></td>
+                                                <td>{{ column.metadata?.data_type || '-' }}</td>
+                                                <td>{{ column.metadata?.sensitive ? '是' : '否' }}</td>
+                                                <td><button class="ea-btn" type="button" @click="applyResourceToGrant(column)">用于授权</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p v-else class="admin-section-note">该表暂无可枚举列资源。</p>
+                            </div>
+                        </div>
+                        <div class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>类型</th><th>Resource ID</th><th>名称</th><th>actions_supported</th><th>说明</th><th>Metadata</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="resource in resources" :key="`${resource.resource_type}:${resource.resource_id}`">
+                                        <td>{{ resource.resource_type }}</td>
+                                        <td><code>{{ resource.resource_id }}</code></td>
+                                        <td>{{ resource.name }}</td>
+                                        <td>{{ (resource.actions_supported || []).join(', ') }}</td>
+                                        <td>{{ resource.description || '-' }}</td>
+                                        <td><pre>{{ compactJson(resource.metadata) }}</pre></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'grants'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>新增授权</h3>
+                                <p class="admin-section-note">MVP 复用现有 ResourceGrant；真正执行时后端 PermissionService 仍做最终校验。</p>
+                            </div>
+                        </div>
+                        <form class="admin-form-grid admin-form-grid-wide" @submit.prevent="createGrant">
+                            <label class="ea-field">Principal 类型<select v-model="forms.grant.principal_type"><option>user</option><option>role</option><option>department</option><option>public</option></select></label>
+                            <label class="ea-field">Principal ID<input v-model.trim="forms.grant.principal_id" required></label>
+                            <label class="ea-field">Resource
+                                <select v-model="forms.grant.resource_id" required @change="onGrantResourceChanged">
+                                    <option v-for="resource in resources" :key="resource.resource_id" :value="resource.resource_id">
+                                        {{ resource.resource_type }} · {{ resource.name }} · {{ resource.resource_id }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="ea-field">Action
+                                <select v-model="forms.grant.action" required @change="onGrantActionChanged">
+                                    <option v-for="action in selectedResourceActions" :key="action" :value="action">{{ action }}</option>
+                                </select>
+                            </label>
+                            <label class="ea-field">Effect<select v-model="forms.grant.effect"><option>allow</option><option>deny</option></select></label>
+                            <label class="ea-field">原因<input v-model.trim="forms.grant.reason"></label>
+                            <div class="admin-row-actions">
+                                <button class="ea-btn" type="button" @click="previewGrant" :disabled="busy">预览</button>
+                                <button class="ea-btn ea-btn-primary" type="submit" :disabled="busy || !grantCanSubmit">保存 Grant</button>
+                            </div>
+                        </form>
+                        <div v-if="grantPreview" class="admin-preview-panel">
+                            <h4>授权预览</h4>
+                            <p :class="grantPreview.can_submit ? 'admin-preview-ok' : 'admin-preview-blocked'">
+                                {{ grantPreview.can_submit ? '可以提交' : '不可提交' }}
+                            </p>
+                            <ul>
+                                <li v-for="check in grantPreview.checks" :key="check.check">
+                                    <span class="ea-badge" :data-tone="check.status === 'passed' ? 'success' : (check.status === 'warning' ? 'warning' : 'danger')">
+                                        {{ check.status }}
+                                    </span>
+                                    <strong>{{ check.check }}</strong>
+                                    <span>{{ check.message }}</span>
+                                    <code v-if="check.matched_grant_ids?.length">{{ check.matched_grant_ids.join(', ') }}</code>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'grants'" class="admin-card">
+                        <div class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>Grant ID</th><th>Principal</th><th>Resource</th><th>Action</th><th>Effect</th><th>原因</th><th>操作</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="grant in grants" :key="grant.grant_id">
+                                        <td><code>{{ grant.grant_id }}</code></td>
+                                        <td>{{ grant.principal_type }}: {{ grant.principal_id }}</td>
+                                        <td>{{ grant.resource_type }}: {{ grant.resource_id }}</td>
+                                        <td>{{ grant.action }}</td>
+                                        <td><span class="ea-badge" :data-tone="grant.effect === 'allow' ? 'success' : 'danger'">{{ grant.effect }}</span></td>
+                                        <td>{{ grant.reason || '-' }}</td>
+                                        <td><button class="ea-btn ea-btn-danger" type="button" @click="revokeGrant(grant)" :disabled="busy">撤销</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'permission-requests'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>权限申请</h3>
+                                <p class="admin-section-note">部门管理员可查看本部门员工申请；requires_global_review=true 的申请只能由 global admin 通过。</p>
+                            </div>
+                            <div class="admin-row-actions">
+                                <span class="ea-badge" data-tone="warning">pending_count {{ permissionRequestSummary.pending_count }}</span>
+                                <span class="ea-badge" data-tone="danger">requires_global_review {{ permissionRequestSummary.requires_global_review_count }}</span>
+                            </div>
+                        </div>
+                        <div v-if="permissionRequests.length === 0" class="ea-empty">暂无权限申请</div>
+                        <div v-else class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead>
+                                    <tr><th>Request</th><th>申请人</th><th>资源</th><th>队列</th><th>申请原因</th><th>审批原因</th><th>操作</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in permissionRequests" :key="request.request_id">
+                                        <td><code>{{ request.request_id }}</code><br><span class="admin-muted">{{ shortTime(request.created_at) }}</span></td>
+                                        <td>{{ request.requester_username }}<br><span class="admin-muted">{{ request.requester_department_id }} / {{ request.requester_department_name }}</span></td>
+                                        <td><code>{{ request.resource_type }}:{{ request.resource_id }}</code><br><span class="admin-muted">{{ request.action }}</span></td>
+                                        <td>
+                                            <span class="ea-badge" data-tone="warning" v-if="request.requires_global_review">requires_global_review</span>
+                                            <span class="ea-badge" data-tone="success" v-else>department</span>
+                                            <div class="admin-muted">{{ request.review_queue }}</div>
+                                            <div class="admin-muted">candidate: {{ (request.candidate_department_ids || []).join(', ') || '-' }}</div>
+                                        </td>
+                                        <td>{{ request.reason || '-' }}</td>
+                                        <td><input v-model.trim="permissionRequestDecisionReasons[request.request_id]" placeholder="审批说明"></td>
+                                        <td class="admin-row-actions">
+                                            <button class="ea-btn ea-btn-primary" type="button" @click="approvePermissionRequest(request)" :disabled="busy || !canApprovePermissionRequest(request)">通过</button>
+                                            <button class="ea-btn ea-btn-danger" type="button" @click="rejectPermissionRequest(request)" :disabled="busy">拒绝</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'reviews'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>高风险审批</h3>
+                                <p class="admin-section-note">接入 F6 Human-in-the-loop pending reviews。</p>
+                            </div>
+                        </div>
+                        <div v-if="reviews.length === 0" class="ea-empty">暂无待审批任务</div>
+                        <div v-else class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>Review ID</th><th>用户</th><th>风险</th><th>原因</th><th>审批原因</th><th>操作</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="review in reviews" :key="review.review_id">
+                                        <td><code>{{ review.review_id }}</code><br><span class="admin-muted">{{ review.trace_id }}</span></td>
+                                        <td>{{ review.user_id }}</td>
+                                        <td><span class="ea-badge" data-tone="warning">{{ review.risk_level }}</span></td>
+                                        <td>{{ review.reason }}</td>
+                                        <td><input v-model.trim="reviewDecisionReasons[review.review_id]" placeholder="审批说明"></td>
+                                        <td class="admin-row-actions">
+                                            <button class="ea-btn ea-btn-primary" type="button" @click="decideReview(review, 'approve')" :disabled="busy">通过</button>
+                                            <button class="ea-btn ea-btn-danger" type="button" @click="decideReview(review, 'reject')" :disabled="busy">拒绝</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'audit'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>审计查询</h3>
+                                <p class="admin-section-note">可按 trace / user / event_type 组合筛选。</p>
+                                <p class="admin-section-note" v-if="isDepartmentAdmin">只显示本部门相关审计。</p>
+                            </div>
+                        </div>
+                        <form class="admin-form-grid" @submit.prevent="loadAudit">
+                            <label class="ea-field">Trace ID<input v-model.trim="forms.audit.trace_id"></label>
+                            <label class="ea-field">User ID<input v-model.trim="forms.audit.user_id"></label>
+                            <label class="ea-field">Event Type<input v-model.trim="forms.audit.event_type" placeholder="admin_operation"></label>
+                            <label class="ea-field">最多返回<input v-model.trim="forms.audit.limit" type="number" min="1" max="500"></label>
+                            <button class="ea-btn ea-btn-primary" type="submit" :disabled="busy">查询</button>
+                        </form>
+                    </section>
+
+                    <section v-if="route === 'audit'" class="admin-card">
+                        <div v-if="auditEvents.length === 0" class="ea-empty">暂无审计事件</div>
+                        <div v-else class="admin-table-wrap">
+                            <table class="ea-table">
+                                <thead><tr><th>时间</th><th>Event</th><th>User</th><th>Decision</th><th>Trace</th><th>Metadata</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="event in auditEvents" :key="event.event_id || `${event.trace_id}-${event.request_id}-${event.timestamp}`">
+                                        <td>{{ shortTime(event.timestamp) }}</td>
+                                        <td>{{ event.event_type }}</td>
+                                        <td>{{ event.user_id }}</td>
+                                        <td>{{ event.decision }}</td>
+                                        <td><code>{{ event.trace_id }}</code></td>
+                                        <td><pre>{{ compactJson(event.metadata) }}</pre></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section v-if="route === 'trace'" class="admin-card">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>Trace 时间线</h3>
+                                <p class="admin-section-note">支持 trace_id / request_id 查询，聚合 routing、retrieval、tool、database、memory、sse 与 audit；缺失来源显示 not_recorded。</p>
+                                <p class="admin-section-note" v-if="isDepartmentAdmin">只允许查看本部门用户 trace。</p>
+                            </div>
+                        </div>
+                        <form class="admin-form-grid" @submit.prevent="loadTraceTimeline">
+                            <label class="ea-field">Trace ID / request_id<input v-model.trim="forms.trace.trace_id" placeholder="trace_id 或 request_id"></label>
+                            <label class="ea-field" v-if="traceCompareEnabled">Compare Trace<input v-model.trim="forms.trace.compare_trace_id" placeholder="trace_id 或 request_id"></label>
+                            <button class="ea-btn ea-btn-primary" type="submit" :disabled="busy || !forms.trace.trace_id">查询</button>
+                            <button class="ea-btn" type="button" @click="traceCompareEnabled = !traceCompareEnabled">
+                                {{ traceCompareEnabled ? '关闭对比' : 'Trace 对比' }}
+                            </button>
+                            <button class="ea-btn" type="button" v-if="traceCompareEnabled" @click="loadTraceComparison" :disabled="busy || !forms.trace.trace_id || !forms.trace.compare_trace_id">对比</button>
+                        </form>
+                    </section>
+
+                    <section v-if="route === 'trace'" class="admin-card trace-timeline-panel">
+                        <div v-if="!traceTimeline" class="ea-empty">输入 trace_id 或 request_id 查看完整时间线</div>
+                        <template v-else>
+                            <div class="trace-summary-grid">
+                                <div class="admin-stat"><span class="admin-muted">Trace</span><strong>{{ traceTimeline.trace_id }}</strong></div>
+                                <div class="admin-stat"><span class="admin-muted">Request</span><strong>{{ traceTimeline.request_id }}</strong></div>
+                                <div class="admin-stat"><span class="admin-muted">Route</span><strong>{{ traceTimeline.summary?.actual_route || '-' }}</strong></div>
+                                <div class="admin-stat"><span class="admin-muted">Hits</span><strong>{{ traceTimeline.summary?.retrieval_hits ?? 0 }}</strong></div>
+                                <div class="admin-stat"><span class="admin-muted">Status</span><strong>{{ traceTimeline.summary?.status || '-' }}</strong></div>
+                            </div>
+                            <div class="trace-action-row">
+                                <button class="ea-btn" type="button" @click="copyTraceId">复制 trace_id</button>
+                                <button class="ea-btn" type="button" @click="copyTraceJson">复制 JSON</button>
+                            </div>
+                            <div class="trace-filter-row">
+                                <label v-for="filter in traceFilters" :key="filter.source">
+                                    <input type="checkbox" v-model="filter.enabled">
+                                    <span>{{ filter.label }}</span>
+                                </label>
+                            </div>
+                            <div class="trace-timeline-list">
+                                <article
+                                    v-for="item in filteredTraceTimeline"
+                                    :key="`${item.source}-${item.stage}-${item.timestamp || item.event_type}`"
+                                    class="trace-timeline-item"
+                                    :data-tone="timelineItemTone(item)"
+                                >
+                                    <div class="trace-timeline-marker"></div>
+                                    <div class="trace-timeline-body">
+                                        <div class="trace-timeline-header">
+                                            <div>
+                                                <strong>{{ item.stage }}</strong>
+                                                <p class="admin-section-note">{{ item.source }} · {{ item.event_type }} · {{ item.status }}</p>
+                                            </div>
+                                            <span class="admin-muted">{{ shortTime(item.timestamp) }}</span>
+                                        </div>
+                                        <p>{{ item.message }}</p>
+                                        <details>
+                                            <summary>Raw JSON</summary>
+                                            <pre>{{ compactJson(item.data) }}</pre>
+                                        </details>
+                                    </div>
+                                </article>
+                            </div>
+                        </template>
+                    </section>
+
+                    <section v-if="route === 'trace' && traceComparison" class="admin-card trace-comparison-panel">
+                        <div class="admin-card-header">
+                            <div>
+                                <h3>Trace 对比</h3>
+                                <p class="admin-section-note">{{ traceComparison.left?.trace_id }} vs {{ traceComparison.right?.trace_id }}</p>
+                            </div>
+                        </div>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead><tr><th>字段</th><th>Left</th><th>Right</th><th>Diff</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="row in traceComparison.rows" :key="row.key">
+                                        <td>{{ row.label }}</td>
+                                        <td><code>{{ compactJson(row.left) }}</code></td>
+                                        <td><code>{{ compactJson(row.right) }}</code></td>
+                                        <td>{{ row.different ? 'changed' : '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+            </main>
+        </div>
+
+        <div v-if="toast.message" class="admin-toast" :data-tone="toast.type">{{ toast.message }}</div>
+    </div>
+
+    <script src="/static/admin-console.js?v=20260531-admin-mvp"></script>
+</body>
+</html>

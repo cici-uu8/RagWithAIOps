@@ -1,0 +1,115 @@
+services:
+  data-sync-service:
+    build: ./services/lab_service
+    environment:
+      SERVICE_NAME: data-sync-service
+      INSTANCE_ID: data-sync-1
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: aiops_lab
+      MYSQL_USER: aiops
+      MYSQL_PASSWORD: aiops_password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LOGS_DIR: /app/logs
+    ports:
+      - "9101:8000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  order-service:
+    build: ./services/lab_service
+    environment:
+      SERVICE_NAME: order-service
+      INSTANCE_ID: order-1
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: aiops_lab
+      MYSQL_USER: aiops
+      MYSQL_PASSWORD: aiops_password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LOGS_DIR: /app/logs
+    ports:
+      - "9102:8000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  inventory-service:
+    build: ./services/lab_service
+    environment:
+      SERVICE_NAME: inventory-service
+      INSTANCE_ID: inventory-1
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: aiops_lab
+      MYSQL_USER: aiops
+      MYSQL_PASSWORD: aiops_password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LOGS_DIR: /app/logs
+    ports:
+      - "9103:8000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    depends_on:
+      - data-sync-service
+      - order-service
+      - inventory-service
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: aiops_lab
+      MYSQL_USER: aiops
+      MYSQL_PASSWORD: aiops_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./mysql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_password"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"

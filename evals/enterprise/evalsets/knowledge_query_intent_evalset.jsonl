@@ -1,0 +1,9 @@
+{"id":"knowledge_qa_crrc_digital","query":"中车长客数字化转型怎么做？","expected_intent":"knowledge_qa","expected_action":"retrieve","expected_selected_kb_ids":["process_digital_dept"],"visible_kb_ids":["craft_dept","process_digital_dept"]}
+{"id":"knowledge_qa_incident_process","query":"线上故障怎么处理？","expected_intent":"knowledge_qa","expected_action":"retrieve","expected_selected_kb_ids":["process_digital_dept"],"visible_kb_ids":["craft_dept","process_digital_dept"]}
+{"id":"document_list_related_files","query":"相关文件有什么？","expected_intent":"document_list","expected_action":"list","visible_kb_ids":["process_digital_dept"]}
+{"id":"document_read_implicit_file","query":"这个文件主要讲什么？","expected_intent":"document_read","expected_action":"read","visible_kb_ids":["process_digital_dept"]}
+{"id":"document_read_named_pdf","query":"总结线上故障处理手册.pdf","expected_intent":"document_read","expected_action":"read","visible_kb_ids":["process_digital_dept"]}
+{"id":"database_schema_handoff","query":"查询订单表有哪些字段","expected_intent":"database","expected_action":"handoff","expected_handoff":"database","visible_kb_ids":["process_digital_dept"]}
+{"id":"database_write_human_review","query":"把订单金额改成 100","expected_intent":"human_review","expected_action":"handoff","expected_handoff":"human_review","visible_kb_ids":["process_digital_dept"]}
+{"id":"permission_request_kb","query":"申请工艺部知识库权限","expected_intent":"permission_request","expected_action":"handoff","expected_handoff":"permission_request","visible_kb_ids":["craft_dept","process_digital_dept"]}
+{"id":"plain_chat_greeting","query":"你好","expected_intent":"plain_chat","expected_action":"none","visible_kb_ids":["craft_dept","process_digital_dept"]}

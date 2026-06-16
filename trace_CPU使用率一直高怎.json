@@ -1,0 +1,56 @@
+{
+  "query": "CPU使用率一直高怎么排查",
+  "kb_ids": [
+    "process_digital_dept"
+  ],
+  "retrieval_mode": "dense_only",
+  "top_k": 3,
+  "results_count": 3,
+  "results": [
+    {
+      "rank": 1,
+      "doc_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa",
+      "score": 0.5244,
+      "source_file": "cpu_high_usage.md",
+      "kb_id": "process_digital_dept",
+      "chunk_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa:c00003",
+      "heading_path": [
+        "CPU使用率过高告警处理方案",
+        "常见原因分析"
+      ],
+      "content_preview": "## 常见原因分析  \n### 原因1: 死循环或无限递归\n**特征**:\n- 单个进程CPU占用接近100%\n- 应用日志中有大量重复的错误堆栈\n- 内存使用也可能同步增长  \n**处理方案**:\n1. 立即重启受影响的服务实例\n2. 查看应用日志定位代码问题\n3. 回滚到上一个稳定版本\n4. 通知开发团队修复代码bug  \n### 原因2: 流量突增\n**特征**:\n- 多个进程CPU使用率均",
+      "content_length": 570
+    },
+    {
+      "rank": 2,
+      "doc_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa",
+      "score": 0.6085,
+      "source_file": "cpu_high_usage.md",
+      "kb_id": "process_digital_dept",
+      "chunk_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa:c00002",
+      "heading_path": [
+        "CPU使用率过高告警处理方案",
+        "排查步骤"
+      ],
+      "content_preview": "## 排查步骤  \n### 步骤1: 获取当前时间\n**工具**: `get_current_time`\n**目的**: 确定告警发生的时间范围，用于后续日志查询  \n### 步骤2: 查询系统日志\n**工具**: `query_logs`\n**参数要求**:\n- **地域**: `ap-guangzhou` (广州)\n- **日志主题**: `system-metrics`\n- **时间范围**",
+      "content_length": 640
+    },
+    {
+      "rank": 3,
+      "doc_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa",
+      "score": 0.6208,
+      "source_file": "cpu_high_usage.md",
+      "kb_id": "process_digital_dept",
+      "chunk_id": "doc_3b15644b-9560-5846-ad86-832321f6c4aa:c00006",
+      "heading_path": [
+        "CPU使用率过高告警处理方案",
+        "相关告警"
+      ],
+      "content_preview": "## 相关告警\n- `HighMemoryUsage`: 内存使用率过高\n- `HighLoadAverage`: 系统负载过高\n- `SlowResponse`: 响应时间过长",
+      "content_length": 89
+    }
+  ],
+  "context_length": 1824,
+  "context_text": "【参考资料 1】\n标题: CPU使用率过高告警处理方案 > 常见原因分析\n来源: cpu_high_usage.md\n定位: [来源: cpu_high_usage.md, 章节: CPU使用率过高告警处理方案 > 常见原因分析, chunk: doc_3b15644b-9560-5846-ad86-832321f6c4aa:c00003]\n内容:\n## 常见原因分析  \n### 原因1: 死循环或无限递归\n**特征**:\n- 单个进程CPU占用接近100%\n- 应用日志中有大量重复的错误堆栈\n- 内存使用也可能同步增长  \n**处理方案**:\n1. 立即重启受影响的服务实例\n2. 查看应用日志定位代码问题\n3. 回滚到上一个稳定版本\n4. 通知开发团队修复代码bug  \n### 原因2: 流量突增\n**特征**:\n- 多个进程CPU使用率均匀升高\n- 请求量明显增加\n- 响应时间变长但无明显错误  \n**处理方案**:\n1. 检查是否有营销活动或突发流量\n2. 启动自动扩容机制\n3. 如果是恶意流量，启用限流策略\n4. 监控扩容后的CPU使用率  \n### 原因3: 定时任务重叠执行\n**特征**:\n- CPU使用率周期性升高\n- 特定时间点出现\n- 日志中有定时任务执行记录  \n**处理方案**:\n1. 检查定时任务配置\n2. 调整任务执行时间，避免重叠\n3. 优化任务执行逻辑\n4. 增加任务执行互斥锁  \n### 原因4: 数据库查询慢\n**特征**:\n- 应用CPU高，但实际业务逻辑简单\n- 日志中有慢查询记录\n- 数据库连接池占用高  \n**处理方案**:\n1. 查询慢SQL日志\n2. 优化SQL语句或添加索引\n3. 检查是否有全表扫描\n4. 考虑增加缓存层\n\n【参考资料 2】\n标题: CPU使用率过高告警处理方案 > 排查步骤\n来源: cpu_high_usage.md\n定位: [来源: cpu_high_usage.md, 章节: CPU使用率过高告警处理方案 > 排查步骤, chunk: doc_3b15644b-9560-5846-ad86-832321f6c4aa:c00002]\n内容:\n## 排查步骤  \n### 步骤1: 获取当前时间\n**工具**: `get_current_time`\n**目的**: 确定告警发生的时间范围，用于后续日志查询  \n### 步骤2: 查询系统日志\n**工具**: `query_logs`\n**参数要求**:\n- **地域**: `ap-guangzhou` (广州)\n- **日志主题**: `system-metrics`\n- **时间范围**: 最近30分钟\n- **查询条件**: `level:ERROR OR cpu_usage:>80`  \n**查询示例**:\n```\n地域: ap-guangzhou\n日志主题: system-metrics\n时间范围: 2024-01-20 14:00:00 到 2024-01-20 14:30:00\n查询语句: cpu_usage > 80 AND service_name:*\n```  \n### 步骤3: 分析CPU消耗进程\n查看日志中的进程信息，重点关注：\n- 进程名称和PID\n- CPU占用百分比\n- 进程启动时间\n- 进程所属服务  \n### 步骤4: 查询应用日志\n**工具**: `query_logs`\n**参数要求**:\n- **地域**: `ap-guangzhou`\n- **日志主题**: `application-logs`\n- **时间范围**: 与告警时间一致\n- **查询条件**: `level:ERROR OR level:WARN`\n\n【参考资料 3】\n标题: CPU使用率过高告警处理方案 > 相关告警\n来源: cpu_high_usage.md\n定位: [来源: cpu_high_usage.md, 章节: CPU使用率过高告警处理方案 > 相关告警, chunk: doc_3b15644b-9560-5846-ad86-832321f6c4aa:c00006]\n内容:\n## 相关告警\n- `HighMemoryUsage`: 内存使用率过高\n- `HighLoadAverage`: 系统负载过高\n- `SlowResponse`: 响应时间过长\n",
+  "generated_answer": "根据检索到的文档 cpu_high_usage.md，回答如下：\n\n[基于文档内容的结构化回答会在这里生成]\n\n上下文来源：\n\n1. cpu_high_usage.md (相关度: 0.5244)\n2. cpu_high_usage.md (相关度: 0.6085)\n3. cpu_high_usage.md (相关度: 0.6208)"
+}
