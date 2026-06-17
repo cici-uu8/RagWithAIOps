@@ -17,6 +17,7 @@ from app.enterprise.permissions.models import GrantEffect, PrincipalType, Resour
 from app.enterprise.permissions.repository import InMemoryGovernanceRepository
 from app.enterprise.permissions.service import PermissionService
 from app.enterprise.tools.gateway import ToolGateway
+from app.enterprise.tools.local_provider import LocalAgentToolProvider
 
 
 class RagDatabaseToolTests(unittest.IsolatedAsyncioTestCase):
@@ -83,6 +84,7 @@ class RagDatabaseToolTests(unittest.IsolatedAsyncioTestCase):
         for resource_id in (
             "database_demo.list_tables",
             "database_demo.describe_table",
+            "database_demo.retrieve_context",
             "database_demo.safe_select",
         ):
             self.grant("tool", resource_id, action="use")
@@ -111,10 +113,20 @@ class RagDatabaseToolTests(unittest.IsolatedAsyncioTestCase):
         self.grant_read_only_database_access()
         token = set_current_request_context(self.context)
         self.addCleanup(reset_current_request_context, token)
+        local_agent_gateway = ToolGateway(
+            providers=[LocalAgentToolProvider()],
+            permission_service=self.permission_service,
+            audit_service=self.audit_service,
+        )
 
         tables = await list_database_tables.ainvoke({"database_id": "sandbox_sales"})
         description = await describe_database_table.ainvoke(
             {"database_id": "sandbox_sales", "table_name": "factory_access_events"}
+        )
+        db_context = await local_agent_gateway.execute(
+            self.context,
+            "database_demo.retrieve_context",
+            {"database_id": "sandbox_sales", "query": "查询最近进厂记录"},
         )
         result = await safe_select_database.ainvoke(
             {
@@ -130,6 +142,30 @@ class RagDatabaseToolTests(unittest.IsolatedAsyncioTestCase):
             [column["name"] for column in description["columns"]],
             ["event_id", "direction"],
         )
+        self.assertEqual(db_context["status"], "success")
+        self.assertEqual(db_context["tool_id"], "database_demo.retrieve_context")
+        self.assertIn("F01", [example["example_id"] for example in db_context["relevant_examples"]])
+        self.assertEqual(
+            db_context["tables"][0]["authorized_columns"],
+            [
+                {
+                    "name": "event_id",
+                    "data_type": "INTEGER",
+                    "sensitive": False,
+                    "mask": None,
+                    "description": "Event id",
+                },
+                {
+                    "name": "direction",
+                    "data_type": "TEXT",
+                    "sensitive": False,
+                    "mask": None,
+                    "description": "Access direction: entry or exit",
+                },
+            ],
+        )
+        self.assertIn("禁止 SELECT *", db_context["context_text"])
+        self.assertNotIn("raw_device_payload", db_context["context_text"])
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["columns"], ["event_id", "direction"])
         self.assertEqual(
@@ -138,6 +174,13 @@ class RagDatabaseToolTests(unittest.IsolatedAsyncioTestCase):
                 {"event_id": 1001, "direction": "entry"},
                 {"event_id": 1002, "direction": "exit"},
             ],
+        )
+        self.assertTrue(
+            any(
+                event.event_type == "tool_call"
+                and event.metadata["tool_id"] == "database_demo.retrieve_context"
+                for event in self.sink.events
+            )
         )
         self.assertTrue(
             any(
@@ -166,6 +209,119 @@ class RagDatabaseToolTests(unittest.IsolatedAsyncioTestCase):
             any(
                 event.event_type == "tool_blocked"
                 and event.metadata["tool_id"] == "database_demo.safe_select"
+                for event in self.sink.events
+            )
+        )
+
+    async def test_safe_select_denial_includes_friendly_error_hint(self):
+        from app.tools.database_tool import safe_select_database
+
+        self.grant_read_only_database_access()
+        token = set_current_request_context(self.context)
+        self.addCleanup(reset_current_request_context, token)
+
+        result = await safe_select_database.ainvoke(
+            {
+                "database_id": "sandbox_sales",
+                "sql": "select * from factory_access_events",
+            }
+        )
+
+        self.assertEqual(result["status"], "denied")
+        self.assertEqual(result["reason"], "select_star_not_allowed")
+        self.assertIn("禁止使用 SELECT *", result["message"])
+        self.assertEqual(result["error_hint"]["reason"], "select_star_not_allowed")
+        self.assertIn("retrieve_database_context", result["error_hint"]["suggestion"])
+        self.assertEqual(result["error_hint"]["example_ids"], ["F01", "B01"])
+        self.assertTrue(
+            any(
+                event.event_type == "database_query"
+                and event.reason == "select_star_not_allowed"
+                for event in self.sink.events
+            )
+        )
+
+    async def test_database_context_and_friendly_error_flow_without_auto_correction(self):
+        from app.tools.database_tool import safe_select_database
+
+        self.grant_read_only_database_access()
+        self.grant("database_column", "sandbox_sales.factory_access_events.employee_name")
+        self.grant("database_column", "sandbox_sales.factory_access_events.badge_id")
+        token = set_current_request_context(self.context)
+        self.addCleanup(reset_current_request_context, token)
+        local_agent_gateway = ToolGateway(
+            providers=[LocalAgentToolProvider()],
+            permission_service=self.permission_service,
+            audit_service=self.audit_service,
+        )
+
+        db_context = await local_agent_gateway.execute(
+            self.context,
+            "database_demo.retrieve_context",
+            {"database_id": "sandbox_sales", "query": "查询最近进厂记录"},
+        )
+        success = await safe_select_database.ainvoke(
+            {
+                "database_id": "sandbox_sales",
+                "sql": (
+                    "select event_id, employee_name, badge_id from factory_access_events "
+                    "order by event_id limit 2"
+                ),
+            }
+        )
+        select_star = await safe_select_database.ainvoke(
+            {
+                "database_id": "sandbox_sales",
+                "sql": "select * from factory_access_events",
+            }
+        )
+        unauthorized_column = await safe_select_database.ainvoke(
+            {
+                "database_id": "sandbox_sales",
+                "sql": "select event_id, raw_device_payload from factory_access_events limit 1",
+            }
+        )
+        join_blocked = await safe_select_database.ainvoke(
+            {
+                "database_id": "sandbox_sales",
+                "sql": (
+                    "select factory_access_events.event_id from factory_access_events "
+                    "join building_access_events on factory_access_events.employee_id = building_access_events.employee_id"
+                ),
+            }
+        )
+
+        self.assertEqual(db_context["status"], "success")
+        self.assertEqual(success["status"], "success")
+        self.assertEqual(success["rows"][0]["employee_name"], "张*")
+        self.assertEqual(success["rows"][0]["badge_id"], "BAD***001")
+        self.assertEqual(select_star["reason"], "select_star_not_allowed")
+        self.assertIn("禁止使用 SELECT *", select_star["message"])
+        self.assertEqual(unauthorized_column["reason"], "unauthorized_column")
+        self.assertIn("raw_device_payload", unauthorized_column["error_hint"]["suggestion"])
+        self.assertEqual(join_blocked["reason"], "join_not_allowed")
+        self.assertIn("禁止使用 JOIN", join_blocked["message"])
+        self.assertNotIn("corrected_sql", select_star)
+        self.assertNotIn("corrected_sql", unauthorized_column)
+        self.assertNotIn("corrected_sql", join_blocked)
+
+    async def test_database_context_tool_denies_without_tool_grant(self):
+        local_agent_gateway = ToolGateway(
+            providers=[LocalAgentToolProvider()],
+            permission_service=self.permission_service,
+            audit_service=self.audit_service,
+        )
+
+        with self.assertRaises(Exception):
+            await local_agent_gateway.execute(
+                self.context,
+                "database_demo.retrieve_context",
+                {"database_id": "sandbox_sales", "query": "查询最近进厂记录"},
+            )
+        self.assertTrue(
+            any(
+                event.event_type == "tool_blocked"
+                and event.metadata["tool_id"] == "database_demo.retrieve_context"
                 for event in self.sink.events
             )
         )

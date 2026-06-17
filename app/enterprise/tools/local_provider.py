@@ -14,6 +14,7 @@ from app.tools import (
     get_current_time,
     list_database_tables,
     list_knowledge_documents,
+    retrieve_database_context,
     retrieve_knowledge,
     safe_select_database,
 )
@@ -120,6 +121,20 @@ def _local_agent_tool_definitions() -> list[ToolDefinition]:
                 "capability": "rag",
                 "database_id": "sandbox_sales",
                 "operation_type": "describe_table",
+                "read_only": True,
+            },
+        ),
+        ToolDefinition(
+            resource_id="database_demo.retrieve_context",
+            name="retrieve_database_context",
+            description=str(retrieve_database_context.description),
+            source="local",
+            raw_tool=retrieve_database_context,
+            metadata={
+                "category": "database",
+                "capability": "rag",
+                "database_id": "sandbox_sales",
+                "operation_type": "context_retrieval",
                 "read_only": True,
             },
         ),

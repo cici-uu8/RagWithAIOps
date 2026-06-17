@@ -130,6 +130,7 @@ class EnterpriseDatabaseE7Tests(unittest.IsolatedAsyncioTestCase):
         for tool_id in (
             "database_demo.list_tables",
             "database_demo.describe_table",
+            "database_demo.retrieve_context",
             "database_demo.safe_select",
         ):
             self.grant_via_admin_api(

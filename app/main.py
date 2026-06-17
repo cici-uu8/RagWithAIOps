@@ -15,7 +15,7 @@ from loguru import logger
 from app.api import admin_reviews, aiops, auth, chat, file, health, knowledge_base, shadow_metrics
 from app.config import config
 from app.core.milvus_client import milvus_manager
-from app.enterprise.admin import memory_operator_routes, routes as admin_routes
+from app.enterprise.admin import memory_operator_routes, ops_metrics_routes, routes as admin_routes
 from app.enterprise.database import routes as database_routes
 from app.enterprise.permission_requests import routes as permission_request_routes
 
@@ -68,6 +68,7 @@ app.include_router(chat.router, prefix="/api", tags=["对话"])
 app.include_router(auth.router, prefix="/api", tags=["企业身份"])
 app.include_router(admin_routes.router, prefix="/api", tags=["企业管理"])
 app.include_router(memory_operator_routes.router, prefix="/api", tags=["Memory Operator"])
+app.include_router(ops_metrics_routes.router, prefix="/api", tags=["Ops Metrics"])
 app.include_router(permission_request_routes.router, prefix="/api", tags=["权限申请"])
 app.include_router(permission_request_routes.admin_router, prefix="/api", tags=["权限申请审批"])
 app.include_router(database_routes.router, prefix="/api", tags=["数据库"])

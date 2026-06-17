@@ -201,6 +201,9 @@ class DatabaseCapabilityCatalogService:
         except KeyError as exc:
             raise SafeSqlBlocked("unauthorized_table") from exc
 
+        if "admin" in context.roles:
+            return [column.name for column in table.visible_columns()]
+
         if not permission_filter.is_table_allowed(context, table.name):
             raise SafeSqlBlocked("database_table_denied")
 

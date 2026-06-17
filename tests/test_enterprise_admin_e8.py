@@ -751,6 +751,14 @@ class EnterpriseAdminE8Tests(unittest.TestCase):
         self.assertEqual(by_id["list_knowledge_documents"]["actions_supported"], ["use"])
         self.assertIn("get_current_time", by_id)
         self.assertEqual(by_id["get_current_time"]["actions_supported"], ["use"])
+        self.assertIn("database_demo.retrieve_context", by_id)
+        self.assertEqual(by_id["database_demo.retrieve_context"]["resource_type"], "tool")
+        self.assertEqual(by_id["database_demo.retrieve_context"]["actions_supported"], ["use"])
+        self.assertEqual(
+            by_id["database_demo.retrieve_context"]["metadata"]["operation_type"],
+            "context_retrieval",
+        )
+        self.assertTrue(by_id["database_demo.retrieve_context"]["metadata"]["read_only"])
 
         table_id = database_table_resource_id(registry.database_id, "factory_access_events")
         column_id = database_column_resource_id(registry.database_id, "factory_access_events", "event_id")

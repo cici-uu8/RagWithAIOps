@@ -12532,3 +12532,90 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: 为什么示例里不用 COUNT/GROUP BY 做统计？**
 
 答：当前 `SafeSqlKernel` 明确禁止函数和聚合函数，`COUNT(*)` / `GROUP BY` 会被阻断。为了让文档和执行层一致，统计类问题先提供明细查询，再由应用层或 operator review 计算；后续如果要支持聚合，必须先扩展 SafeSqlKernel 和权限审计，而不能只在文档里写看似合理的 SQL。
+
+## 2026-06-16 (P1 Database Catalog Browser：sample rows 可见性闭环)
+
+- 背景：数据库 v2 Stage 2 已经有门禁场景 Q-SQL 示例，下一步需要把“用户能看到哪些库、表、列和样例数据”做成产品可见性，而不是继续让用户只看文档。该切片仍然是 sandbox/database-demo/allowlist 只读 viewer，不是任意 SQL 编辑器，也不是真实企业 DB 管理台。
+- 后端实现：`app/enterprise/database/routes.py` 新增 `GET /api/database/{database_id}/tables/{table_name}/sample?limit=10`。HTTP route 构造 `GatewayRequest(route="database_catalog_sample_rows")`，再进入 `RequestGateway.execute(...)`，handler 内调用 `ToolGateway.execute(context, "database_demo.safe_select", {"sql": ...})`，最终由 `SafeSqlKernel.safe_select(...)` 执行。这样 request audit、tool permission、SQL allowlist、masking 和 `database_query` audit 都留在既有企业边界里。
+- 权限实现：`app/enterprise/database/service.py` 新增 `DatabaseCapabilityCatalogService.get_authorized_columns(...)`。普通用户必须有 table read 权限，并且只返回 column read 授权列；admin smoke 路径只返回 registry-visible columns，仍不会返回 `raw_device_payload` 这类 `allowed=False` 字段。
+- SQL 形状：sample SQL 只由授权列构造，例如 `SELECT event_id, direction FROM factory_access_events LIMIT 2`。没有 `SELECT *`、JOIN、聚合、子查询、函数或直接系统表查询；`total_rows_estimate` 第一版保持 `null`，避免为了统计绕过 SafeSqlKernel。
+- 前端实现：`static/admin-console.js/html/css` 新增 `database-catalog` route。左侧是 database/table 列表，右侧显示 Authorized Columns 和 Sample Rows；UI 展示 `SafeSqlKernel` / `ToolGateway` / `RequestGateway` 标识，以及 `safe_sql_verified` 元信息。没有新增独立 `static/database-catalog.*`，因为 admin-console 已经有 auth、导航和 `adminFetch`。
+- fixture 稳定性：`app/enterprise/database/sandbox.py` 新增 `ensure_sandbox_database(...)`，当本地 SQLite demo 文件还是旧 schema 时按 registry 重建，避免开发机残留旧 fixture 导致 sample rows 路由看似失败。
+- 验证：targeted DB HTTP / frontend tests 通过；DB operation prepare / confirm regression 通过；targeted ruff、`node --check static/admin-console.js`、`git diff --check` 通过；live API smoke 返回 `factory_access_events` 的授权列 sample rows；Playwright 浏览器 smoke 到达 `#database-catalog` 并截图。
+- 记录同步：`PROJECT_STATE.md`、`task_plan.md`、`findings.md`、`progress.md`、`docs/项目最后优化2执行清单.md` 和 `docs/项目最后优化2执行清单_revised.md` 已同步为 P1 完成，下一步默认转向 P2 Audit / Trace Ops Dashboard。
+
+**追问: 为什么 sample rows 还要走 ToolGateway，HTTP 页面直接查 SQLite 不是更简单吗？**
+
+答：sample rows 本质上也是数据库能力。如果 HTTP route 直接查 SQLite，就会绕过 `tool/use` 权限、表列授权、SafeSqlKernel 的 SQL 安全检查、masking 和 database_query audit。现在 route 只负责构造 gateway request，真正执行仍走 `ToolGateway -> SafeSqlKernel`，所以前端可见性和 Agent tool 执行共享同一条治理边界。
+
+**追问: 为什么没有新增独立 database-catalog 页面？**
+
+答：现有 admin-console 已经有登录态、adminFetch、左侧导航、资源/授权风格和静态测试。把 Catalog Browser 放进去能少维护一套认证与导航逻辑，也能和 Memory Operator、资源授权页保持一致。独立页面只有在未来要面向非 admin 或普通业务用户单独开放时才值得拆。
+
+## 2026-06-17 (P2 Audit / Trace Ops Dashboard：admin-console 集成)
+
+- 背景：P1 Database Catalog Browser 完成后，用户要求继续 `docs/项目最后优化2执行清单.md` 的 P2 Audit / Trace Ops Dashboard。该切片目标是给 admin 一个跨会话/跨用户的运维统计面板，聚合 trace/audit/tool/route/latency/failure；明确不做成本、token 费用、阈值告警或报表导出。
+- 读侧 seam：`app/enterprise/observability/audit_service.py` 原本只有 `AuditService.record(...)`；`SQLiteAuditSink` 有 `query(...)`，但 `InMemoryAuditSink` 没有，`AdminService._load_audit_events(...)` 只能在内部探测 sink。P2 新增 `InMemoryAuditSink.query(...)` 和 `AuditService.query(...)`，让 ops metrics 通过 `AuditService` 读取 audit event，而不是 route 或 service 直接依赖 `SQLiteAuditSink`。
+- 后端实现：新增 `app/enterprise/admin/ops_metrics_service.py`，从 `request_completed` / `request_failed` 聚合 `total_requests`、`success_count`、`failed_count`、`success_rate`、`avg_latency_ms`、`p50_latency_ms`、`p95_latency_ms`、Top Users、Top Routes；从 `tool_call` / `tool_failure` / `tool_blocked` / `database_query` 聚合 Top Tools；从失败 request 输出 `failure_semantics` 和 `recovered`。
+- Adapter 实现：新增 `app/enterprise/admin/ops_metrics_adapter.py`，负责 admin role 校验、`time_range` 校验（`1h/24h/7d/30d`，最大 30 天）、`bucket` 校验和 failures `limit` 校验。第一版保持 admin-only，不扩展 department admin 明细过滤。
+- Route 实现：新增 `app/enterprise/admin/ops_metrics_routes.py`，并在 `app/main.py` 挂载 `/api/admin/ops-metrics/*`。`summary`、`timeline`、`failures` 三个 endpoint 都先构造 `GatewayRequest.from_headers(...)`，再调用 `RequestGateway.execute(...)`，handler 内调用 `OpsMetricsAdapter`。非法参数在 gateway 内抛出后写 `request_failed` audit，再映射为 HTTP 400。
+- 前端实现：`static/admin-console.js/html/css` 新增 `ops-dashboard` route，复用 `adminFetch` / `EnterpriseApiClient`。页面显示 1h/24h/7d 时间范围切换、Total Requests / Success Rate / P50 / P95 卡片、Top Users / Routes / Tools、Timeline 和 Failures；页面说明只展示 `trace/audit/tool/route/latency/failure`，不含成本统计。
+- TDD 证据：先写 `tests/test_ops_metrics_service.py`、`tests/test_ops_metrics_adapter.py`、`tests/test_ops_metrics_routes.py` 和 `test_admin_console_ops_dashboard_contract`。红灯阶段后端失败于 `ModuleNotFoundError: app.enterprise.admin.ops_metrics_adapter/ops_metrics_routes`，前端失败于 `ops-dashboard` route 缺失；实现后转绿。
+- 验证：`uv run pytest tests/test_ops_metrics_service.py tests/test_ops_metrics_adapter.py tests/test_ops_metrics_routes.py tests/test_assistant_frontend_optimization.py -q --no-cov` 通过 46/46；`uv run pytest tests/test_enterprise_admin_e8.py tests/test_memory_operator_routes.py tests/test_ops_metrics_routes.py -q --no-cov` 通过 31/31；`uv run ruff check --select F,E9,I app/enterprise/observability/audit_service.py app/enterprise/admin/ops_metrics_service.py app/enterprise/admin/ops_metrics_adapter.py app/enterprise/admin/ops_metrics_routes.py app/main.py tests/test_ops_metrics_service.py tests/test_ops_metrics_adapter.py tests/test_ops_metrics_routes.py tests/test_assistant_frontend_optimization.py` 通过；`node --check static/admin-console.js` 通过；Browser mock API 烟测确认 `#ops-dashboard` 渲染 summary cards、Top Users/Routes/Tools、Timeline、Failures，且无 `total_cost` / `cost_by_user` / `cost_by_model` / `token-cost` 字段；`git diff --check` 通过。
+- 明确未做：未新增独立 `static/ops-dashboard.*` 页面，未实现 `/api/admin/ops-metrics/traces` 列表，未做成本或 token usage 统计，未做 department admin scope 过滤，未修改 RAG retrieval defaults、Memory default、AIOps planner/replanner 或数据库权限链路。
+
+**追问: 为什么先补 `AuditService.query(...)`，而不是在 OpsMetricsService 里直接拿 SQLiteAuditSink？**
+
+答：P2 的架构约束明确 route 不能直接查 sink，service 也不应该知道当前 audit 存储是 SQLite 还是内存。已有 AdminService 内部已经证明需要 read-side 查询，但那是局部私有实现。把查询 seam 提升到 `AuditService.query(...)` 后，默认运行时继续读 SQLite，本地测试读 InMemory，同一套 service/adapter/route 测试都不需要依赖具体 sink 类型。
+
+**追问: 为什么 P2 不做独立 Ops Dashboard 页面？**
+
+答：现有 admin-console 已经有登录态、adminFetch、scope badge、左侧导航和静态契约测试；Memory Operator 和 Database Catalog 也都在这里。P2 只是 admin 运维视角，不是面向普通用户的新产品入口。集成到 admin-console 可以减少重复认证/导航代码，也让 P2 与 audit/trace/database/memory 管理面保持同一操作语境。
+
+**追问: 为什么不顺手加成本字段？**
+
+答：P2 的触发条件只是跨会话 audit/trace 可见性，项目之前的 F8 资源优化结论没有稳定 token/tool/DB cost baseline。提前展示 `total_cost`、`cost_by_user` 或 token 费用会制造不可信的经营指标。当前测试和前端契约都锁定“不出现成本字段”，P3 仍保留为有预算压力或 usage baseline 后再触发。
+
+## 2026-06-17 (数据库 v2 Stage 3：retrieve_database_context 第一版)
+
+- 背景：P2 Ops Dashboard 验收后，用户确认可以关闭 P2，并要求数据库 v2 Stage 3 按现有执行清单 S3.1-S3.3 走。关键约束是不能新建平行 `DatabaseContextToolProvider`，必须复用现有 `LocalAgentToolProvider`、`ToolGateway`、`ToolExecutionFacade`；resource id 用 `database_demo.retrieve_context`；第一版只接 RAG/local-agent，不扩 AIOps；context tool 不内置 sample rows；硬验收不强绑 LLM/browser 端到端。
+- TDD 入口：先新增 `tests/test_qsql_examples.py`、`tests/test_database_context_builder.py`，并扩展 `tests/test_tool_execution_facade.py`、`tests/test_rag_database_tools.py`、`tests/test_enterprise_database_e7.py`。红灯阶段明确失败于 `ModuleNotFoundError: app.enterprise.database.qsql_examples` 和 `ModuleNotFoundError: app.enterprise.database.context_builder`，证明测试先于实现。
+- 示例库实现：新增 `app/enterprise/database/qsql_examples.py`，把 `docs/数据库_门禁场景_Q-SQL示例.md` 中的 15 条门禁场景 Q-SQL 示例落成 `QSqlExample`，并用 `QSqlExampleRegistry.search(...)` 做轻量标签/关键词匹配。该实现不引入 Milvus，不新增索引管理，也不改变 `SafeSqlKernel`。
+- 上下文构建实现：新增 `app/enterprise/database/context_builder.py`。`DatabaseContextBuilder.build_context(...)` 接收 `RequestContext`、自然语言问题和 `database_id`，再组合 registry、`DatabasePermissionFilter` 和 Q-SQL 示例，返回 `status/database_id/question/relevant_examples/tables/context_text`。普通用户必须有 table read 和 column read 授权；admin 只看 registry-visible columns，仍看不到 `allowed=False` 字段。
+- 权限细节：结构化输出也按权限过滤，不只过滤 `context_text`。如果用户没有某张表权限，该表的示例不会进入 `relevant_examples`；如果示例 SQL 需要未授权列，则保留问题/解释但 `sql=None`，并标记 `sql_unavailable_reason="requires_ungranted_columns"`。这避免 Agent 从结构化字段里拿到不可见表列或不可直接复用的 SQL。
+- Tool 接入：`app/tools/database_tool.py` 新增 `retrieve_database_context(query, database_id="sandbox_sales")`，并从 `app/tools/__init__.py` 导出。工具内部只构建上下文，不执行 SQL；它复用 `app.enterprise.database.routes.get_database_tool_gateway().permission_service`，确保权限服务和 database demo gateway 一致。
+- Provider / resource catalog：`app/enterprise/tools/local_provider.py` 在现有 local agent 工具列表中注册 `ToolDefinition(resource_id="database_demo.retrieve_context", name="retrieve_database_context", metadata.capability="rag")`。`app/enterprise/admin/resources.py` 将同一 resource id 加入 tool resource catalog，metadata 标记 `operation_type="context_retrieval"` 和 `read_only=True`。
+- 审计边界：不在工具内部手写审计。授权和审计仍由 `ToolGateway.execute(...)` 处理：成功调用记录 `tool_call`，未授权调用记录 `tool_blocked`。本轮没有新增 request route，因此没有新增 RequestGateway HTTP 审计点。
+- 明确未做：没有新增 `DatabaseContextToolProvider`，没有调用不存在的 `ToolGateway.register_provider()`，没有改 `RagAgentService.tools`，没有新增 HTTP route，没有把工具接入 AIOps，没有在 context tool 里取 sample rows，没有执行 SQL，没有把 LLM/browser SQL 生成作为硬验收。
+- 文档同步：新增 `docs/数据库_Stage3_Context_Tool_设计.md`，更新 `docs/数据库能力升级执行清单_v2_轻量版.md`、`PROJECT_STATE.md`、`task_plan.md`、`progress.md`、`findings.md`。Stage 4 友好错误提示仍未启动。
+- 验证：`uv run pytest tests/test_qsql_examples.py tests/test_database_context_builder.py tests/test_tool_execution_facade.py tests/test_rag_database_tools.py tests/test_enterprise_database_e7.py tests/test_enterprise_admin_e8.py -q --no-cov` 通过 46/46，只有既有 Pydantic deprecation warning。最终 closeout 还运行 targeted ruff、compileall 和 `git diff --check`。
+
+**追问: 为什么 tool name 不直接叫 `database_demo.retrieve_context`？**
+
+答：`resource_id` 是治理语义，必须进入权限、资源目录和审计；模型可绑定工具名要保持 LangChain tool 的普通函数名形态。现在 `resource_id="database_demo.retrieve_context"` 和 `name="retrieve_database_context"` 分开，既让 grant/audit 与 `database_demo.safe_select` 对齐，也避免把点号 resource id 暴露成不自然的模型工具名。
+
+**追问: 为什么不把 sample rows 一起塞进 context tool？**
+
+答：sample rows 是真实数据库查询，不是静态上下文。只要取样，就必须走 `ToolGateway -> database_demo.safe_select -> SafeSqlKernel` 并产生额外 `database_query` audit。第一版 context tool 的职责是帮助模型知道有哪些表、列、示例和限制；P1 Catalog Browser 已经有受控 sample rows 路径，不能为了让上下文看起来更丰富而把工具调用变重。
+
+**追问: 为什么不接 AIOps？**
+
+答：门禁数据库上下文的当前使用场景是 RAG/普通 Agent 的数据库问答。AIOps 是否需要门禁数据，应由真实诊断场景触发，否则会把 planner/replanner prompt、tool catalog、权限和验收面一起扩大。第一版先把 RAG bindable path 做稳，后续再根据 AIOps 证据单独接入。
+
+## 2026-06-17 (数据库 v2 Stage 4：friendly safe-SQL error hints)
+
+- 背景：Stage 3 完成后，数据库轻量版 v2 只剩“拒绝时怎么解释清楚”这一层。目标不是放宽 SQL 能力，也不是做 auto-correction，而是让 `safe_select_database(...)` 被 `SafeSqlKernel` 或表/列权限挡下时，返回对人和模型都可直接消费的中文提示，同时保持既有 `reason` code 和 HTTP route 契约稳定。
+- 工具层实现：`app/enterprise/database/error_hints.py` 新增并集中维护当前错误映射。覆盖范围不仅包含 `safe_sql.py` / `mysql.py` 的 AST 安全拒绝（如 `select_star_not_allowed`、`join_not_allowed`、`function_not_allowed`），也包含 provider/service 层会抛出的 `database_table_denied`、`database_column_denied`、`sql_result_verification_failed`，以及这轮补齐的 `database_not_allowed`。映射结构保持最小，只提供 `message`、`suggestion`、`example_ids` 和可选 `sql_excerpt`，没有引入新的异常类型。
+- 返回面实现：`app/tools/database_tool.py` 在 `ToolExecutionError(SafeSqlBlocked)` 分支里，不再只返回泛化的“数据库查询被安全策略阻断”，而是拼接 `format_safe_sql_blocked_message(...)` 并附上结构化 `error_hint`。这里保留 `reason=exc.cause.reason` 原样返回，避免影响既有断言、审计查询和前后端其他依赖 reason code 的逻辑。
+- 边界选择：没有直接改 `SafeSqlBlocked.__str__`，因为那会扩散到 HTTP route、老测试和错误映射层；也没有把友好文案塞进 `/api/database/*` HTTP `detail`，因为这些 route 现有契约仍以 machine-readable reason 为主。Stage 4 目前只增强 LangChain/local-agent tool surface，HTTP raw detail 继续保持原语义。
+- 补洞记录：在复核当前 `SafeSqlBlocked(...)` reason 集合时，发现 `DatabaseCapabilityCatalogService.get_authorized_columns(...)` 还会抛 `database_not_allowed`，但 `error_hints.py` 和覆盖测试最初没有纳入。已补充该映射及 `tests/test_database_error_hints.py` 覆盖，避免对非法 database_id 退回泛化兜底提示。
+- 测试设计：没有单独新建 `tests/integration/test_database_context_e2e.py`。当前 repo 中更贴近真实调用面的组合是：`tests/test_database_error_hints.py` 验证当前 reason 集合都有 hint；`tests/test_rag_database_tools.py` 验证 5 个端到端场景，包括 context -> success、`SELECT *` 拒绝、未授权列拒绝、JOIN 拒绝、敏感字段脱敏，并明确断言没有 `corrected_sql` 自动修正字段。
+- 验证：`uv run pytest tests/test_database_error_hints.py tests/test_rag_database_tools.py -q --no-cov` 通过；`uv run pytest tests/test_enterprise_database_e6.py tests/test_enterprise_database_e7.py -q --no-cov` 通过。说明 Stage 4 在提升拒绝提示的同时，没有改变 SafeSqlKernel/provider 的既有安全边界和权限行为。
+
+**追问: 为什么不顺手把 HTTP route 的 403 detail 也改成友好中文？**
+
+答：HTTP route 现在更像治理 API，调用方很多时候先依赖 `detail=reason` 做程序分支，例如 `database_column_denied`、`unauthorized_table`。如果这轮直接改成中文，会把 Stage 4 从“工具返回更友好”扩大成“HTTP 契约变更”。当前更稳的做法是保留 route 的 machine-readable reason，把友好解释留在面向 Agent 的 `safe_select_database(...)` 结果里。
+
+**追问: 为什么不做自动修正，明明已经知道怎么提示了？**
+
+答：知道为什么被拒绝，不等于可以安全地替用户重写 SQL。只要进入 auto-correction，就要定义重试次数、重试审计、失败归因、修正后的权限重检，以及模型是否可能借修正路径突破原始约束。轻量版 v2 的目标是“看得见 schema、看得见 sample、看得懂拒绝原因”，不是“自动把不安全 SQL 修好”。这条边界在当前阶段更重要。

@@ -184,6 +184,12 @@ class ResourceCatalogService:
                 "category": "database",
                 "operation_type": "describe_table",
             },
+            "database_demo.retrieve_context": {
+                "tool": None,
+                "description": "Retrieve permission-scoped Q-SQL examples and schema context for the database demo sandbox",
+                "category": "database",
+                "operation_type": "context_retrieval",
+            },
             "database_demo.safe_select": {
                 "tool": None,
                 "description": "Run an allowlisted read-only SELECT in the database demo sandbox",
@@ -201,6 +207,7 @@ class ResourceCatalogService:
             for operation, definition in {
                 "list_tables": database_tools["database_demo.list_tables"],
                 "describe_table": database_tools["database_demo.describe_table"],
+                "retrieve_context": database_tools["database_demo.retrieve_context"],
                 "safe_select": database_tools["database_demo.safe_select"],
             }.items()
         }

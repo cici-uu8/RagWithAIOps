@@ -15,6 +15,7 @@
         'trace',
         'memory-operator',
         'database-catalog',
+        'ops-dashboard',
     ];
 
     function createEmptyForms() {
@@ -59,6 +60,9 @@
             },
             databaseCatalog: {
                 sample_limit: '10',
+            },
+            opsDashboard: {
+                time_range: '24h',
             },
             departmentScope: {
                 department_id: '',
@@ -177,6 +181,24 @@
                         sampleMeta: null,
                         isLoadingSample: false,
                     },
+                    opsDashboard: {
+                        timeRange: '24h',
+                        summary: {
+                            total_requests: 0,
+                            success_count: 0,
+                            failed_count: 0,
+                            success_rate: 0,
+                            avg_latency_ms: 0,
+                            p50_latency_ms: 0,
+                            p95_latency_ms: 0,
+                            top_users: [],
+                            top_routes: [],
+                            top_tools: [],
+                        },
+                        timeline: [],
+                        failures: [],
+                        isLoading: false,
+                    },
                     traceFilters: [
                         { source: 'routing', label: 'routing', enabled: true },
                         { source: 'retrieval', label: 'retrieval', enabled: true },
@@ -210,6 +232,7 @@
                         { key: 'trace', label: 'Trace' },
                         { key: 'memory-operator', label: 'Memory Operator' },
                         { key: 'database-catalog', label: '数据库查看' },
+                        { key: 'ops-dashboard', label: 'Ops Dashboard' },
                     ],
                 };
             },
@@ -482,6 +505,8 @@
                         return this.loadMemoryOperator();
                     } else if (route === 'database-catalog') {
                         return this.loadDatabaseCatalog();
+                    } else if (route === 'ops-dashboard') {
+                        return this.loadOpsDashboard();
                     }
                     return false;
                 },
@@ -493,6 +518,90 @@
                         return this.previewMemoryDeprecation(setBusy);
                     }
                     return this.loadMemoryReviewQueue(setBusy);
+                },
+                async loadOpsDashboard(setBusy = true) {
+                    if (setBusy) this.busy = true;
+                    this.opsDashboard.isLoading = true;
+                    try {
+                        const results = await Promise.all([
+                            this.loadOpsSummary(false),
+                            this.loadOpsTimeline(false),
+                            this.loadOpsFailures(false),
+                        ]);
+                        return results.every(Boolean);
+                    } catch (error) {
+                        this.showToast(error.message, 'error');
+                        return false;
+                    } finally {
+                        this.opsDashboard.isLoading = false;
+                        if (setBusy) this.busy = false;
+                    }
+                },
+                async loadOpsSummary(setBusy = true) {
+                    if (setBusy) this.busy = true;
+                    try {
+                        const params = new URLSearchParams({ time_range: this.opsDashboard.timeRange });
+                        const payload = await this.adminFetch(`/admin/ops-metrics/summary?${params.toString()}`);
+                        this.opsDashboard.summary = {
+                            total_requests: 0,
+                            success_count: 0,
+                            failed_count: 0,
+                            success_rate: 0,
+                            avg_latency_ms: 0,
+                            p50_latency_ms: 0,
+                            p95_latency_ms: 0,
+                            top_users: [],
+                            top_routes: [],
+                            top_tools: [],
+                            ...(payload.data || {}),
+                        };
+                        return true;
+                    } catch (error) {
+                        this.showToast(error.message, 'error');
+                        return false;
+                    } finally {
+                        if (setBusy) this.busy = false;
+                    }
+                },
+                async loadOpsTimeline(setBusy = true) {
+                    if (setBusy) this.busy = true;
+                    try {
+                        const params = new URLSearchParams({
+                            time_range: this.opsDashboard.timeRange,
+                            bucket: '1h',
+                        });
+                        const payload = await this.adminFetch(`/admin/ops-metrics/timeline?${params.toString()}`);
+                        this.opsDashboard.timeline = payload.data?.timeline || [];
+                        return true;
+                    } catch (error) {
+                        this.opsDashboard.timeline = [];
+                        this.showToast(error.message, 'error');
+                        return false;
+                    } finally {
+                        if (setBusy) this.busy = false;
+                    }
+                },
+                async loadOpsFailures(setBusy = true) {
+                    if (setBusy) this.busy = true;
+                    try {
+                        const params = new URLSearchParams({
+                            time_range: this.opsDashboard.timeRange,
+                            limit: '20',
+                        });
+                        const payload = await this.adminFetch(`/admin/ops-metrics/failures?${params.toString()}`);
+                        this.opsDashboard.failures = payload.data?.failures || [];
+                        return true;
+                    } catch (error) {
+                        this.opsDashboard.failures = [];
+                        this.showToast(error.message, 'error');
+                        return false;
+                    } finally {
+                        if (setBusy) this.busy = false;
+                    }
+                },
+                async setOpsTimeRange(range) {
+                    this.opsDashboard.timeRange = range;
+                    await this.loadOpsDashboard();
                 },
                 async loadDatabaseCatalog(setBusy = true) {
                     if (setBusy) this.busy = true;

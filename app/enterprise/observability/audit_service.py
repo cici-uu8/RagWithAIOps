@@ -28,6 +28,29 @@ class InMemoryAuditSink:
     def emit(self, event: AuditEvent) -> None:
         self.events.append(event)
 
+    def query(
+        self,
+        *,
+        trace_id: str | None = None,
+        request_id: str | None = None,
+        user_id: str | None = None,
+        event_type: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[AuditEvent]:
+        events = [
+            event
+            for event in self.events
+            if (trace_id is None or event.trace_id == trace_id)
+            and (request_id is None or event.request_id == request_id)
+            and (user_id is None or event.user_id == user_id)
+            and (event_type is None or event.event_type == event_type)
+            and (start_time is None or event.timestamp >= start_time)
+            and (end_time is None or event.timestamp <= end_time)
+        ]
+        return events[-limit:] if limit is not None else events
+
 
 class JsonlAuditSink:
     def __init__(self, path: str | Path):
@@ -202,6 +225,33 @@ class AuditService:
                 sink.emit(event)
             except Exception as exc:
                 logger.warning("Audit sink write failed: {}", exc)
+
+    def query(
+        self,
+        *,
+        trace_id: str | None = None,
+        request_id: str | None = None,
+        user_id: str | None = None,
+        event_type: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[AuditEvent]:
+        for sink in self.sinks:
+            query = getattr(sink, "query", None)
+            if callable(query):
+                return list(
+                    query(
+                        trace_id=trace_id,
+                        request_id=request_id,
+                        user_id=user_id,
+                        event_type=event_type,
+                        start_time=start_time,
+                        end_time=end_time,
+                        limit=limit,
+                    )
+                )
+        return []
 
     def _default_sinks(self) -> list[AuditSink]:
         return [

@@ -461,6 +461,74 @@ class EnterpriseDatabaseHttpTests(unittest.TestCase):
             )
         )
 
+    def test_database_sample_rows_allow_admin_for_registry_visible_columns(self):
+        for column_name in (
+            "event_id",
+            "employee_id",
+            "employee_name",
+            "department_name",
+            "direction",
+            "gate_name",
+            "event_time",
+            "badge_id",
+        ):
+            self.permission_service.grant_access(
+                ResourceGrant(
+                    resource_type="database_column",
+                    resource_id=f"sandbox_sales.factory_access_events.{column_name}",
+                    action="read",
+                    principal_type=PrincipalType.USER,
+                    principal_id="user_admin",
+                    effect=GrantEffect.ALLOW,
+                )
+            )
+        self.permission_service.grant_access(
+            ResourceGrant(
+                resource_type="database_table",
+                resource_id="sandbox_sales.factory_access_events",
+                action="read",
+                principal_type=PrincipalType.USER,
+                principal_id="user_admin",
+                effect=GrantEffect.ALLOW,
+            )
+        )
+        self.permission_service.grant_access(
+            ResourceGrant(
+                resource_type="tool",
+                resource_id="database_demo.safe_select",
+                action="use",
+                principal_type=PrincipalType.USER,
+                principal_id="user_admin",
+                effect=GrantEffect.ALLOW,
+            )
+        )
+        token = self.login(username="admin", password="Admin123!")
+
+        response = self.get_sample_rows(token)
+
+        self.assertEqual(response.status_code, 200, response.text)
+        sample = response.json()["data"]["sample"]
+        self.assertEqual(
+            sample["columns"],
+            [
+                "event_id",
+                "employee_id",
+                "employee_name",
+                "department_name",
+                "direction",
+                "gate_name",
+                "event_time",
+                "badge_id",
+            ],
+        )
+        self.assertTrue(
+            any(
+                event.event_type == "tool_call"
+                and event.metadata["tool_id"] == "database_demo.safe_select"
+                for event in self.sink.events
+            )
+        )
+
     def test_database_tool_gateway_recreates_stale_sandbox_fixture(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             stale_db_path = Path(tmpdir) / "database_demo.sqlite3"

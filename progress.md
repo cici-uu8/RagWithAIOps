@@ -26,15 +26,22 @@
   - `app/enterprise/database/safe_sql.py` and `app/enterprise/database/mysql.py` support `name` and `badge` masks.
   - `app/enterprise/admin/departments.py` and affected DB/admin/frontend tests now point at the access-event resources.
   - Verification passed: DB Stage 1 related suite 149/149 and targeted ruff.
+- Implemented P1 Database Catalog Browser sample rows slice:
+  - `app/enterprise/database/routes.py` now serves `GET /api/database/{database_id}/tables/{table_name}/sample` through `RequestGateway -> ToolGateway -> SafeSqlKernel`, returning only authorized columns and `safe_sql_verified`.
+  - `app/enterprise/database/service.py` now exposes `get_authorized_columns(...)`, with admin bypass limited to registry-visible columns.
+  - `static/admin-console.js/html/css` add the `database-catalog` route, database/table navigator, authorized columns table, sample rows table, and sample limit controls.
+  - `tests/test_enterprise_database_http.py` and `tests/test_assistant_frontend_optimization.py` lock the API / UI contract.
+  - Verification passed: targeted database HTTP / frontend tests, targeted ruff, `node --check static/admin-console.js`, `git diff --check`, live API smoke, and Playwright browser smoke.
 - Updated documentation and durable records:
   - Added `docs/memory_operator_api_design.md`.
   - Added `docs/数据库_门禁场景_表设计.md`.
   - Added `docs/架构决策_旧服务边界_20260616.md`.
-  - Updated `docs/项目最后优化2执行清单.md`, `docs/数据库能力升级执行清单_v2_轻量版.md`, `docs/架构违反检查报告_20260616.md`, `docs/rag_fusion_development_record.md`, and `docs/memory_fusion_development_record.md`.
+  - Updated `docs/项目最后优化2执行清单.md`, `docs/项目最后优化2执行清单_revised.md`, `docs/数据库能力升级执行清单_v2_轻量版.md`, `docs/架构违反检查报告_20260616.md`, `docs/rag_fusion_development_record.md`, and `docs/memory_fusion_development_record.md`.
 - Final verification passed:
   - `uv run pytest tests/test_memory_operator_adapter.py tests/test_memory_operator_routes.py -q --no-cov` (7/7)
   - `uv run pytest tests/test_enterprise_gateway_routes.py tests/test_enterprise_strategy_router.py tests/test_knowledge_query_orchestration_integration.py tests/test_enterprise_task_contract.py tests/test_enterprise_human_review.py -q --no-cov` (43/43)
   - `uv run pytest tests/test_enterprise_database_e6.py tests/test_enterprise_database_e7.py tests/test_enterprise_database_http.py tests/test_rag_database_tools.py tests/test_enterprise_database_operation_prepare.py tests/test_enterprise_database_operation_confirm.py tests/test_enterprise_database_operation_audit.py tests/test_enterprise_database_operation_permissions.py tests/test_enterprise_admin_e8.py tests/test_enterprise_admin_stage4_scope.py tests/test_assistant_frontend_optimization.py tests/test_enterprise_error_recovery.py -q --no-cov` (149/149)
+  - targeted `uv run pytest tests/test_enterprise_database_http.py tests/test_assistant_frontend_optimization.py -q --no-cov` (P1 sample rows contract)
   - targeted `uv run ruff check --select F,E9,I ...` passed
   - targeted `uv run python -m compileall -q ...` passed
   - `git diff --check` passed
@@ -58,6 +65,35 @@
   - Updated `docs/数据库能力升级执行清单_v2_轻量版.md` to record Stage 2 as documentation-complete and keep `qsql_examples.py` / validator / context matching deferred until Stage 3.
   - Validated all positive SQL examples with current `SafeSqlKernel.safe_select(...)` against deterministic sandbox seed data. A first candidate with composite `AND` predicates was blocked as `function_not_allowed`, so the final examples use single-condition or no-condition SELECT patterns that current execution policy accepts.
   - No runtime code, API route, frontend file, database permission policy, or default config changed in this slice.
+
+## 2026-06-17
+
+- Implemented database v2 Stage 3 first-version context tool:
+  - Added `app/enterprise/database/qsql_examples.py` with 15 structured examples extracted from the Stage 2 door-access Q-SQL document.
+  - Added `app/enterprise/database/context_builder.py`; it builds permission-scoped context from the registry, `DatabasePermissionFilter`, and Q-SQL examples, and returns both structured data and LLM-readable `context_text`.
+  - Added `retrieve_database_context` in `app/tools/database_tool.py` and exported it from `app/tools/__init__.py`.
+  - Registered the tool in `app/enterprise/tools/local_provider.py` as `resource_id="database_demo.retrieve_context"` and `name="retrieve_database_context"`.
+  - Added the resource to `app/enterprise/admin/resources.py` so admin grants, resource catalog, and audit use the same `database_demo.*` naming family as `database_demo.safe_select`.
+- Stage 3 scope decisions:
+  - Did not create a parallel `DatabaseContextToolProvider`; the existing local-agent provider/facade/gateway path is used.
+  - Did not add an HTTP route, did not add AIOps binding, and did not change `RagAgentService.tools` directly.
+  - Did not query sample rows inside the context tool; sample rows remain in P1 Catalog Browser and any SQL execution must still go through `database_demo.safe_select -> SafeSqlKernel`.
+  - Did not make LLM/browser SQL generation a hard acceptance gate; tests verify tool visibility, permissions, ToolGateway execution, audit, context content, and RAG bindable visibility.
+- Verification passed:
+  - `uv run pytest tests/test_qsql_examples.py tests/test_database_context_builder.py tests/test_tool_execution_facade.py tests/test_rag_database_tools.py tests/test_enterprise_database_e7.py tests/test_enterprise_admin_e8.py -q --no-cov` (46/46)
+  - Final targeted ruff/compile/diff checks are recorded in the closeout response for this turn.
+- Implemented database v2 Stage 4 friendly safe-SQL error hints:
+  - `app/enterprise/database/error_hints.py` now maps current AST safety reasons and permission/service denial reasons to Chinese `message`, `suggestion`, and `example_ids`.
+  - `app/tools/database_tool.py` now returns `message` and `error_hint` for `safe_select_database(...)` denial paths while preserving the original `reason` code and without introducing SQL auto-correction.
+  - `tests/test_database_error_hints.py` locks reason coverage, including `database_not_allowed`; `tests/test_rag_database_tools.py` locks the no-auto-correction tool path and the five end-to-end scenarios.
+- Stage 4 scope decisions:
+  - Did not change `SafeSqlBlocked.__str__`, existing HTTP route `detail` contracts, or database capability boundaries.
+  - Did not add retry, corrected SQL, auto-repair loops, or broader SQL support.
+  - Kept the UX improvement at the LangChain/local-agent tool surface where the model/user receives structured hints.
+- Verification passed:
+  - `uv run pytest tests/test_database_error_hints.py tests/test_rag_database_tools.py -q --no-cov`
+  - `uv run pytest tests/test_enterprise_database_e6.py tests/test_enterprise_database_e7.py -q --no-cov`
+  - Final targeted ruff/compile/diff checks are recorded in the closeout response for this turn.
 
 ## 2026-06-13
 
@@ -1155,3 +1191,32 @@
   - Real `get_mcp_tools_with_retry()` returned 16 tools and cache hit worked on the second call
   - `make stop-cls && make stop-monitor` stopped both services and closed 8003/8004
 - Refreshed `docs/项目全功能验收_20260613.md` after the MCP fix: desktop acceptance is now 51 PASS / 0 FAIL / 2 PARTIAL, with `ENV-03` closed. Ordinary AIOps MCP diagnosis and Memory ingestion remain PARTIAL until a separate end-to-end rerun, so this does not overstate Beta readiness.
+
+## 2026-06-17 P2 Audit/Trace Ops Dashboard
+
+- Started P2 per `docs/ops_dashboard_backend_design_compliant.md` and `docs/ops_dashboard_frontend_design.md`.
+- Acceptance slice: admin-only `/api/admin/ops-metrics/{summary,timeline,failures}` must go through `RequestGateway`; aggregation belongs in `OpsMetricsService`; read path uses `AuditService` rather than route/sink direct queries; admin-console gets an `ops-dashboard` route; no cost/token-cost fields are introduced.
+- Red tests added first:
+  - `tests/test_ops_metrics_service.py` for summary/timeline/failures aggregation and no-cost fields.
+  - `tests/test_ops_metrics_adapter.py` for admin role and time-range validation.
+  - `tests/test_ops_metrics_routes.py` for admin-only routes and request audit.
+  - `tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_admin_console_ops_dashboard_contract` for UI/API contract.
+- Red verification:
+  - `uv run pytest tests/test_ops_metrics_service.py tests/test_ops_metrics_adapter.py tests/test_ops_metrics_routes.py -q --no-cov` failed during collection because `app.enterprise.admin.ops_metrics_adapter` and `ops_metrics_routes` do not exist.
+  - `uv run pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_admin_console_ops_dashboard_contract -q --no-cov` failed because `ops-dashboard` is not yet in `static/admin-console.js`.
+- Backend implemented:
+  - `app/enterprise/observability/audit_service.py` now exposes `AuditService.query(...)` and `InMemoryAuditSink.query(...)`.
+  - `app/enterprise/admin/ops_metrics_service.py` aggregates request summary, timeline buckets, top users/routes/tools, and failures from audit events.
+  - `app/enterprise/admin/ops_metrics_adapter.py` validates admin role, time range, bucket, and failure limit.
+  - `app/enterprise/admin/ops_metrics_routes.py` exposes `/api/admin/ops-metrics/summary`, `/timeline`, and `/failures`, each through `RequestGateway.execute(...)`.
+- Frontend implemented:
+  - `static/admin-console.js` now has `ops-dashboard` route/state and summary/timeline/failures loaders through `adminFetch`.
+  - `static/admin-console.html` shows Ops Dashboard cards, Top Users/Routes/Tools, Timeline, and Failures.
+  - `static/admin-console.css` adds `.admin-ops-*` styles.
+- Verification passed:
+  - `uv run pytest tests/test_ops_metrics_service.py tests/test_ops_metrics_adapter.py tests/test_ops_metrics_routes.py tests/test_assistant_frontend_optimization.py -q --no-cov` (46/46).
+  - `uv run pytest tests/test_enterprise_admin_e8.py tests/test_memory_operator_routes.py tests/test_ops_metrics_routes.py -q --no-cov` (31/31).
+  - Targeted `ruff check --select F,E9,I` passed for touched Python files.
+  - `node --check static/admin-console.js` passed.
+  - Browser smoke against a local mock admin API rendered `#ops-dashboard` with summary cards, Top Users/Routes/Tools, Timeline, Failures, and no `total_cost` / `cost_by_user` / `cost_by_model` / `token-cost` text.
+  - `git diff --check` passed.

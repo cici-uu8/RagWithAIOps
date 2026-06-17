@@ -1,8 +1,8 @@
 # Task Plan
 
-## Current Active Track: 2026-06-16 架构偏差修复与执行清单启动
+## Current Active Track: 2026-06-16 架构偏差修复与执行清单收口
 
-Goal: 先修复当前已确认的架构偏差（`/api/chat/clear` 走 `ChatAdapter`/`RequestGateway`，RAG/AIOps 关键路径显式传递 `RequestContext`），暂不搬迁旧服务；随后完成 `docs/项目最后优化2执行清单.md` 的 P0a/P0b，推进 `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1 和 Stage 2 文档版，并把架构决策和 development record 写清楚。下一步建议进入 P1 Database Catalog Browser。
+Goal: 先修复当前已确认的架构偏差（`/api/chat/clear` 走 `ChatAdapter`/`RequestGateway`，RAG/AIOps 关键路径显式传递 `RequestContext`），暂不搬迁旧服务；随后完成 `docs/项目最后优化2执行清单.md` 的 P0a/P0b，推进 `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1-4，并把架构决策和 development record 写清楚。当前已完成到数据库 v2 Stage 4、P1 Database Catalog Browser 和 P2 Audit / Trace Ops Dashboard；下一步默认转向数据库 v2 P3/P4 触发条件 review，需用户明确选择。
 
 | Phase | Status | Verify |
 |---|---|---|
@@ -11,6 +11,10 @@ Goal: 先修复当前已确认的架构偏差（`/api/chat/clear` 走 `ChatAdapt
 | P0b Memory Operator UI | completed | 在现有 `admin-console` 新增 `memory-operator` route、Review Queue / Validation Status / Deprecation Preview 三个 tab 和默认关闭警告；approve/reject 只提交 `decision_note`。验证：`node --check static/admin-console.js`、frontend + memory operator tests 37/37、targeted ruff、diff-check 通过。 |
 | 数据库 v2 Stage 1 门禁场景 sandbox | completed | 默认 sandbox 表替换为 `factory_access_events` / `building_access_events`，registry/mask/admin scope/tests 同步。验证：DB Stage 1 相关套件 149/149、targeted ruff 通过。 |
 | 数据库 v2 Stage 2 Q-SQL 示例文档 | completed | 新增 `docs/数据库_门禁场景_Q-SQL示例.md`，提供 15 条门禁场景自然语言问题到安全 SQL 的示例；正向 SQL 均用 `SafeSqlKernel.safe_select(...)` 在 deterministic sandbox 上验证可执行。 |
+| 数据库 v2 Stage 3 Context Tool | completed | `retrieve_database_context` 经 `LocalAgentToolProvider -> ToolGateway -> ToolExecutionFacade` 暴露为 `database_demo.retrieve_context`，上下文由 `DatabaseContextBuilder` 按当前表/列授权过滤。验证：Stage 3/context/resource/facade/RAG DB 目标套件 46/46、targeted ruff/compile/diff-check 纳入最终收口。 |
+| 数据库 v2 Stage 4 Friendly Errors | completed | `error_hints.py` 为当前 safe-SQL / permission reason 提供中文 message、suggestion、example_ids；`safe_select_database` 的拒绝返回包含 `message + error_hint`，但不做自动修正，也不改 HTTP route `detail` 契约。验证：`tests/test_database_error_hints.py` + `tests/test_rag_database_tools.py`、DB e6/e7 回归、targeted ruff/compile/diff-check 通过。 |
+| P1 Database Catalog Browser | completed | `GET /api/database/{database_id}/tables/{table_name}/sample` 通过 `RequestGateway -> ToolGateway -> SafeSqlKernel`，admin-console `database-catalog` 展示授权列和 sample rows。验证：DB HTTP/frontend/operation regression、targeted ruff、`node --check`、`git diff --check` 通过。 |
+| P2 Audit / Trace Ops Dashboard | completed | 新增 `AuditService.query(...)` read-side seam、`OpsMetricsService` / `OpsMetricsAdapter` / `/api/admin/ops-metrics/{summary,timeline,failures}` routes，并在 admin-console 集成 `ops-dashboard`。验证：ops metrics + frontend 46/46，admin/memory/ops route regression 31/31，targeted ruff、`node --check static/admin-console.js`、Browser mock API 烟测、`git diff --check` 通过。 |
 | 架构决策与记录 | completed | 已新增 `docs/架构决策_旧服务边界_20260616.md`、`docs/memory_operator_api_design.md`、`docs/memory_operator_frontend_design.md`、`docs/数据库_门禁场景_表设计.md`，并更新 development record / PROJECT_STATE。最终收口 `git diff --check` 已纳入 P0b 验证。 |
 
 ### Acceptance for Current Phase
@@ -20,7 +24,7 @@ Goal: 先修复当前已确认的架构偏差（`/api/chat/clear` 走 `ChatAdapt
 - 不移动 `app/services/rag_agent_service.py`、`app/services/aiops_service.py`、`app/services/knowledge_search_service.py`。
 - Targeted gateway/audit tests pass, followed by focused ruff/compile checks.
 - P0a API 和 P0b admin-console UI 已完成；Memory 仍默认 off。
-- 数据库 v2 已完成 Stage 1 和 Stage 2 文档版；后续 context 工具和错误提示未启动。
+- 数据库 v2 已完成 Stage 1、Stage 2 文档版、Stage 3 第一版 context tool 和 Stage 4 友好拒绝提示；P1 Database Catalog Browser sample rows 与 P2 Ops Dashboard 已完成并验证。后续成本统计、Skill Registry、AIOps 绑定、context tool 内 sample rows、自动修正仍未启动。Stage 3/4 不扩 AIOps、不在工具内部取 sample rows、不把 LLM/browser 生成 SQL 作为硬验收。
 
 ## Current Active Track: 2026-06-14 MCP 稳定性专项诊断
 

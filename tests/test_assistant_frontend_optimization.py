@@ -1056,6 +1056,31 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertEqual(allowed_document_ids, ["doc-runbook"])
         self.assertEqual(artifact["query"]["document_ids"], ["doc-runbook"])
 
+    def test_admin_console_ops_dashboard_contract(self):
+        js = Path("static/admin-console.js").read_text(encoding="utf-8")
+        html = Path("static/admin-console.html").read_text(encoding="utf-8")
+        css = Path("static/admin-console.css").read_text(encoding="utf-8")
+
+        self.assertIn("'ops-dashboard'", js)
+        self.assertIn("Ops Dashboard", js)
+        self.assertIn("loadOpsDashboard", js)
+        self.assertIn("/admin/ops-metrics/summary", js)
+        self.assertIn("/admin/ops-metrics/timeline", js)
+        self.assertIn("/admin/ops-metrics/failures", js)
+        self.assertIn("route === 'ops-dashboard'", html)
+        self.assertIn("trace/audit/tool/route/latency/failure", html)
+        self.assertIn("Top Users", html)
+        self.assertIn("Top Routes", html)
+        self.assertIn("Top Tools", html)
+        self.assertIn("failure_semantics", html)
+        self.assertIn("recovered", html)
+        self.assertIn(".admin-ops-cards", css)
+        self.assertIn(".admin-ops-section", css)
+
+        combined = "\n".join([js, html, css])
+        for forbidden in ("total_cost", "cost_by_user", "cost_by_model", "token cost", "预算"):
+            self.assertNotIn(forbidden, combined)
+
 
 if __name__ == "__main__":
     unittest.main()

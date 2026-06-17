@@ -530,6 +530,74 @@
     margin-bottom: 10px;
 }
 
+.admin-ops-range {
+    display: inline-flex;
+    border: 1px solid var(--ea-line);
+    border-radius: var(--ea-radius-md);
+    background: #ffffff;
+    padding: 3px;
+}
+
+.admin-ops-range button {
+    min-width: 44px;
+    min-height: 32px;
+    border: 0;
+    border-radius: var(--ea-radius-sm);
+    background: transparent;
+    color: var(--ea-muted);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.admin-ops-range button.active {
+    background: var(--ea-primary);
+    color: #ffffff;
+}
+
+.admin-ops-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.admin-ops-card,
+.admin-ops-section {
+    border: 1px solid var(--ea-line);
+    border-radius: var(--ea-radius-md);
+    background: #f8fafc;
+    padding: 12px;
+}
+
+.admin-ops-card {
+    display: grid;
+    gap: 6px;
+}
+
+.admin-ops-card strong {
+    overflow-wrap: anywhere;
+    font-size: 24px;
+}
+
+.admin-ops-top-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.admin-ops-section {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    margin-bottom: 16px;
+}
+
+.admin-ops-section h4 {
+    margin: 0;
+    font-size: 14px;
+}
+
 .admin-panel-actions {
     margin-top: 16px;
 }
@@ -588,6 +656,8 @@
 
     .admin-grid,
     .trace-summary-grid,
+    .admin-ops-cards,
+    .admin-ops-top-section,
     .database-catalog-layout,
     .admin-form-grid,
     .admin-form-grid-wide {

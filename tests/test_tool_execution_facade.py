@@ -186,6 +186,7 @@ class ToolExecutionFacadeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(tools["retrieve_knowledge"].name, "retrieve_knowledge")
         self.assertEqual(tools["list_knowledge_documents"].name, "list_knowledge_documents")
         self.assertEqual(tools["get_current_time"].name, "get_current_time")
+        self.assertEqual(tools["database_demo.retrieve_context"].name, "retrieve_database_context")
         self.assertEqual(tools["database_demo.safe_select"].name, "safe_select_database")
         self.assertEqual(tools["database_demo.list_tables"].name, "list_database_tables")
 
@@ -210,18 +211,29 @@ class ToolExecutionFacadeTests(unittest.IsolatedAsyncioTestCase):
             any(
                 event.event_type == "tool_visible"
                 and "database_demo.safe_select" in event.metadata["blocked_tool_ids"]
+                and "database_demo.retrieve_context" in event.metadata["blocked_tool_ids"]
                 and "retrieve_knowledge" in event.metadata["default_allowed_tool_ids"]
                 for event in self.sink.events
             )
         )
 
+        self.grant_tool("database_demo.retrieve_context")
         self.grant_tool("database_demo.safe_select")
 
         visible_after_grant = await facade.list_visible_tools(self.context, capability="rag")
+        bindable_after_grant = await facade.get_bindable_tools(self.context, capability="rag")
 
+        self.assertIn(
+            "database_demo.retrieve_context",
+            [tool.resource_id for tool in visible_after_grant],
+        )
         self.assertIn(
             "database_demo.safe_select",
             [tool.resource_id for tool in visible_after_grant],
+        )
+        self.assertIn(
+            "retrieve_database_context",
+            [tool.name for tool in bindable_after_grant],
         )
 
     async def test_rag_agent_initializes_enterprise_bindable_tools_through_facade(self):

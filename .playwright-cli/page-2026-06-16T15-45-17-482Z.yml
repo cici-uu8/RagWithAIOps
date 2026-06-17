@@ -1,0 +1,7 @@
+- generic [ref=e4]:
+  - heading "企业助手管理后台" [level=1] [ref=e5]
+  - paragraph [ref=e6]: 请先回到聊天页登录管理员账号。
+  - paragraph [ref=e7]: 管理后台复用聊天页的企业登录 token。
+  - generic [ref=e8]:
+    - button "返回聊天页" [ref=e9] [cursor=pointer]
+    - button "重新检查" [ref=e10] [cursor=pointer]

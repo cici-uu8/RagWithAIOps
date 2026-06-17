@@ -20,16 +20,22 @@
    - Database UI：当前只有 sandbox/database-demo，**不是真实 DB UI**
    - 成本/Skill：明确未触发，不提前做
 
-## 优先级（修订后）
+## 优先级（修订后） - 收口状态（2026-06-17）
 
-| 优先级 | 任务 | 投入 | 价值 | 理由 | 边界收窄 |
+| 优先级 | 任务 | 投入 | 价值 | 状态 | 验收 |
 |---|---|---|---|---|---|
-| **P0a** | Memory Operator Read-only API | 小 | 中 | P7 代码已完整，先只暴露 review queue/validation status/deprecation preview | ✅ 只做 operator 最小控制面，不做全 L0/L1/L2 Explorer |
-| **P0b** | Memory Explorer UI（降档） | 小 | 中 | 在 P0a API 稳定后，补 operator UI | ✅ 明确标注"Memory 仍默认 off，此 UI 仅供 operator review" |
-| **P1** | Sandbox/Demo DB Catalog Browser | 中 | 高 | 复用 admin-console 资源页，只展示 sandbox/database-demo/已授权 MySQL allowlist | ✅ **不叫真实 DB UI**，只做已授权范围 |
-| **P2** | Audit/Trace Ops Dashboard | 中 | 高 | E9/E11 已有 audit/trace 基础，补跨会话聚合统计 | ✅ 只做 trace/audit/tool/route/latency/failure，**不做成本** |
-| **P3** | 成本统计（条件触发） | 中 | 中 | 等明确成本压力后再做 | ⏸️ 未触发 |
-| **P4** | Skill registry（条件触发） | 大 | 中 | 等明确扩展生态需求后再做 | ⏸️ 未触发 |
+| **P0a** | Memory Operator Read-only API | 小 | 中 | ✅ 完成 | 7/7 测试通过 |
+| **P0b** | Memory Explorer UI（降档） | 小 | 中 | ✅ 完成 | 37/37 测试通过 + 浏览器验收 |
+| **P1** | Sandbox/Demo DB Catalog Browser | 中 | 高 | ✅ 完成 | 46/46 测试通过 + 浏览器验收 |
+| **P2** | Audit/Trace Ops Dashboard | 中 | 高 | ✅ 完成 | 46/46 测试通过 + 浏览器烟测 |
+| **P3** | 成本统计（条件触发） | 中 | 中 | ⏸️ **未触发** | 无明确成本压力 |
+| **P4** | Skill registry（条件触发） | 大 | 中 | ⏸️ **未触发** | 无明确扩展生态需求 |
+
+**收口决策**：
+- ✅ P0/P1/P2 全部完成并验收，进入 Maintenance 模式
+- ⏸️ P3 成本统计：触发条件未满足（无明确成本压力、花费统计需求、预算目标）
+- ⏸️ P4 Skill Registry：触发条件未满足（无明确扩展生态需求、外部 skill 安装需求）
+- 📄 收口总结：`docs/项目最后优化2_收口总结_20260617.md`
 
 ---
 
@@ -383,8 +389,8 @@ uv run pytest tests/test_memory_operator_frontend.py -q --no-cov
 - ✅ 已有：`/api/database/safe-select`（安全 SELECT 端点）
 - ✅ 已有：admin-console 资源页（按 table 分组展示 `database_table/database_column`）
 - ✅ 已有：`ToolGateway.execute("database_demo.safe_select", ...)`（走权限检查）
-- ❌ 缺失：独立的 catalog browser UI
-- ❌ 缺失：sample rows preview
+- ✅ 已补齐：`database-catalog` 已集成到现有 admin-console
+- ✅ 已补齐：sample rows preview，且只返回授权列
 
 ## 验收标准
 
@@ -401,8 +407,10 @@ uv run pytest tests/test_memory_operator_frontend.py -q --no-cov
 **目标**：在既有 catalog 基础上，增加 sample rows 端点，**必须走 ToolGateway + SafeSqlKernel + 列权限过滤**。
 
 **文件清单**：
-- 新增：`app/enterprise/database/catalog_routes.py`（或复用 `routes.py`）
-- 修改：`app/main.py`（挂载 `/api/database/catalog/*` router）
+- 修改：`app/enterprise/database/routes.py`（复用既有 `/api/database` router）
+- 修改：`app/enterprise/database/service.py`（新增 `get_authorized_columns(...)`）
+- 修改：`app/enterprise/database/sandbox.py`（补 `ensure_sandbox_database(...)`）
+- 修改：`tests/test_enterprise_database_http.py`
 
 **API 设计**：
 
@@ -431,7 +439,7 @@ GET /api/database/{database_id}/tables/{table_name}/sample?limit=10
 
 **验证**：
 ```bash
-uv run pytest tests/test_database_catalog_sample_api.py -q --no-cov
+uv run pytest tests/test_enterprise_database_http.py tests/test_assistant_frontend_optimization.py -q --no-cov
 
 # 测试覆盖：
 # - 有 table + column 权限用户可以查看 sample rows
@@ -444,13 +452,13 @@ uv run pytest tests/test_database_catalog_sample_api.py -q --no-cov
 
 ### Step 2: 前端 DB Catalog Browser（限定范围）
 
-**目标**：创建独立的 catalog browser 页面，**只展示 sandbox/database-demo/已授权 MySQL allowlist**。
+**目标**：在 admin-console 中新增 catalog browser 页面，**只展示 sandbox/database-demo/已授权 MySQL allowlist**。
 
 **文件清单**：
-- 新增：`static/database-catalog.html`
-- 新增：`static/database-catalog.js`
-- 新增：`static/database-catalog.css`
-- 修改：`static/app.js`（添加用户菜单 "数据库查看" 入口）
+- 修改：`static/admin-console.html`
+- 修改：`static/admin-console.js`
+- 修改：`static/admin-console.css`
+- 修改：`tests/test_assistant_frontend_optimization.py`
 
 **页面结构**：
 
@@ -587,7 +595,7 @@ app.mount('#app');
 
 **验证**：
 ```bash
-# 浏览器打开 http://localhost:9900/static/database-catalog.html
+# 浏览器打开 http://localhost:9900/static/admin-console.html#database-catalog
 # 1. 页面顶部显示 info 横幅
 # 2. 左侧只显示 sandbox/database-demo/MySQL allowlist
 # 3. 点击 table，只显示已授权列
@@ -601,7 +609,8 @@ app.mount('#app');
 
 **文件清单**：
 - 修改：`PROJECT_STATE.md`（记录 P1 完成状态，**明确不是真实 DB UI**）
-- 新增：`docs/database_catalog_browser_design.md`（设计文档）
+- 已有：`docs/database_catalog_backend_design_compliant.md`
+- 已有：`docs/database_catalog_frontend_design.md`
 
 **验收标准**：
 1. ✅ 后端 API 测试通过
@@ -612,15 +621,25 @@ app.mount('#app');
 
 **完成标志**：
 ```bash
-uv run pytest tests/test_database_catalog_sample_api.py tests/test_database_catalog_frontend.py -q --no-cov
+uv run pytest tests/test_enterprise_database_http.py tests/test_assistant_frontend_optimization.py -q --no-cov
 
 # 浏览器验收
-# - 用户菜单有 "数据库查看" 入口
+# - admin-console 有 "数据库查看" / database-catalog 入口
 # - 页面顶部有 info 横幅
 # - 可以看到 sandbox/database-demo/MySQL allowlist
 # - 可以查看已授权 Columns 和 Sample Rows
 # - 未授权列不显示
 ```
+
+### P1 完成记录（2026-06-16）
+
+P1 已按架构合规版完成，实际实现选择是集成到现有 `admin-console`，而不是新增独立 `static/database-catalog.*`:
+
+- 后端：`app/enterprise/database/routes.py` 新增 `GET /api/database/{database_id}/tables/{table_name}/sample?limit=10`，route 走 `RequestGateway(route="database_catalog_sample_rows")`。
+- 权限：`DatabaseCapabilityCatalogService.get_authorized_columns(...)` 只返回授权列；普通用户需要 table + column grants，admin 只返回 registry-visible columns。
+- 执行：sample SQL 只由授权列构造，不用 `SELECT *`，并通过 `ToolGateway.execute(..., "database_demo.safe_select", ...)` 进入 `SafeSqlKernel`。
+- 前端：`static/admin-console.js/html/css` 增加 `database-catalog` route，显示数据库/表、Authorized Columns、Sample Rows 和 `safe_sql_verified` 状态。
+- 验证：`tests/test_enterprise_database_http.py`、`tests/test_assistant_frontend_optimization.py` 相关测试通过；targeted ruff、`node --check static/admin-console.js`、`git diff --check` 通过；live API smoke 和 Playwright 浏览器 smoke 已完成。
 
 ---
 
@@ -634,9 +653,9 @@ uv run pytest tests/test_database_catalog_sample_api.py tests/test_database_cata
 
 - ✅ 已有：E11 Vue3 execution dashboard（单次诊断可视化）
 - ✅ 已有：E9 audit/trace 基础（SQLite `enterprise_audit.sqlite`）
-- ✅ 已有：`SQLiteAuditSink.query(...)`（按 trace_id/user_id/event_type 查询）
-- ❌ 缺失：跨会话/跨用户的 trace 聚合
-- ❌ 缺失：tool 调用统计、route 分布、latency p50/p95
+- ✅ 已有并已复用：`AuditService.query(...)` read-side seam（默认 SQLite，本地测试可用 InMemory）
+- ✅ 已补齐：跨会话/跨用户的 summary/timeline/failures 聚合
+- ✅ 已补齐：tool 调用统计、route 分布、latency p50/p95
 
 ## 验收标准
 
@@ -720,10 +739,9 @@ uv run pytest tests/test_ops_metrics_api.py -q --no-cov
 **目标**：创建独立的 ops dashboard 页面，展示跨会话统计，**不含成本卡片**。
 
 **文件清单**：
-- 新增：`static/ops-dashboard.html`
-- 新增：`static/ops-dashboard.js`
-- 新增：`static/ops-dashboard.css`
-- 修改：`static/admin-console.html`（添加 "Ops Dashboard" 入口链接）
+- 修改：`static/admin-console.js`（添加 `ops-dashboard` route/state/methods）
+- 修改：`static/admin-console.html`（添加 "Ops Dashboard" 区块）
+- 修改：`static/admin-console.css`（添加 `.admin-ops-*` 样式）
 
 **页面结构（不含成本）**：
 
@@ -945,7 +963,7 @@ app.mount('#app');
 
 **完成标志**：
 ```bash
-uv run pytest tests/test_ops_metrics_api.py tests/test_ops_dashboard_frontend.py -q --no-cov
+uv run pytest tests/test_ops_metrics_service.py tests/test_ops_metrics_adapter.py tests/test_ops_metrics_routes.py tests/test_assistant_frontend_optimization.py -q --no-cov
 
 # 浏览器验收
 # - admin-console 有 "Ops Dashboard" 入口
@@ -955,6 +973,16 @@ uv run pytest tests/test_ops_metrics_api.py tests/test_ops_dashboard_frontend.py
 # - 可以查看最近失败列表
 # - 可以按时间范围过滤
 ```
+
+### P2 完成记录（2026-06-17）
+
+P2 已按架构合规版完成，实际实现选择是集成到现有 `admin-console`，而不是新增独立 `static/ops-dashboard.*`：
+
+- 后端：新增 `AuditService.query(...)` read-side seam、`OpsMetricsService`、`OpsMetricsAdapter`、`ops_metrics_routes.py`，并在 `app/main.py` 挂载 `/api/admin/ops-metrics/*`。
+- API：`GET /api/admin/ops-metrics/summary`、`timeline`、`failures` 均通过 `RequestGateway.execute(...)`；非 admin 403；非法 time range 返回 400 并写 request_failed audit。
+- 前端：`static/admin-console.js/html/css` 新增 `ops-dashboard` route，总览卡片、Top Users/Routes/Tools、Timeline、Failures 均复用 `adminFetch` / EnterpriseApiClient。
+- 边界：response 和 UI 都不包含 `total_cost`、`cost_by_user`、`cost_by_model` 或 token/cost dashboard；P3 仍需明确触发条件。
+- 验证：ops metrics + frontend 46/46、admin/memory/ops route regression 31/31、targeted ruff、`node --check static/admin-console.js`、Browser mock API 烟测、`git diff --check` 通过。
 
 
 ---
@@ -1026,7 +1054,7 @@ uv run pytest tests/test_ops_metrics_api.py tests/test_ops_dashboard_frontend.py
 | **P0a** | Memory Operator Read-only API | 🚀 **立即执行** | 只做 review queue/validation status/deprecation preview |
 | **P0b** | Memory Explorer UI | 🚀 **P0a 稳定后执行** | 明确标注"Memory 仍默认 off，此 UI 仅供 operator review" |
 | **P1** | Sandbox/Demo DB Catalog Browser | 🚀 **立即执行** | 只展示 sandbox/database-demo/已授权 MySQL allowlist |
-| **P2** | Audit/Trace Ops Dashboard | 🚀 **立即执行** | 只做 trace/audit/tool/route/latency/failure，不做成本 |
+| **P2** | Audit/Trace Ops Dashboard | ✅ **已完成** | 只做 trace/audit/tool/route/latency/failure，不做成本 |
 | **P3** | 成本统计 | ⏸️ **等触发条件满足** | 等明确成本压力后再做 |
 | **P4** | Skill Registry | ⏸️ **等触发条件满足** | 等明确扩展生态需求后再做 |
 
@@ -1113,8 +1141,8 @@ uv run pytest tests/test_memory_operator_frontend.py -q --no-cov
 
 ### P1 完成
 ```bash
-uv run pytest tests/test_database_catalog_sample_api.py tests/test_database_catalog_frontend.py -q --no-cov
-# 浏览器验收：info 横幅显示 + 只显示已授权范围
+uv run pytest tests/test_enterprise_database_http.py tests/test_assistant_frontend_optimization.py -q --no-cov
+# 浏览器验收：admin-console database-catalog + info 横幅显示 + 只显示已授权范围
 ```
 
 ### P2 完成
@@ -1140,4 +1168,3 @@ uv run pytest tests/test_ops_metrics_api.py tests/test_ops_dashboard_frontend.py
 2. 实现 CLI scaffold（`python -m app.cli.skill_cli scaffold`）
 3. 实现 skill registry（list/install/uninstall/load）
 4. 实现 skill 依赖/权限/输入输出 schema 声明
-

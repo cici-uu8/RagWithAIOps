@@ -6,6 +6,11 @@ from langchain_core.tools import tool
 from loguru import logger
 
 from app.enterprise.context import get_current_request_context
+from app.enterprise.database.context_builder import DatabaseContextBuilder
+from app.enterprise.database.error_hints import (
+    build_safe_sql_error_hint,
+    format_safe_sql_blocked_message,
+)
 from app.enterprise.database.safe_sql import DatabaseExecutionError, SafeSqlBlocked
 from app.enterprise.tools.gateway import ToolAccessDenied, ToolExecutionError
 
@@ -64,6 +69,47 @@ async def safe_select_database(
     return await _execute_read_only_database_tool(database_id, "safe_select", {"sql": sql})
 
 
+@tool
+async def retrieve_database_context(
+    query: str,
+    database_id: str = "sandbox_sales",
+) -> dict[str, Any]:
+    """检索当前用户可见的数据库上下文，用于辅助生成安全 SQL。
+
+    Args:
+        query: 用户的自然语言数据库问题。
+        database_id: 数据源 ID，默认 sandbox_sales。
+
+    Returns:
+        结构化上下文，包含相关 Q-SQL 示例、已授权表列和安全限制。不执行 SQL。
+    """
+
+    normalized_database_id = (database_id or "sandbox_sales").strip() or "sandbox_sales"
+    tool_id = _database_tool_id(normalized_database_id, "retrieve_context")
+    context = get_current_request_context()
+    if context is None:
+        return _tool_result(
+            status="error",
+            reason="request_context_missing",
+            database_id=normalized_database_id,
+            tool_id=tool_id,
+            message="当前请求缺少用户上下文，无法检索数据库上下文。",
+        )
+
+    from app.enterprise.database.routes import get_database_tool_gateway
+
+    gateway = get_database_tool_gateway()
+    context_payload = DatabaseContextBuilder(
+        permission_service=gateway.permission_service,
+    ).build_context(
+        context,
+        question=query,
+        database_id=normalized_database_id,
+    )
+    context_payload["tool_id"] = tool_id
+    return context_payload
+
+
 async def _execute_read_only_database_tool(
     database_id: str,
     operation: str,
@@ -96,12 +142,14 @@ async def _execute_read_only_database_tool(
     except ToolExecutionError as exc:
         logger.warning("RAG database tool failed: tool_id={}, error={}", tool_id, exc)
         if isinstance(exc.cause, SafeSqlBlocked):
+            sql = str(arguments.get("sql", "")) if operation == "safe_select" else ""
             return _tool_result(
                 status="denied",
                 reason=exc.cause.reason,
                 database_id=normalized_database_id,
                 tool_id=tool_id,
-                message="数据库查询被安全策略阻断。",
+                message=format_safe_sql_blocked_message(exc.cause.reason, sql=sql),
+                error_hint=build_safe_sql_error_hint(exc.cause.reason, sql=sql),
             )
         if isinstance(exc.cause, DatabaseExecutionError):
             return _tool_result(
@@ -144,6 +192,7 @@ def _tool_result(
     tool_id: str,
     message: str = "",
     result: Any | None = None,
+    error_hint: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload = {
         "status": status,
@@ -155,4 +204,6 @@ def _tool_result(
         payload["message"] = message
     if result is not None:
         payload["result"] = result
+    if error_hint is not None:
+        payload["error_hint"] = error_hint
     return payload
