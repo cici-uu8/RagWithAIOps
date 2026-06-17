@@ -189,7 +189,20 @@ pytest tests/e2e/
 
 ---
 
-## Week 10: 性能与可观测性
+## Week 10: 性能与可观测性（部分已完成）
+
+### ⭐️ 本周说明
+
+**Ops Dashboard基础版已完成**（2026-06-17）:
+- ✅ 总览卡片（总请求/成功率/P50/P95）
+- ✅ Top Users/Routes/Tools
+- ✅ Timeline趋势图
+- ✅ Failures列表
+- ✅ 测试: 46/46 passed
+
+**本周重点**: 性能压测 + 监控告警配置
+
+---
 
 ### Day 1-2: Locust性能基准测试
 
@@ -369,11 +382,17 @@ receivers:
 - [ ] 告警通知已测试
 - [ ] 手动触发告警验证通过
 
-**Week 10 验收**:
+**Week 10 验收（已调整）**:
 - [ ] 性能基线已建立 ✅
-- [ ] Grafana Dashboard就绪 ✅
+- [ ] ~~Grafana Dashboard就绪~~ → ✅ 已提前完成（Ops Dashboard UI已有）
+- [ ] Prometheus + Grafana系统配置完成（新增）
 - [ ] 告警规则已配置并验证 ✅
 - [ ] week10_evidence.md已填写 ✅
+
+**提前完成证据**:
+- 参考 `历史完成记录.md`
+- P2 Ops Dashboard: 46/46 tests passed
+- 前端UI已有总览/排行/趋势/失败4个面板
 
 ---
 

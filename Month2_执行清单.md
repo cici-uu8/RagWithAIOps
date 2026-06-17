@@ -146,12 +146,34 @@ python -m evals.rag_layer.analyze_rerank_lift
 
 ---
 
-## Week 6: 企业能力完善（Database v2 + 管理后台）
+## Week 6: 企业能力完善（已调整 - 部分任务已提前完成）
 
-### Day 1-2: Database v2 Stage 3
+### ⭐️ 本周调整说明
 
-#### Day 1: 后端实现
-**修改 app/enterprise/database/catalog.py**:
+**已提前完成（2026-06-16至17）**:
+- ✅ Database v2 Stage 1-4（包含原计划的Stage 3）
+- ✅ 管理后台独立页面骨架（admin-console.html已存在）
+- ✅ Database Catalog Browser完整功能
+
+**详见**: `历史完成记录.md`
+
+**本周调整为**: 管理后台功能增强 + 权限申请工作流细化
+
+---
+
+### Day 1-2: ~~Database v2 Stage 3~~ → 已完成，跳过
+
+**原任务**: 实现browse_sample_rows功能  
+**状态**: ✅ 已在2026-06-17完成  
+**证据**: 
+- `GET /api/database/{database_id}/tables/{table_name}/sample` 已实现
+- 测试: 46/46 passed
+- 浏览器手工验收通过
+
+**新任务（替代）**: 权限申请工作流UI细化
+
+#### Day 1: 后端实现（如需要）
+**检查现有实现是否完整**:
 ```python
 class DatabaseCatalogService:
     async def browse_sample_rows(
@@ -222,10 +244,19 @@ async showDatabaseSampleRows(dbName, tableName) {
 - [ ] 表格展示样式已完成
 - [ ] 测试：查看示例数据正常
 
-### Day 3-4: 管理后台独立页面
+### Day 3-4: ~~管理后台独立页面~~ → 已完成，改为功能增强
 
-#### Day 3: 页面结构
-**创建 static/admin.html**:
+**原任务**: 创建admin.html骨架  
+**状态**: ✅ admin-console.html已存在，且已有3个功能tab  
+**已有功能**:
+- ✅ Memory Operator（Review Queue / Validation Status / Deprecation）
+- ✅ Database Catalog（数据库/表/列浏览 + sample rows）
+- ✅ Ops Dashboard（总览/Top榜/Timeline/Failures）
+
+**新任务**: 权限申请工作流UI实现
+
+#### Day 3: 权限申请表单
+**创建权限申请界面**（如不存在）:
 ```html
 <!DOCTYPE html>
 <html>
@@ -296,17 +327,37 @@ window.adminConsole = new AdminConsole();
 - [ ] 通知机制已实现
 - [ ] 测试：完整工作流通过
 
-### Day 5: Week 6验收
+**Week 6 验收（已调整）**:
+- [ ] ~~Database v2 Stage 3完成~~ → ✅ 已提前完成
+- [ ] ~~管理后台页面可用~~ → ✅ 已提前完成（admin-console已有3个功能）
+- [ ] 权限申请工作流UI完成（新增任务）
+- [ ] 权限申请后端逻辑完整（新增任务）
+- [ ] 测试：权限申请完整流程通过
+- [ ] week6_evidence.md已填写
 
-**验收清单**:
-- [ ] Database v2 Stage 3完成 ✅
-- [ ] 管理后台页面可用 ✅
-- [ ] 权限申请工作流通过 ✅
-- [ ] week6_evidence.md已填写 ✅
+**提前完成证据**:
+- 参考 `历史完成记录.md`
+- P1 Database Catalog: 46/46 tests passed
+- admin-console已有完整框架和3个功能tab
 
 ---
 
-## Week 7: AIOps场景扩充第二波（6→10场景）
+## Week 7: AIOps场景扩充第二波（6→10场景）+ Ops Dashboard增强（可选）
+
+### ⭐️ 本周说明
+
+**基础Ops Dashboard已完成**（2026-06-17）:
+- ✅ 总览卡片（总请求/成功率/P50/P95）
+- ✅ Top Users/Routes/Tools
+- ✅ Timeline趋势
+- ✅ Failures列表
+- ✅ 测试: 46/46 passed
+
+**不含成本统计**（P3触发条件未满足）
+
+**本周重点**: AIOps场景扩充为主，Ops Dashboard增强为可选
+
+---
 
 ### Day 1-2: SlowResponse场景
 ### Day 2.5-4: NetworkLatency场景
@@ -404,13 +455,14 @@ pre-commit run --all-files
 
 ---
 
-## Month 2 最终验收（Week 8 Friday）
+## Month 2 最终验收（Week 8 Friday - 已调整）
 
 ### 功能验收
 - [ ] RAG语料库100个文档，baseline≥80%
 - [ ] AIOps场景10个，成功率≥85%
-- [ ] Database v2 Stage 3完成
-- [ ] 管理后台可用
+- [ ] ~~Database v2 Stage 3完成~~ → ✅ 已提前完成（Stage 1-4全部完成）
+- [ ] ~~管理后台可用~~ → ✅ 已提前完成（admin-console已有3个功能）
+- [ ] 权限申请工作流完整（Week 6新增任务）
 
 ### 质量验收
 - [ ] 前端测试覆盖率≥30%
@@ -420,8 +472,14 @@ pre-commit run --all-files
 
 ### 文档验收
 - [ ] week5-8 evidence已归档
-- [ ] 管理后台使用文档完成
+- [ ] ~~管理后台使用文档完成~~ → 部分已完成（Database Catalog/Ops Dashboard文档已有）
+- [ ] 权限申请工作流文档（新增）
 
-**通过标准**: 以上全部打勾
+### 提前完成的额外成果
+- ✅ Memory Operator完整功能（P0a + P0b）
+- ✅ Database v2 Stage 1-4（原计划只到Stage 3）
+- ✅ Ops Dashboard基础版（原计划Week 10才做）
+
+**通过标准**: 以上未打勾项全部打勾 + 提前完成项已验收
 
 **下一步**: 打开 `Month3_执行清单.md`
