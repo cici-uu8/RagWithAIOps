@@ -442,3 +442,18 @@
 - The acceptance scope is intentionally frontend/core-visibility only. It does not prove live AIOps model/MCP diagnosis quality and does not change backend permission semantics.
 - The next Month1 task is Week3 Day0 top_k / rerank shadow compare gate. This must start from the locked default posture `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3` and compare candidates before any runtime change.
 - Week3 should split `retrieval_top_k`, `rerank_top_n`, and `final_context_k`. Do not ask "top_k best value" as a single question; test recall pool size, rerank ordering, answer context size, latency, cost, timeout, and context pollution separately.
+
+## 2026-06-18 Month1 Week3 Day0 Top-K / Rerank Findings
+
+- The Week3 Day0 gate is now closed with real evidence on the 30-doc / Mixed 54q baseline. No runtime default changed.
+- `retrieval_top_k` expansion without rerank is the only direction that looked viable in shadow:
+  - `dense_k5_ctx3_no_rerank` improved final expected-doc hit from `94.44%` to `96.30%` with flat pass rate and no context pollution.
+  - `dense_k20_ctx5_no_rerank` improved pass rate from `83.33%` to `87.04%` and answer proxy from `0.8287` to `0.9074`, but only by increasing context size materially.
+- Current rerank strategies are not mature enough for promotion on this corpus:
+  - local lexical rerank reduced ranking quality and produced context pollution.
+  - Bailian rerank was callable, but still regressed answer proxy and added latency/API cost.
+  - high-recall lexical rerank showed the clearest “找全了但没找准” failure shape.
+- The gate successfully separated two failure classes that were previously mixed together:
+  - `retrieval_pool_miss` marks first-stage recall ceiling;
+  - `context_pollution` marks cases where the right doc entered the pool but the final context got worse.
+- The next safe step is Week3 corpus expansion work, not rerank/default switching.

@@ -35,6 +35,24 @@
 - Added Month2 Week5 100-doc rerun of the same matrix for local lexical vs Bailian rerank and high-recall pressure cases.
 - Runtime defaults remain unchanged: `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`.
 
+## 2026-06-18 Month1 Week3 Day0 Top-K / Rerank Shadow Gate
+
+- Completed the Week3 Day0 shadow matrix on the existing 30-doc / Mixed 54q baseline.
+- Added governance artifacts:
+  - `docs/baselines/baseline_month1_rag_topk_rerank_current.md`
+  - `docs/baselines/baseline_month1_rag_30doc.md`
+  - `docs/compare-reports/compare_month1_rag_topk_rerank_matrix.md`
+  - `docs/scorecards/scorecard_month1_rag_topk_rerank_gate.md`
+- Raw reports are:
+  - `evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.json`
+  - `evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.md`
+- Gate outcome:
+  - baseline: `dense_k3_ctx3_default`
+  - keep-shadow: `dense_k5_ctx3_no_rerank`, `dense_k20_ctx5_no_rerank`
+  - reject: `dense_k10_lexical_rn5_ctx3`, `dense_k20_bailian_rn5_ctx3`, `dense_k50_lexical_rn8_ctx5`
+- Main conclusion: larger dense candidate pools can improve recall slightly, but current rerank strategies are not promotion-ready on this corpus; runtime defaults stay locked.
+- Next step is Week3 Day1-Day2 corpus collection for the 30 -> 50 doc expansion.
+
 ## 2026-06-18 Month1 Week2 Day1 AIOps Visualizer
 
 - Created `static/js/aiops-visualizer.js` as a reusable frontend class with `init`, `handleEvent`, `updateStep`, and `addToolCall`.

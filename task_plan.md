@@ -15,8 +15,8 @@ Goal: execute the current production-grade mainline in fixed order: `Week0_å‡†å¤
 | Month1 Week2 Day1-Day3 AIOps visualization | completed | `static/js/aiops-visualizer.js`, `static/styles_aiops.css`, `static/app.js`, Day1/Day2/Day3 scorecards and compare reports, and `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json`; targeted JS checks and frontend contract tests passed. |
 | Month1 Week2 Day4 permission-state visualization | completed | `static/js/permission-viewer.js`, `static/styles.css`, `static/index.html`, `static/app.js`, Day4 scorecard/compare reports, and `output/playwright/month1_week2_day4_permission_viewer/browser_smoke_result.json`; JS checks and frontend contract tests passed 33/33. |
 | Month1 Week2 Day5 acceptance gate | completed | `docs/milestones/week2_evidence.md`, `baseline_month1_week2_acceptance.md`, `scorecard_month1_week2_acceptance.md`, and `compare_month1_week2_acceptance.md`; full pytest, frontend contract 33/33, JS checks, and diff check passed. |
-| Month1 Week3 Day0 top_k / rerank shadow compare gate | pending | Start next. Keep defaults locked; compare `retrieval_top_k`, `rerank_top_n`, and `final_context_k` before any runtime change. |
-| Month1 remaining local tasks | in_progress | Next is Month1 Week3 Day0 top_k / rerank shadow compare gate; use external-blocked for GitHub/CI/permission items that cannot be finished locally. |
+| Month1 Week3 Day0 top_k / rerank shadow compare gate | completed | Created `baseline_month1_rag_topk_rerank_current.md`, `baseline_month1_rag_30doc.md`, `compare_month1_rag_topk_rerank_matrix.md`, and `scorecard_month1_rag_topk_rerank_gate.md`; no runtime default change. |
+| Month1 remaining local tasks | in_progress | Next is Week3 Day1-Day2 corpus collection for the 30 -> 50 doc expansion, with the two no-rerank top_k candidates kept as shadow references only. |
 | Month2 | pending | Start only after Month1 scorecard/compare gates. |
 | Month3 | pending | Start only after Month2 scorecard/compare gates. |
 

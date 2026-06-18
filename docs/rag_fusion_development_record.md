@@ -12700,3 +12700,42 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: Week2 完成后是不是可以直接进 Week3 改 top_k？**
 
 答：不能直接改默认值。Week3 Day0 是 shadow compare gate，不是参数切换任务。`retrieval_top_k` 控制召回候选池，`rerank_top_n` 控制排序后保留数量，`final_context_k` 控制进 LLM 的上下文大小；这三者必须分开评测，否则无法判断质量提升、延迟成本和上下文污染分别来自哪里。
+
+## 2026-06-18 (生产级主线 Month1 Week3 Day0：top_k / rerank shadow matrix runner)
+
+- 背景：Week2 验收通过后，主线进入 `Month1_执行清单.md` 的 Week3 Day0。已有 `compare_month1_retrieval_candidates.md` 只比较了 `dense_only / sparse_only / hybrid / hybrid_rerank` 四种 retrieval_mode，依然把 dense recall、rerank 和 final context 三个变量绑在一起，不足以回答 “top_k 变大到底是找全了、找准了，还是只是把噪声塞进上下文”。
+- 新增 runner：`evals/knowledge_base/topk_rerank_shadow_matrix_report.py`。它固定运行时默认值 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3` 不变，只做 shadow compare；输入仍是现有 Mixed 54q 代表集，但现在把实验拆成三个独立参数：`retrieval_top_k`、`rerank_top_n`、`final_context_k`。
+- 关键实现选择：没有直接用 `RerankService.rerank()` 做矩阵主入口。原因是线上 `RerankService` 会把 `query.top_k` 和 rerank 输出数量绑定起来，这对产品路径是合理的，但对 Week3 Day0 的评测归因不够细。runner 仍复用现有 scorer（`LexicalRerankScorer` / `BailianTextRerankScorer`），但在离线层自己保留候选全排序，再独立切 `rerank_top_n` 和 `final_context_k`。
+- 指标设计：runner 一次性输出 Retrieval（`Recall@k`、pool/final expected doc hit）、Rerank（`MRR`、`nDCG`、rank lift、applied/blocked）、Answer proxy（沿用 deterministic `answer_score` + `failure_category`，只作为上下文代理，不冒充真实 Answer gate）、Engineering（retrieval/rerank/total latency、estimated tokens、embedding/rerank API calls、timeout）以及诊断字段（`retrieval_pool_miss`、`rerank_ceiling_limited`、`context_pollution`）。
+- 既有证据复用：runner 会读取 `evals/knowledge_base/reports/department_rag_answer_3q_top_k5_shadow_20260612.json`，把“3q sample-local top_k=5 只有 1/3 真正 passed”写入 gate notes，明确 context lift 不是 answer pass 的充分条件，避免后续 agent 把 retrieval shadow 和 answer 通过混为一谈。
+- 新增测试：`tests/test_topk_rerank_shadow_matrix_report.py`。测试锁定三件事：1）`retrieval_top_k / rerank_top_n / final_context_k` 真正分离；2）local lexical rerank 能在 shadow 中改善正确 doc 排名；3）当召回池里已经有正确 doc，但 final context 被前置噪声挤掉时，runner 必须标记 `context_pollution=true`，并把该候选场景 gate 成 `reject`。
+- 验证：`python3 -m py_compile evals/knowledge_base/topk_rerank_shadow_matrix_report.py tests/test_topk_rerank_shadow_matrix_report.py` 通过；`uv run pytest tests/test_topk_rerank_shadow_matrix_report.py -q --no-cov` 通过（3 tests）。下一步才是跑真实 Mixed 54q shadow matrix，生成 raw report，再回写 baseline / compare / scorecard / state 文档。
+
+**追问: 为什么不直接拿现有 `hybrid_rerank` 的四模式报告继续做判断？**
+
+答：因为 `hybrid_rerank` 同时改了召回策略、候选池大小和排序逻辑，观察到结果变差时，你无法知道是 dense recall ceiling 不够、rerank 把正确 chunk 排下去了，还是最终 context 被噪声污染。Week3 Day0 的任务不是再证一次“某个组合不行”，而是把变量拆开，给后续 Month1 Week3 语料扩充和 Month2 Week5 100-doc rerun 提供可复用的 compare 框架。
+
+**追问: 为什么 Answer 层这次只做 deterministic proxy，不直接再跑 qwen-max / OpenJudge？**
+
+答：因为 Day0 的主问题是 retrieval/rerank 参数归因，不是重开 Answer gate。仓库已经有 3q sample-local `top_k=5` Answer shadow，结果只有 `1/3` passed，足够证明 “context 变好” 不等于 “答案已经稳定变好”。这次 runner 先把 answer 层保守地压成 deterministic proxy，等真正出现候选需要 promote 时，再用 sample-local Answer shadow 或更大的 Answer gate 复核，边界更干净。
+
+## 2026-06-18 (生产级主线 Month1 Week3 Day0：54q shadow matrix 结果收口)
+
+- 背景：runner 和测试已经准备好，但真正的门禁不在“代码能跑”，而在“54q 真实结果能不能支撑默认值讨论”。用户要求企业级开发计划必须把 `top_k` 的“找全”和 `rerank` 的“找准”拆开评测，因此本轮必须把真实 matrix 结果沉淀成 baseline / compare / scorecard，而不是停留在 raw report。
+- 原始执行：`uv run python -m evals.knowledge_base.topk_rerank_shadow_matrix_report --evalset evals/knowledge_base/evalsets/department_rag_mixed_markdown_pdf_54q_after_c6_p2.jsonl --output-json evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.json --output-md evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.md`。报告生成时间是 `2026-06-18T09:13:43Z`，样本数 `54`，场景数 `6`。
+- Baseline 收口：新增 `docs/baselines/baseline_month1_rag_topk_rerank_current.md`，把当前默认场景固定为 `dense_k3_ctx3_default`。关键数字是 `45/54` passed、`pass_rate=83.33%`、`pool_expected_doc_hit_rate=94.44%`、`answer_score_avg=0.8287`、`retrieval_pool_miss_count=3`、`context_pollution_count=0`、`latency_p95_ms=488`。这一步的意义是给所有后续 top_k / rerank 候选一个同口径起点。
+- 30 文档扩充前 baseline：新增 `docs/baselines/baseline_month1_rag_30doc.md`，把当前 corpus 状态单独固定为 `30 indexed docs = 18 Markdown + 12 PDF`，并指向 `docs/RAG_Corpus_清单6_Final_Closeout.md`、`docs/RAG_Corpus_清单6_C6-P3_Mixed_54q_retrieval_baseline.md` 和正式 dense-only `45/54` retrieval baseline。这样 Week3 Day1-Day2 语料收集就不会脱离“扩充前到底是什么状态”。
+- Compare 结果：新增 `docs/compare-reports/compare_month1_rag_topk_rerank_matrix.md`。结论不是“改 top_k=20”或“启用 rerank”，而是 `keep-shadow`。两个 no-rerank 扩召回场景保留为 shadow：`dense_k5_ctx3_no_rerank` 把 final expected doc hit 提升到 `96.30%`，`dense_k20_ctx5_no_rerank` 把 pass rate 提升到 `87.04%`、answer proxy 提升到 `0.9074`，但它把 `context_tokens_p95` 从 `1091` 推到 `1694`，所以不该直接 promote。
+- Rerank 结果：三个 rerank 场景全部 reject，而且拒绝理由不是单一指标。`dense_k10_lexical_rn5_ctx3` 的 `pass_rate` 从 `83.33%` 掉到 `51.85%`，`answer_proxy_regression_count=19`，`context_pollution_count=3`；`dense_k20_bailian_rn5_ctx3` 在 `53` 次 applied、`1` 次 external-blocked 的真实调用后，`pass_rate` 仍降到 `68.52%`，`latency_p95_ms` 增加 `405ms`；`dense_k50_lexical_rn8_ctx5` 则把高召回压力直接变成 `context_pollution_count=7` 和 `final_expected_doc_hit_rate=83.33%`。这说明“候选池更大 + 有 rerank”在当前 30 docs 上并没有自然收敛成更好的 final context。
+- 关键归因收获：Day0 成功把两类失败拆开记录。`retrieval_pool_miss_count` 说明第一阶段没把正确 doc 召回进池子的 ceiling；`rerank_ceiling_limited_count` 说明 rerank 其实没有修复空间；`context_pollution_count` 则明确指出“正确 doc 进池了，但最终上下文被更差的结果挤占”。这正是用户要求的企业级评测形状：不再把所有 RAG 失败都笼统归到 embedding 或 rerank。
+- Scorecard 收口：新增 `docs/scorecards/scorecard_month1_rag_topk_rerank_gate.md`。Scorecard 的判断是“门禁执行通过，但没有候选 promote”。也就是说 Day0 的任务是成功的，因为治理证据齐了；但产品决策仍是保守的，因为没有任何候选同时满足 Retrieval / Rerank / Answer / Engineering 四条收益线。
+- 计划同步：`Month1_执行清单.md` 现已勾掉 Day0 三件套和扩充前 baseline 条目，并追加结果摘要表；`task_plan.md`、`PROJECT_STATE.md`、`progress.md`、`findings.md`、`DEVELOPMENT_LOG.md` 都把“Week3 Day0 已完成，下一步是 Week3 Day1-Day2 语料收集”写成当前真实状态。
+- 验证：代码层验证沿用前一步结果 `python3 -m py_compile evals/knowledge_base/topk_rerank_shadow_matrix_report.py tests/test_topk_rerank_shadow_matrix_report.py` 和 `uv run pytest tests/test_topk_rerank_shadow_matrix_report.py -q --no-cov`（3 tests）。本轮文档/状态收口后还需跑 `git diff --check`，确保治理文档自身没有格式错误。
+
+**追问: `dense_k20_ctx5_no_rerank` 明明是本次 54q proxy 最好的，为什么还不直接改默认值？**
+
+答：因为它的收益只在 shadow gate 里被证明，且收益结构并不“免费”。它把 `pass_rate` 提到 `87.04%`、`answer_score_avg` 提到 `0.9074`，但 `final_context_k=5` 导致 `context_tokens_p95` 增加了 `603`。这意味着默认改动不仅是“多拿一些候选”，也是“长期把更多上下文塞进 LLM”。在还没做真实 Answer gate、成本核算和更大 corpus 比较之前，直接 promote 过于乐观。
+
+**追问: Bailian rerank 不是已经能调通了吗，为什么还 reject？**
+
+答：企业级 gate 看的不是“服务通没通”，而是“调通以后值不值得进默认路径”。`dense_k20_bailian_rn5_ctx3` 的结果很典型：`pool_expected_doc_hit_rate` 保持 `96.30%`，说明 dense recall 池本身没问题；但 rerank 后 `pass_rate` 降到 `68.52%`，`answer_proxy_regression_count=11`，而且还多了 `54` 次外部 API 调用和 `p95 +405ms` 的延迟。也就是说它现在更像一个“可调用的外部能力”，不是“可默认启用的生产策略”。

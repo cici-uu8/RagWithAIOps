@@ -400,6 +400,33 @@ Week0 已通过，Month1 Week1 Day1 已启动。
 - 为什么按钮只预填现有表单：保持申请路径、字段校验和审批记录不变，避免新建平行流程。
 - 为什么 Week2 不声称 live AIOps 质量：Week2 验收对象是前端可视化 consumer 和 DOM 行为，live AIOps 诊断质量属于后续 AIOps 质量验收。
 
+### 2026-06-18 Month1 Week3 Day0: top_k / rerank shadow compare gate
+**日期**: 2026-06-18
+**状态**: ✅ 完成（无默认值变更）
+
+**已完成**:
+- [x] 新增 `docs/baselines/baseline_month1_rag_topk_rerank_current.md`
+- [x] 新增 `docs/baselines/baseline_month1_rag_30doc.md`
+- [x] 新增 `docs/compare-reports/compare_month1_rag_topk_rerank_matrix.md`
+- [x] 新增 `docs/scorecards/scorecard_month1_rag_topk_rerank_gate.md`
+- [x] 生成 raw reports:
+  - `evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.json`
+  - `evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.md`
+
+**核心结果**:
+- baseline: `dense_k3_ctx3_default`
+- keep-shadow: `dense_k5_ctx3_no_rerank`, `dense_k20_ctx5_no_rerank`
+- reject: `dense_k10_lexical_rn5_ctx3`, `dense_k20_bailian_rn5_ctx3`, `dense_k50_lexical_rn8_ctx5`
+- 默认值仍保持 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`
+
+**关键发现**:
+- 扩大 `retrieval_top_k` 能带来小幅召回增益，但还不足以直接 promote。
+- 当前 lexical / Bailian rerank 都没有在 30 docs / 54q 基线上证明净收益。
+- `context_pollution` 和 `retrieval_pool_miss` 已被分开记录，后续不会再把“没召回”和“排坏了”混为一谈。
+
+**下一步**:
+- 进入 Month1 Week3 Day1-Day2 语料收集，目标从 30 docs 扩到 50 docs，同时保留 Day0 的两个 no-rerank shadow 方案作为 Week3 compare 参考。
+
 ---
 
 ## Month 2: 能力扩展 + 质量保证
@@ -453,4 +480,4 @@ Week0 已通过，Month1 Week1 Day1 已启动。
 
 **最后更新**: 2026-06-18
 **当前阶段**: Month 1 in_progress
-**下一步**: Month 1 Week 2 Day 1 - AIOps诊断流程可视化
+**下一步**: Month 1 Week 3 Day 1-2 - 语料收集

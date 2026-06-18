@@ -542,12 +542,29 @@ git push origin enterprise3
 
 **任务清单**:
 
-- [ ] 创建 `docs/baselines/baseline_month1_rag_topk_rerank_current.md`。
-- [ ] 生成 `docs/compare-reports/compare_month1_rag_topk_rerank_matrix.md`。
-- [ ] 生成 `docs/scorecards/scorecard_month1_rag_topk_rerank_gate.md`。
-- [ ] 至少覆盖一个 dense-only 默认组、两个扩召回无 rerank 组、两个扩召回+rerank shadow 组。
-- [ ] 任一候选 promote 前必须证明 Retrieval/Rerank/Answer/工程指标综合收益，而不是单点命中提升。
-- [ ] 若第一阶段没有召回正确文档，不把失败归因给 rerank；若候选召回变大但答案退化，归入 context pollution / answer failure triage。
+- [x] 创建 `docs/baselines/baseline_month1_rag_topk_rerank_current.md`。
+- [x] 生成 `docs/compare-reports/compare_month1_rag_topk_rerank_matrix.md`。
+- [x] 生成 `docs/scorecards/scorecard_month1_rag_topk_rerank_gate.md`。
+- [x] 至少覆盖一个 dense-only 默认组、两个扩召回无 rerank 组、两个扩召回+rerank shadow 组。
+- [x] 任一候选 promote 前必须证明 Retrieval/Rerank/Answer/工程指标综合收益，而不是单点命中提升。
+- [x] 若第一阶段没有召回正确文档，不把失败归因给 rerank；若候选召回变大但答案退化，归入 context pollution / answer failure triage。
+
+**Day 0 结果摘要**:
+
+| 方案 | 结论 | 关键原因 |
+|---|---|---|
+| `dense_k3_ctx3_default` | baseline | 当前默认基线，45/54，安全边界干净 |
+| `dense_k5_ctx3_no_rerank` | keep-shadow | expected-doc +1/54，answer proxy 微升，但证据不足以 promote |
+| `dense_k20_ctx5_no_rerank` | keep-shadow | 54q proxy 最好，但上下文成本明显变大，仍不改默认值 |
+| `dense_k10_lexical_rn5_ctx3` | reject | rank/answer proxy 明显退化 |
+| `dense_k20_bailian_rn5_ctx3` | reject | 54 次外部 rerank 调用后仍无净收益，且延迟上升 |
+| `dense_k50_lexical_rn8_ctx5` | reject | 高召回压力带来上下文污染 |
+
+**Day 0 决策**:
+
+- 不修改运行时默认值。
+- 允许后续 Week3 语料扩充工作继续，但只把 `dense_k5_ctx3_no_rerank` 和 `dense_k20_ctx5_no_rerank` 作为 shadow 参考，不作为默认 promote。
+- rerank 相关策略在当前 30 docs / 54q 基线下全部不进入默认切换讨论。
 
 ### Day 1-2: 语料收集
 ### Day 3: 批量导入
@@ -555,8 +572,8 @@ git push origin enterprise3
 ### Day 5: Week 3验收
 
 **RAG评测硬要求**:
-- [ ] 语料扩充前创建 `docs/baselines/baseline_month1_rag_30doc.md`
-- [ ] 语料扩充前完成 `compare_month1_rag_topk_rerank_matrix.md` 或记录 external-blocked / insufficient-samples 原因
+- [x] 语料扩充前创建 `docs/baselines/baseline_month1_rag_30doc.md`
+- [x] 语料扩充前完成 `compare_month1_rag_topk_rerank_matrix.md` 或记录 external-blocked / insufficient-samples 原因
 - [ ] 语料扩充后创建 `docs/compare-reports/compare_month1_rag_30_to_50_docs.md`
 - [ ] embedding 覆盖、retrieval 命中、rerank 候选、query rewrite off 基线分别记录
 - [ ] 任一模块退化必须分流到 failure triage，不得只归咎于 embedding
