@@ -1,5 +1,32 @@
 # Findings
 
+## 2026-06-18 Production-Grade Week0 Findings
+
+- The active execution line is now unambiguous: `Week0_准备清单.md -> Month1_执行清单.md -> Month2_执行清单.md -> Month3_执行清单.md`; `docs/plan_registry.md` is the canonical guard against old-plan contamination.
+- Week0 evidence is sufficient to enter Month1 local work, but it does not justify any runtime default change.
+- Public-corpus fallback can proceed without internal contacts if every source records URL, license evidence, domain, synthetic flag, and import decision. Kubernetes and Google Cloud docs have CC BY 4.0 evidence; Prometheus docs have Apache 2.0 footer evidence and should remain `eligible-review` until import policy accepts Apache-licensed docs.
+- `text-embedding-v4` is callable from local `.env` and returns 1024-dimensional vectors. This proves availability only; it does not prove enterprise-corpus suitability. Suitability must come from Month1/Month2 corpus coverage and failure-cluster evaluation.
+- Bailian `qwen3-rerank` is callable through `https://dashscope.aliyuncs.com/compatible-api/v1/reranks`. A 3-candidate smoke showed sensible ordering, but the correct gate decision is `keep-shadow` because the sample is too small for default promotion.
+- Current RAG defaults remain correct for Month1 start: `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`.
+- GitHub Projects is available enough to read the project (`SuperBizAgent 生产级开发`, 4 items), but local plan registry/checklists/weekly review remain the source of truth for autonomous work.
+- The next useful Month1 task is not frontend work yet; first create retrieval baseline/scorecard/compare evidence for dense/sparse/hybrid/hybrid_rerank candidates so later UI/RAG tasks do not inherit unproven defaults.
+
+## 2026-06-18 Month1 Day3 Frontend Loading State
+
+- Existing `static/app.js` loading UX was fragmented: chat used `addLoadingMessage('正在思考...')`, upload used static overlay text, and AIOps used static loading/error replacement. There was no shared loading-state module or progress semantics.
+- Day3 adds `static/js/loading-states.js` with chat / file_upload / aiops state sequences and `static/styles_loading.css` with loading card and progress bar styling.
+- The integration is intentionally frontend-only. It changes no API route, backend protocol, RAG default, permission boundary, or retrieval/rerank/query-rewrite behavior.
+- Playwright smoke on `http://127.0.0.1:9900/` confirmed `window.loadingStateManager` loads and can render chat loading from `正在检索知识库...` at `30%` to `正在分析相关文档...` at `60%`, then cleanly remove the card on `stop()`.
+- The only browser console error observed during the smoke was `/favicon.ico` 404, unrelated to the Day3 loading implementation.
+
+## 2026-06-18 Month1 Day4 Frontend Trace ID
+
+- Backend trace support already existed: `GatewayRequest.from_headers(...)` reads `X-Trace-Id` and `X-Request-Id`, while chat/AIOps stream endpoints already propagate trace/request ids.
+- The main static chat page lacked a global frontend trace injector. Day4 adds `static/js/trace-utils.js`, loaded in `static/index.html` before Markdown, EnterpriseApiClient, error-handler, loading-states, and app.js.
+- `TraceManager` wraps `window.fetch` to add `X-Trace-Id` / `X-Request-Id`, log request/response with the trace id, and attach `frontendTraceId` / `frontendRequestId` to the returned response. It deliberately does not throw on HTTP 4xx/5xx so existing `EnterpriseApiClient.readError(...)` can still parse backend payloads.
+- Playwright smoke confirmed a real `/api/auth/me` browser request carried `x-trace-id: fe-...` and `x-request-id: req-...`; console output included both the request and response log under the same frontend trace id.
+- Error cards can now render trace ids from backend payloads/messages or frontend `error.traceId` / `error.trace_id`.
+
 ## 2026-06-16 Architecture cleanup before new execution plans
 
 - User confirmed execution order: first fix `ChatAdapter.clear_session` and key `get_current_request_context()` architecture drift, then start `docs/项目最后优化2执行清单.md` P0a, then `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1, then record docs/development state.
@@ -366,3 +393,30 @@
 - Desktop Beta scope should include the newly repaired product surfaces: upload -> file manager visibility -> document health, plus existing chat/SSE/session, permission requests, admin Trace/audit, database safe-select/confirmation, and execution dashboard loading.
 - MCP should be explicitly excluded from the desktop core success rate. Normal AIOps MCP diagnosis and Memory ingestion can be recorded as `mcp_known_issue_observed`, then routed to a separate MCP diagnostic track.
 - Pre-Beta git/config hygiene belongs in the plan: do not commit local `.env`; do not include `uv.lock` unless the dependency diff is intentionally reviewed; target environments must keep `PDF_AGENT_TOOLS_ENABLED=false`.
+## 2026-06-18 Month1 Day1 Retrieval Compare
+
+- Month1 retrieval compare raw reports are `evals/knowledge_base/reports/month1_retrieval_4mode_54q_20260618.json` and `.md`, using 54 samples from `department_rag_mixed_markdown_pdf_54q_after_c6_p2.jsonl`.
+- Dense baseline: `expected_doc_found=51/54`, wrong-scope 0, citation/source_ref incomplete 0, avg latency 510ms, P95 1430ms.
+- Sparse-only: `35/54`, avg 86ms, P95 122ms; too much coverage loss for broad default.
+- Hybrid: `52/54`, avg 1177ms, P95 3580ms, max 27349ms; only +1/54 lift and material latency regression, so keep-shadow.
+- Hybrid rerank: `36/54`, `rerank applied=161`; quality regression means reject as default.
+- Full coverage baseline passed at 84.45%; remote GitHub Actions run is external-blocked by auth/push conditions.
+
+## 2026-06-18 Month1 Day2 Frontend Error Handling
+
+- Existing frontend is static HTML/CSS/JS without a build step; the safest integration point is `static/index.html` plus `static/app.js`.
+- New `static/js/error-handler.js` classifies network/auth/permission/backend/validation/unknown errors and renders compact `.error-card` markup.
+- New `static/styles_error.css` keeps error styles separate from the large existing `static/styles.css`.
+- `static/app.js` now normalizes API-client errors and renders structured error cards in login/chat/AIOps paths while preserving existing toast behavior for normal notifications.
+- Verification passed with `node --check` and the existing static frontend contract test.
+
+## 2026-06-18 Month1 Week1 Day5 Acceptance Findings
+
+- Full local pytest passed with `uv run pytest -q --no-cov`; no failures.
+- Desktop technical smoke passed 21/21 through `smoke_test_desktop_beta.py`: normal user 11/11, Admin 8/8, observer 2/2.
+- Browser smoke initially exposed a real frontend regression: `/api/chat` 500 showed trace text but no `.error-card` element.
+- Root cause: `renderErrorMessage()` returns trusted internal HTML, but `addMessage('assistant', ...)` sends assistant content through Markdown rendering, so the error-card DOM was lost.
+- Fix: `sendMessage()` catch now creates an empty assistant message and injects `renderErrorMessage(...)` into `.message-content.innerHTML`; normal assistant answer rendering still uses Markdown.
+- Browser recheck passed: `error_card_visible=true`, `error_trace_visible=true`, loading state appears and cleans up, and `/api/auth/me` / `/api/chat` requests carry `x-trace-id` and `x-request-id`.
+- Week1 local gate can pass, but Month1 remains in progress. Next task is Week2 Day1 AIOps diagnosis visualization.
+- Runtime note: `make start-api` / `make restart` can lose FastAPI under the command runner due to plain `nohup`; current runtime was started via independent session. This is a launcher robustness risk to revisit if later gates depend on restart automation.

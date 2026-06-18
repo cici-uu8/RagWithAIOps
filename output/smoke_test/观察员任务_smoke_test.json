@@ -1,7 +1,7 @@
 {
   "test_type": "技术冒烟测试（非 Beta 测试）",
   "note": "不包含满意度、愿意继续用等主观反馈",
-  "generated_at": "2026-06-16T09:41:37.869083",
+  "generated_at": "2026-06-18T12:04:17.594534",
   "summary": {
     "total": 2,
     "passed": 2,
@@ -45,28 +45,35 @@
                   },
                   {
                     "resource_type": "database_table",
-                    "resource_id": "sandbox_sales.orders",
+                    "resource_id": "sandbox_sales.factory_access_events",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.orders.order_id",
+                    "resource_id": "sandbox_sales.factory_access_events.event_id",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.orders.total_amount",
+                    "resource_id": "sandbox_sales.factory_access_events.employee_id",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.orders.created_at",
+                    "resource_id": "sandbox_sales.factory_access_events.direction",
+                    "actions": [
+                      "read"
+                    ]
+                  },
+                  {
+                    "resource_type": "database_column",
+                    "resource_id": "sandbox_sales.factory_access_events.event_time",
                     "actions": [
                       "read"
                     ]
@@ -80,10 +87,11 @@
                 "manageable_resource_ids": [
                   "list_knowledge_documents",
                   "retrieve_knowledge",
-                  "sandbox_sales.orders",
-                  "sandbox_sales.orders.created_at",
-                  "sandbox_sales.orders.order_id",
-                  "sandbox_sales.orders.total_amount"
+                  "sandbox_sales.factory_access_events",
+                  "sandbox_sales.factory_access_events.direction",
+                  "sandbox_sales.factory_access_events.employee_id",
+                  "sandbox_sales.factory_access_events.event_id",
+                  "sandbox_sales.factory_access_events.event_time"
                 ]
               },
               {
@@ -100,35 +108,35 @@
                   },
                   {
                     "resource_type": "database_table",
-                    "resource_id": "sandbox_sales.incidents",
+                    "resource_id": "sandbox_sales.building_access_events",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.incidents.incident_id",
+                    "resource_id": "sandbox_sales.building_access_events.event_id",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.incidents.title",
+                    "resource_id": "sandbox_sales.building_access_events.employee_id",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.incidents.severity",
+                    "resource_id": "sandbox_sales.building_access_events.building_name",
                     "actions": [
                       "read"
                     ]
                   },
                   {
                     "resource_type": "database_column",
-                    "resource_id": "sandbox_sales.incidents.created_at",
+                    "resource_id": "sandbox_sales.building_access_events.event_time",
                     "actions": [
                       "read"
                     ]
@@ -141,11 +149,11 @@
                 ],
                 "manageable_resource_ids": [
                   "get_current_time",
-                  "sandbox_sales.incidents",
-                  "sandbox_sales.incidents.created_at",
-                  "sandbox_sales.incidents.incident_id",
-                  "sandbox_sales.incidents.severity",
-                  "sandbox_sales.incidents.title"
+                  "sandbox_sales.building_access_events",
+                  "sandbox_sales.building_access_events.building_name",
+                  "sandbox_sales.building_access_events.employee_id",
+                  "sandbox_sales.building_access_events.event_id",
+                  "sandbox_sales.building_access_events.event_time"
                 ]
               },
               {
@@ -160,7 +168,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:37.868025"
+      "timestamp": "2026-06-18T12:04:17.590306"
     },
     {
       "category": "可观测",
@@ -182,13 +190,13 @@
           "memory_recall_errors": 0,
           "trace_writes": 0,
           "trace_write_errors": 0,
-          "last_reset": "2026-06-16T09:32:09.182892",
+          "last_reset": "2026-06-18T11:58:13.458604",
           "memory_recall_latency_p50": null,
           "memory_recall_latency_p95": null,
           "memory_recall_latency_p99": null
         }
       },
-      "timestamp": "2026-06-16T09:41:37.869080"
+      "timestamp": "2026-06-18T12:04:17.594531"
     }
   ]
 }

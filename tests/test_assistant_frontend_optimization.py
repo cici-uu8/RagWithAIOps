@@ -323,6 +323,11 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         index_html = (static_root / "index.html").read_text(encoding="utf-8")
         app_js = (static_root / "app.js").read_text(encoding="utf-8")
         app_css = (static_root / "styles.css").read_text(encoding="utf-8")
+        error_js = (static_root / "js" / "error-handler.js").read_text(encoding="utf-8")
+        error_css = (static_root / "styles_error.css").read_text(encoding="utf-8")
+        trace_js = (static_root / "js" / "trace-utils.js").read_text(encoding="utf-8")
+        loading_js = (static_root / "js" / "loading-states.js").read_text(encoding="utf-8")
+        loading_css = (static_root / "styles_loading.css").read_text(encoding="utf-8")
         html = (static_root / "admin-console.html").read_text(encoding="utf-8")
         js = (static_root / "admin-console.js").read_text(encoding="utf-8")
         admin_css = (static_root / "admin-console.css").read_text(encoding="utf-8")
@@ -339,6 +344,31 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertIn("adminConsoleMenuItem", index_html)
         self.assertIn("executionDashboardMenuItem", index_html)
         self.assertIn("/static/enterprise-api-client.js", index_html)
+        self.assertIn("/static/styles_error.css", index_html)
+        self.assertIn("/static/styles_loading.css", index_html)
+        self.assertIn("/static/js/trace-utils.js", index_html)
+        self.assertIn("/static/js/error-handler.js", index_html)
+        self.assertIn("/static/js/loading-states.js", index_html)
+        self.assertLess(
+            index_html.index("/static/js/trace-utils.js"),
+            index_html.index("cdn.jsdelivr.net/npm/marked"),
+        )
+        self.assertLess(
+            index_html.index("/static/js/trace-utils.js"),
+            index_html.index("/static/enterprise-api-client.js"),
+        )
+        self.assertLess(
+            index_html.index("/static/enterprise-api-client.js"),
+            index_html.index("/static/js/error-handler.js"),
+        )
+        self.assertLess(
+            index_html.index("/static/js/error-handler.js"),
+            index_html.index("/static/js/loading-states.js"),
+        )
+        self.assertLess(
+            index_html.index("/static/js/loading-states.js"),
+            index_html.index("/static/app.js"),
+        )
         self.assertIn("/static/vendor/highlight/github.min.css", index_html)
         self.assertIn("/static/vendor/highlight/highlight.min.js", index_html)
         self.assertNotIn("cdn.jsdelivr.net/npm/highlight.js", index_html)
@@ -347,6 +377,41 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertIn("/static/admin-console.html", app_js)
         self.assertIn("/static/enterprise-dashboard.html", app_js)
         self.assertIn("EnterpriseApiClient", app_js)
+        self.assertIn("this.errorHandler = window.errorHandler || null", app_js)
+        self.assertIn("this.loadingStateManager = window.loadingStateManager || null", app_js)
+        self.assertIn("this.traceManager = window.traceManager || null", app_js)
+        self.assertIn("normalizeError(error", app_js)
+        self.assertIn("renderErrorMessage(error", app_js)
+        self.assertIn("const errorMessage = this.addMessage('assistant', '', false, false);", app_js)
+        self.assertIn("errorContent.innerHTML = this.renderErrorMessage(error, '发送消息失败')", app_js)
+        self.assertNotIn("this.addMessage('assistant', this.renderErrorMessage(error, '发送消息失败'))", app_js)
+        self.assertIn("startLoadingState('chat', loadingMessage)", app_js)
+        self.assertIn("startLoadingState('aiops', loadingMessage)", app_js)
+        self.assertIn("startOverlayLoadingState('file_upload'", app_js)
+        self.assertIn("this.showNotification(error, 'error', '文件上传失败')", app_js)
+        self.assertIn("class ErrorHandler", error_js)
+        self.assertIn("classifyError(error)", error_js)
+        self.assertIn("renderError(error", error_js)
+        self.assertIn("window.errorHandler = new ErrorHandler()", error_js)
+        self.assertIn("class TraceManager", trace_js)
+        self.assertIn('"X-Trace-Id"', trace_js)
+        self.assertIn('"X-Request-Id"', trace_js)
+        self.assertIn("window.traceManager.install()", trace_js)
+        self.assertIn("frontendTraceId", trace_js)
+        self.assertIn("error?.traceId", error_js)
+        self.assertIn("error?.trace_id", error_js)
+        self.assertIn(".error-card", error_css)
+        self.assertIn(".error-red", error_css)
+        self.assertIn(".error-amber", error_css)
+        self.assertIn("class LoadingStateManager", loading_js)
+        self.assertIn("chat: [", loading_js)
+        self.assertIn("file_upload: [", loading_js)
+        self.assertIn("aiops: [", loading_js)
+        self.assertEqual(loading_js.count("progress:"), 11)
+        self.assertIn("window.loadingStateManager = new LoadingStateManager()", loading_js)
+        self.assertIn(".loading-state-card", loading_css)
+        self.assertIn(".loading-progress-bar", loading_css)
+        self.assertIn("transition: width 0.5s ease-out", loading_css)
         self.assertIn("/static/enterprise-api-client.js", html)
         self.assertLess(
             html.index("/static/enterprise-api-client.js"),

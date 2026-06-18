@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     rag_model: str = "qwen-max"  # 使用快速响应模型，不带扩展思考
     rerank_enabled: bool = False
     rerank_model: str = "local_lexical_v1"
+    rerank_bailian_model: str = "qwen3-rerank"
+    rerank_bailian_endpoint: str = "https://dashscope.aliyuncs.com/compatible-api/v1/reranks"
     rerank_timeout_ms: int = 2000
     rerank_top_k: int = 10
     rerank_fallback_on_error: bool = True

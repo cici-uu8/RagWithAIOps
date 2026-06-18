@@ -8,6 +8,13 @@
 
 ## Week 5: RAG质量提升第二波（50→100 docs + Rerank验证）
 
+**硬规则**:
+
+- 语料扩充、retrieval、rerank、query rewrite 都必须有 baseline / compare / scorecard。
+- 默认值继续保持 `dense_only / query_rewrite=off / rerank_enabled=false`，除非 compare gate 明确通过。
+- 公开语料扩充不等待内部联系人，但必须记录 manifest、license、synthetic 标记。
+- Rerank 以现有 `app/services/rerank_service.py` 边界扩展，不新建平行 RAG 框架。
+
 ### Day 1-3: 语料扩充Phase 2
 
 #### Day 1: 语料收集
@@ -23,6 +30,7 @@
 - [ ] 格式转换为Markdown
 - [ ] 质量评审（确保内容有用）
 - [ ] 创建manifest文件
+- [ ] 更新 `docs/baselines/baseline_month2_rag_50doc.md`
 
 #### Day 2: 批量导入
 ```bash
@@ -55,6 +63,8 @@ python -m evals.rag_layer.analyze_results
 - [ ] baseline_after ≥ baseline_before - 3%
 - [ ] new_doc_hit_rate ≥ 50%
 - [ ] 无scope泄漏
+- [ ] 生成 `docs/compare-reports/compare_month2_rag_50_to_100_docs.md`
+- [ ] embedding / retrieval / rerank / query rewrite 各自有失败分流记录
 
 **如果baseline下降>3%**:
 ```bash
@@ -66,57 +76,31 @@ python -m evals.rag_layer.failure_analysis
 
 ### Day 4-5: Rerank二次排序验证（条件触发）
 
-**前提条件**: Hybrid模式后仍有≥5个rank-gap样本
+**前提条件**: retrieval residual triage 中仍有≥5个 rank-gap 样本，且 local lexical rerank 不足以解释/解决。
 
-#### Day 4: 接入DashScope Rerank API
-**创建 app/core/rag/rerank/dashscope_reranker.py**:
+#### Day 4: 接入百炼文本Rerank候选
+
+**实现边界**:
+
+- 在 `app/services/rerank_service.py` 现有 `RerankScorer` 协议下增加外部 scorer。
+- local lexical 保留为 baseline/fallback。
+- 百炼候选优先使用 `qwen3-rerank` 文本 rerank 能力。
+- 不把 `gte-rerank-hybrid` 当作直接文本 rerank 首选；如要使用，必须在 compare 报告里说明它属于知识库/Retrieve API 参数语境。
+- API key 只从环境变量读取，不写入代码、文档或报告。
+
+**示意形态**:
 ```python
-from typing import List
-import httpx
-
-class DashScopeReranker:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.endpoint = "https://dashscope.aliyuncs.com/api/v1/services/rerank"
-    
-    async def rerank(self, query: str, documents: List[str]) -> List[float]:
-        """使用DashScope rerank API重新排序"""
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "gte-rerank-hybrid",
-            "query": query,
-            "documents": documents
-        }
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    self.endpoint,
-                    headers=headers,
-                    json=payload,
-                    timeout=5.0
-                )
-                response.raise_for_status()
-                result = response.json()
-                return result["scores"]
-        except Exception as e:
-            # 降级到local_lexical
-            logger.warning(f"DashScope rerank failed: {e}, fallback to local")
-            return self._fallback_rerank(query, documents)
-    
-    def _fallback_rerank(self, query: str, documents: List[str]) -> List[float]:
-        """降级方案：使用本地lexical rerank"""
-        # 实现本地rerank逻辑
-        pass
+class BailianRerankScorer:
+    def score(self, query: str, candidates: list[SearchResult]) -> list[float]:
+        """Return one score per candidate; fallback remains local lexical."""
 ```
 
 **任务清单**:
-- [ ] DashScopeReranker已实现
+- [ ] Bailian/DashScope rerank scorer 已实现或 external-blocked 记录清楚
 - [ ] 降级逻辑已实现
 - [ ] 单元测试已添加
+- [ ] API smoke 只记录成功/失败/延迟/模型名，不记录密钥
+- [ ] `docs/scorecards/scorecard_month2_rerank_candidates.md` 已创建
 
 #### Day 5: Shadow对比实验
 ```python
@@ -132,16 +116,17 @@ python -m evals.rag_layer.analyze_rerank_lift
 **决策点**:
 ```yaml
 如果 lift_proven ≥ 5个样本:
-  → 启用active模式（Week 6执行）
+  → 继续 shadow 或申请 active gate；不得自动改默认值
   
 如果 lift_proven < 5个样本:
-  → 不启用，继续使用Hybrid
+  → reject 或 keep-shadow，继续使用当前默认 dense_only
 ```
 
 **Week 5 验收**:
 - [ ] 语料库扩充到100个文档 ✅
 - [ ] Baseline保持80-85% ✅
 - [ ] Rerank方案有数据支撑决策 ✅
+- [ ] `docs/compare-reports/compare_month2_rerank_local_vs_bailian.md` 已生成 ✅
 - [ ] week5_evidence.md已填写 ✅
 
 ---

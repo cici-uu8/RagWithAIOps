@@ -1,0 +1,3 @@
+request_started|chat|trace-guide-chat-001|request-guide-chat-001|user_demo_dept1|allowed|
+routing_decision|chat|trace-guide-chat-001|request-guide-chat-001|user_demo_dept1|shadow|
+request_completed|chat|trace-guide-chat-001|request-guide-chat-001|user_demo_dept1|allowed|

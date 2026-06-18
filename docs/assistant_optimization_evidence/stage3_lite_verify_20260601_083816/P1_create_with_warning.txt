@@ -1,0 +1,2 @@
+{"code":200,"message":"success","data":{"grant":{"grant_id":"160353c1-8d30-46be-b9d2-bc545309c90e","resource_type":"tool","resource_id":"retrieve_knowledge","action":"use","principal_type":"user","principal_id":"user_demo_dept1","effect":"deny","reason":"verify warning still allowed","created_at":"2026-06-01T00:40:50.831344Z"}}}
+HTTP 200

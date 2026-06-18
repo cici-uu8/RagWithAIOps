@@ -1,5 +1,32 @@
 # PROJECT_STATE
 
+## Current Production Mainline Status (2026-06-18)
+
+Active execution line: `Week0_准备清单.md` -> `Month1_执行清单.md` -> `Month2_执行清单.md` -> `Month3_执行清单.md`. Do not execute old plan documents unless they are explicitly added to `docs/plan_registry.md`.
+
+Week0 status: completed / gate passed locally. Month1 status: in progress. Evidence:
+- `docs/plan_registry.md` and `docs/plan_timeline_report.md` mark Week0 completed and Month1 in progress.
+- `docs/scorecards/scorecard_week0_governance_20260618.md` is `pass`.
+- `docs/scorecards/scorecard_week0_rag_eval_matrix_20260618.md` defines evaluation coverage for embedding, retrieval, rerank, query rewrite, answer, frontend, ops, and governance.
+- `docs/baselines/baseline_week0_current_state_20260618.md` records current service/default baseline.
+- `docs/compare-reports/compare_week0_plan_alignment_20260618.md` rejects auto-registering old plans.
+- `docs/compare-reports/compare_week0_embedding_rerank_smoke_20260618.md` records successful `text-embedding-v4` and Bailian `qwen3-rerank` smoke checks.
+- `docs/public_corpus_manifest_week0_20260618.md` records public fallback corpus candidates with URL/license/synthetic/import status.
+- Latest weekly review: `docs/weekly_reviews/weekly_review_auto_20260618_131150.md`.
+
+External-blocked policy: unavailable internal contacts, budget approval, or external permission gaps must be recorded in `docs/external_blocked_registry.md` and the active checklist, then local fallback work continues.
+
+Runtime defaults remain locked unless compare gates prove otherwise:
+
+```text
+rag_default_retrieval_mode = dense_only
+rag_query_rewrite_mode = off
+rerank_enabled = false
+rag_top_k = 3
+```
+
+Current next step: continue `Month1_执行清单.md` Week 2 Day 1 AIOps diagnosis visualization. Month1 Week1 local gate passed on 2026-06-18. Evidence: `docs/milestones/week1_evidence.md`, `docs/baselines/baseline_month1_week1_acceptance.md`, `docs/scorecards/scorecard_month1_week1_acceptance.md`, `docs/compare-reports/compare_month1_week1_acceptance.md`, `output/smoke_test/*_smoke_test.json` (`21/21`), and `output/playwright/month1_week1_day5_smoke/browser_smoke_result.json`. Day5 found and fixed one browser-level regression: `/api/chat` 500 displayed trace text but not `.error-card`; `static/app.js` now injects trusted internal error-card HTML directly into the assistant error message content. Full local pytest passed, frontend contract tests passed `32/32`, JS syntax checks passed, and retrieval defaults remain unchanged. Remote GitHub Actions validation remains `EXT-M1-CI-REMOTE` external-blocked. Local launcher note: `make start-api` / `make restart` can still lose the FastAPI child in this command runner because it uses plain `nohup`; current runtime was started with an independent session and `/health` verified. Do not change production defaults while running any further shadow comparisons.
+
 ## Project Summary
 `SuperBizAgent` is the main oncall agent repo for RAG knowledge-base Q&A and AIOps diagnosis. The 2026-03-21 RAG / WeKnora fusion release is closed; Reviewed Oncall Pattern Memory V1 P7 layered memory has completed its first-stage closeout under the explicit Gate A.2 pre-launch product-bet boundary. P6/P6_v2 are closed with rollout YES; P7.1 L0 Evidence Store, P7.2 L1 Atom Candidate Extraction, P7.3 Conflict + Lifecycle, P7.4 L2 aggregation, P7.5 Hierarchical Retrieval, and the deterministic P7 full eval are complete. Memory work is now frozen. RAG quality audit is also complete; AIOps mainline stability has now been validated with an MCP tool discovery cache slice and a fresh P6 rerun that recovered overall back to 7/12. The post-rerun mature-project gap backlog is now split into AIOps mainline, RAG production readiness, and Runtime readiness in `docs/项目与成熟项目做法差距.md`. A later external recheck also narrowed `docs/database_operation_capability_plan.md` into a sandbox-first, read-only DB capability plan and added `docs/mature_project_practice_review_20260530.md` plus `docs/enterprise_capability_development_record.md` as durable review records. The enterprise assistant direction now has a unified layered plan in `docs/enterprise_assistant_development_plan.md`, mature reference sources are indexed in `/Users/cici/oncall agent/reference_repos/README.md`, and the plan now splits governance work from the DB sandbox branch with M1-M4 demo checkpoints.
 

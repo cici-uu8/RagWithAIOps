@@ -1,0 +1,2 @@
+{"code":200,"message":"success","data":{"user":{"user_id":"user_verify_192923","username":"cici","department_id":"dept_1","department_name":"Department 1","roles":["user"],"is_active":true}}}
+HTTP 200

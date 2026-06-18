@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import time
+import urllib.request
 from collections import Counter
 from typing import Protocol
 
@@ -60,6 +63,79 @@ class LexicalRerankScorer:
         return [token for token in tokens if token.strip()]
 
 
+class BailianTextRerankScorer:
+    """External rerank scorer using DashScope/Bailian text rerank API."""
+
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        endpoint: str | None = None,
+        model: str | None = None,
+        timeout_ms: int | None = None,
+    ):
+        self.api_key = (
+            config.dashscope_api_key or os.environ.get("DASHSCOPE_API_KEY", "")
+            if api_key is None
+            else api_key
+        )
+        self.endpoint = endpoint or config.rerank_bailian_endpoint
+        self.model = model or config.rerank_bailian_model
+        self.timeout_ms = timeout_ms or config.rerank_timeout_ms
+
+    def score(self, query: str, candidates: list[SearchResult]) -> list[float]:
+        if not self.api_key:
+            raise ValueError("DASHSCOPE_API_KEY missing")
+        if not candidates:
+            return []
+        payload = {
+            "model": self.model,
+            "query": query,
+            "documents": [self._candidate_text(candidate) for candidate in candidates],
+            "top_n": len(candidates),
+        }
+        request = urllib.request.Request(
+            self.endpoint,
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        started_at = time.perf_counter()
+        with urllib.request.urlopen(request, timeout=max(1, self.timeout_ms / 1000)) as response:
+            body = response.read().decode("utf-8")
+        duration_ms = int((time.perf_counter() - started_at) * 1000)
+        logger.info(
+            "Bailian rerank completed, model={}, input={}, latency_ms={}",
+            self.model,
+            len(candidates),
+            duration_ms,
+        )
+        parsed = json.loads(body)
+        results = parsed.get("results") or parsed.get("output", {}).get("results") or []
+        if len(results) != len(candidates):
+            raise ValueError(
+                f"rerank scorer returned invalid result count: {len(results)} != {len(candidates)}"
+            )
+        scores_by_index: dict[int, float] = {}
+        for item in results:
+            index = item.get("index")
+            if index is None:
+                continue
+            score = item.get("relevance_score", item.get("score"))
+            if score is None:
+                continue
+            scores_by_index[int(index)] = float(score)
+        if len(scores_by_index) != len(candidates):
+            raise ValueError("rerank scorer returned incomplete scores")
+        return [scores_by_index[index] for index in range(len(candidates))]
+
+    def _candidate_text(self, candidate: SearchResult) -> str:
+        return build_search_text(candidate.metadata.get("heading_path"), candidate.content)
+
+
 class RerankService:
     """Reorder fused candidates while preserving citation identity."""
 
@@ -73,6 +149,9 @@ class RerankService:
     ):
         self.enabled = config.rerank_enabled if enabled is None else enabled
         self.scorer = scorer or LexicalRerankScorer()
+        self.external_scorer = None
+        if config.dashscope_api_key or os.environ.get("DASHSCOPE_API_KEY"):
+            self.external_scorer = BailianTextRerankScorer()
         self.timeout_ms = config.rerank_timeout_ms if timeout_ms is None else timeout_ms
         self.max_candidates = config.rerank_top_k if max_candidates is None else max_candidates
         self.fallback_on_error = (
@@ -102,6 +181,7 @@ class RerankService:
                 raise TimeoutError(f"rerank timeout after {duration_ms}ms")
             if len(scores) != len(candidates):
                 raise ValueError("rerank scorer returned an invalid score count")
+            model_id = self._scorer_model_id()
 
             ranked_pairs = sorted(
                 enumerate(zip(candidates, scores, strict=True)),
@@ -113,7 +193,7 @@ class RerankService:
                     retrieval_mode="hybrid_rerank",
                     rerank_score=score,
                     rerank_status="applied",
-                    rerank_model=self.model_id,
+                    rerank_model=model_id,
                     rerank_latency_ms=duration_ms,
                 )
                 for _, (candidate, score) in ranked_pairs
@@ -131,6 +211,25 @@ class RerankService:
                 raise
             logger.warning("Rerank 失败，回退 fused candidates: {}", exc)
             return self._annotate(candidates[: query.top_k], status="fallback", error=str(exc))
+
+    def rerank_with_candidate(
+        self,
+        query: RetrievalQuery,
+        candidates: list[SearchResult],
+    ) -> list[SearchResult]:
+        """Run external scorer when available, otherwise stay on local lexical baseline."""
+        if self.external_scorer is None:
+            return self.rerank(query, candidates)
+        original_scorer = self.scorer
+        try:
+            self.scorer = self.external_scorer
+            return self.rerank(query, candidates)
+        finally:
+            self.scorer = original_scorer
+
+    def _scorer_model_id(self) -> str:
+        model = getattr(self.scorer, "model", "")
+        return str(model or self.model_id)
 
     def _annotate(
         self,

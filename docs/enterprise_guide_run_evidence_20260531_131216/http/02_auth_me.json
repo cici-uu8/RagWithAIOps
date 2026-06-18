@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"user":{"user_id":"user_admin","username":"admin","department_id":"system","department_name":"System","roles":["admin"],"is_active":true},"trace_id":"trace-guide-admin-me"}}

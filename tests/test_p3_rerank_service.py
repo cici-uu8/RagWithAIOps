@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from app.models import ParserEngine, RetrievalMode, RetrievalQuery, SourceRef
-from app.services.rerank_service import RerankService
+from app.services.rerank_service import BailianTextRerankScorer, RerankService
 from app.services.vector_search_service import SearchResult as RawSearchResult
 
 
@@ -37,6 +37,13 @@ def build_hit(chunk_id: str, content: str, score: float = 0.1) -> RawSearchResul
 class BrokenScorer:
     def score(self, query: str, candidates: list[RawSearchResult]) -> list[float]:
         raise TimeoutError("rerank timeout")
+
+
+class ExternalScorer:
+    model = "qwen3-rerank"
+
+    def score(self, query: str, candidates: list[RawSearchResult]) -> list[float]:
+        return [0.1, 0.9]
 
 
 class P3RerankServiceTests(unittest.TestCase):
@@ -104,6 +111,69 @@ class P3RerankServiceTests(unittest.TestCase):
         self.assertEqual([hit.id for hit in ranked], ["doc_cpu:c00002", "doc_cpu:c00001"])
         self.assertEqual(len(ranked), 2)
         self.assertEqual(ranked[0].metadata["rerank_status"], "disabled")
+
+    def test_bailian_scorer_parses_compatible_rerank_response(self):
+        candidates = [
+            build_hit("doc_cpu:c00002", "CPU 告警可能来自流量突增。", 0.4),
+            build_hit("doc_cpu:c00001", "HighCPUUsage 告警需要查询 system-metrics 日志。", 0.3),
+        ]
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return (
+                    b'{"results":[{"index":1,"relevance_score":0.92},'
+                    b'{"index":0,"relevance_score":0.11}]}'
+                )
+
+        scorer = BailianTextRerankScorer(
+            api_key="sk-test",
+            endpoint="https://dashscope.example/reranks",
+            model="qwen3-rerank",
+            timeout_ms=2000,
+        )
+
+        with patch("urllib.request.urlopen", return_value=Response()) as mocked_urlopen:
+            scores = scorer.score("HighCPUUsage system-metrics", candidates)
+
+        self.assertEqual(scores, [0.11, 0.92])
+        request = mocked_urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://dashscope.example/reranks")
+        self.assertEqual(request.headers["Authorization"], "Bearer sk-test")
+
+    def test_bailian_scorer_requires_api_key(self):
+        with self.assertRaisesRegex(ValueError, "DASHSCOPE_API_KEY missing"):
+            BailianTextRerankScorer(api_key="", endpoint="https://dashscope.example/reranks").score(
+                "CPU",
+                [build_hit("doc_cpu:c00001", "CPU", 0.1)],
+            )
+
+    def test_rerank_with_candidate_uses_external_scorer_and_restores_local_scorer(self):
+        candidates = [
+            build_hit("doc_cpu:c00002", "CPU 告警可能来自流量突增。", 0.4),
+            build_hit("doc_cpu:c00001", "HighCPUUsage 告警需要查询 system-metrics 日志。", 0.3),
+        ]
+        reranker = RerankService(enabled=True)
+        original_scorer = reranker.scorer
+        reranker.external_scorer = ExternalScorer()
+
+        ranked = reranker.rerank_with_candidate(
+            query=RetrievalQuery(
+                query="HighCPUUsage system-metrics",
+                top_k=2,
+                retrieval_mode=RetrievalMode.HYBRID_RERANK,
+            ),
+            candidates=candidates,
+        )
+
+        self.assertEqual([hit.id for hit in ranked], ["doc_cpu:c00001", "doc_cpu:c00002"])
+        self.assertEqual(ranked[0].metadata["rerank_model"], "qwen3-rerank")
+        self.assertIs(reranker.scorer, original_scorer)
 
     def test_retrieval_service_routes_hybrid_rerank_mode(self):
         from app.services.retrieval_service import retrieval_service

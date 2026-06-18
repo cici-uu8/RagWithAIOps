@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-06-18 Production-Grade Mainline Week0 Gate
+
+- Continued the active goal: execute the production-grade mainline in order `Week0 -> Month1 -> Month2 -> Month3`, without mixing old plans.
+- Closed Week0 local governance/evaluation foundation:
+  - `docs/plan_registry.md` now marks Week0 completed and Month1 ready to start.
+  - `docs/plan_timeline_report.md` records Week0 as completed and Month1 as ready-to-start.
+  - `docs/scorecards/scorecard_week0_governance_20260618.md` moved from pending to pass.
+  - Added `docs/scorecards/scorecard_week0_rag_eval_matrix_20260618.md` so embedding, retrieval, rerank, query rewrite, answer, frontend, ops, and governance all have baseline/compare expectations.
+  - Added `docs/public_corpus_manifest_week0_20260618.md` with source URL, license evidence, license status, synthetic flag, import status, and intended coverage.
+  - Added `docs/compare-reports/compare_week0_embedding_rerank_smoke_20260618.md`.
+- Verified DashScope local API paths:
+  - `text-embedding-v4` smoke returned 2 vectors, dimension 1024, latency 868 ms.
+  - Bailian `qwen3-rerank` smoke returned scores for 3 candidates, latency 620 ms.
+  - Local lexical and Bailian rerank both ranked `doc_cpu:c00001` first for `HighCPUUsage system-metrics`; result is `keep-shadow`, not a default change.
+- Verified service/dependency state:
+  - `make start` confirmed FastAPI, CLS MCP, and Monitor MCP are already running.
+  - `/health` returned service healthy with Milvus connected.
+  - `.venv/bin/python --version` is Python 3.13.3; `node --version` is v23.11.0.
+  - Docker shows Milvus/Redis containers healthy.
+  - Fresh MCP tool discovery returned 16 tools with `get_tools_latency_ms.last=44.982`.
+  - `gh project view 1 --owner cici-uu8` can read the `SuperBizAgent 生产级开发` GitHub Project.
+- Verification passed:
+  - `uv run ruff check scripts/weekly_review.py`.
+  - `.venv/bin/python scripts/weekly_review.py` generated `docs/weekly_reviews/weekly_review_auto_20260618_102347.md`.
+  - `uv run pytest tests/test_checklist2_production_defaults.py tests/test_p3_rerank_service.py -q --no-cov` passed 8/8.
+  - `git diff --check` passed.
+- Updated `Week0_准备清单.md`, `PROJECT_STATE.md`, `DEVELOPMENT_LOG.md`, `task_plan.md`, `findings.md`, `progress.md`, and governance evidence. Month1 should now start from retrieval defaults baseline/compare gate, with defaults still locked.
+
 ## 2026-06-16
 
 - Started architecture cleanup before new execution plans. User-confirmed order: first fix `ChatAdapter.clear_session` and key `get_current_request_context()` drift, then start `docs/项目最后优化2执行清单.md` P0a, then `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1, then record docs/development state.
@@ -1220,3 +1248,84 @@
   - `node --check static/admin-console.js` passed.
   - Browser smoke against a local mock admin API rendered `#ops-dashboard` with summary cards, Top Users/Routes/Tools, Timeline, Failures, and no `total_cost` / `cost_by_user` / `cost_by_model` / `token-cost` text.
   - `git diff --check` passed.
+## 2026-06-18 Production Mainline Month1 Day1
+
+- Created Month1 retrieval evidence:
+  - `docs/baselines/baseline_month1_retrieval_defaults.md`
+  - `docs/scorecards/scorecard_month1_retrieval_strategy.md`
+  - `docs/compare-reports/compare_month1_retrieval_candidates.md`
+- Updated `Month1_执行清单.md` for Day1 retrieval compare and coverage baseline.
+- Added `.github/workflows/ci.yml`.
+- Full coverage baseline passed: `uv run pytest --cov=app --cov-report=html --cov-report=term` -> 952 passed, coverage 84.45%.
+- Marked remote GitHub Actions validation as `EXT-M1-CI-REMOTE` external-blocked so local Month1 work can continue.
+
+## 2026-06-18 Production Mainline Month1 Day2
+
+- Implemented frontend error handling Phase 0:
+  - `static/js/error-handler.js`
+  - `static/styles_error.css`
+  - `static/index.html`
+  - `static/app.js`
+  - `tests/test_assistant_frontend_optimization.py`
+- Verification passed:
+  - `node --check static/app.js`
+  - `node --check static/js/error-handler.js`
+  - `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` -> 32/32
+
+## 2026-06-18 Production Mainline Month1 Day3
+
+- Implemented frontend loading-state Phase 0:
+  - `static/js/loading-states.js`
+  - `static/styles_loading.css`
+  - `static/index.html`
+  - `static/app.js`
+  - `tests/test_assistant_frontend_optimization.py`
+- Added evidence artifacts:
+  - `docs/baselines/baseline_month1_frontend_loading_current_state.md`
+  - `docs/scorecards/scorecard_month1_frontend_loading_state.md`
+  - `docs/compare-reports/compare_month1_frontend_loading_state.md`
+- Verification passed:
+  - `node --check static/app.js`
+  - `node --check static/js/loading-states.js`
+  - `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` -> 32/32
+  - `git diff --check`
+  - `curl -fsS http://127.0.0.1:9900/health`
+  - Playwright smoke confirmed `loadingStateManager` loads and chat loading progresses from 30% to 60% before cleanup.
+
+## 2026-06-18 Production Mainline Month1 Day4
+
+- Implemented frontend trace_id tracking Phase 0:
+  - `static/js/trace-utils.js`
+  - `static/index.html`
+  - `static/app.js`
+  - `static/js/error-handler.js`
+  - `tests/test_assistant_frontend_optimization.py`
+- Added evidence artifacts:
+  - `docs/baselines/baseline_month1_frontend_trace_current_state.md`
+  - `docs/scorecards/scorecard_month1_frontend_trace_id.md`
+  - `docs/compare-reports/compare_month1_frontend_trace_id.md`
+- Verification passed:
+  - `node --check static/js/trace-utils.js`
+  - `node --check static/app.js`
+  - `node --check static/js/error-handler.js`
+  - `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` -> 32/32
+  - `git diff --check`
+  - Playwright request header smoke confirmed `x-trace-id` and `x-request-id` on `/api/auth/me`.
+
+## 2026-06-18 Production Mainline Month1 Week1 Day5
+
+- Ran local acceptance checks:
+  - `uv run pytest -q --no-cov` passed.
+  - `node --check static/app.js`, `static/js/error-handler.js`, `static/js/loading-states.js`, `static/js/trace-utils.js` passed.
+  - `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` passed 32/32.
+  - `uv run python smoke_test_desktop_beta.py` passed 21/21.
+- Browser smoke initially found `error_card_visible=false` when `/api/chat` returned a mocked 500, even though `trace-browser-error` text was visible.
+- Fixed `static/app.js` send-message catch path to inject the trusted `renderErrorMessage(...)` HTML directly into an empty assistant message's `.message-content`, instead of sending it through the normal Markdown assistant path.
+- Added static regression assertions in `tests/test_assistant_frontend_optimization.py`.
+- Re-ran browser smoke after restarting a clean Playwright session: `error_card_visible=true`, `error_trace_visible=true`, `loading_state_visible_during_chat=true`, `loading_state_cleaned_after_chat=true`, `trace_header_on_auth_or_chat=true`, and `no_unexpected_console_error=true`.
+- Created Week1 evidence:
+  - `docs/milestones/week1_evidence.md`
+  - `docs/baselines/baseline_month1_week1_acceptance.md`
+  - `docs/scorecards/scorecard_month1_week1_acceptance.md`
+  - `docs/compare-reports/compare_month1_week1_acceptance.md`
+- Updated active-plan governance docs and state docs. Current next step is Month1 Week2 Day1; Month1 is still in progress and Month2 is not started.

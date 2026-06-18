@@ -1,5 +1,28 @@
 # Task Plan
 
+## Current Active Track: 2026-06-18 Production-Grade Mainline
+
+Goal: execute the current production-grade mainline in fixed order: `Week0_准备清单.md` -> `Month1_执行清单.md` -> `Month2_执行清单.md` -> `Month3_执行清单.md`. Historical plan documents are evidence only unless registered in `docs/plan_registry.md`.
+
+| Phase | Status | Verify |
+|---|---|---|
+| Week0 governance/evaluation foundation | completed | `docs/plan_registry.md`, `docs/plan_timeline_report.md`, `docs/scorecards/scorecard_week0_governance_20260618.md`, `docs/scorecards/scorecard_week0_rag_eval_matrix_20260618.md`, `docs/baselines/baseline_week0_current_state_20260618.md`, `docs/compare-reports/compare_week0_plan_alignment_20260618.md`, `docs/compare-reports/compare_week0_embedding_rerank_smoke_20260618.md`, `docs/public_corpus_manifest_week0_20260618.md`, and `docs/weekly_reviews/weekly_review_auto_20260618_102347.md`. |
+| Month1 Week1 Day1 retrieval candidate baseline/compare | completed | Created `baseline_month1_retrieval_defaults.md`, `scorecard_month1_retrieval_strategy.md`, and `compare_month1_retrieval_candidates.md`; defaults remain `dense_only / off / false / top_k=3`. |
+| Month1 Week1 Day1 coverage baseline / CI scaffold | in_progress | Full coverage run passed at 84.45%; `.github/workflows/ci.yml` exists; remote CI trigger remains pending/external-blocked until push/auth is available. |
+| Month1 Week1 Day2 frontend error handling | completed | `static/js/error-handler.js`, `static/styles_error.css`, `static/index.html`, and `static/app.js` integrated; `node --check` and frontend static contract tests passed. |
+| Month1 Week1 Day3 frontend loading states | completed | `static/js/loading-states.js`, `static/styles_loading.css`, `static/index.html`, and `static/app.js` integrated; browser smoke confirmed staged chat loading; targeted checks passed. |
+| Month1 Week1 Day4 frontend trace_id tracking | completed | `static/js/trace-utils.js` injects `X-Trace-Id` / `X-Request-Id`; browser smoke confirmed headers and console logs; targeted checks passed. |
+| Month1 remaining local tasks | in_progress | Continue Day5 Week1 acceptance next; use external-blocked for GitHub/CI/permission items that cannot be finished locally. |
+| Month2 | pending | Start only after Month1 scorecard/compare gates. |
+| Month3 | pending | Start only after Month2 scorecard/compare gates. |
+
+### Acceptance for Current Track
+
+- No old plan is executed outside `docs/plan_registry.md`.
+- Every RAG default or candidate strategy has baseline and compare evidence before promotion.
+- External blockers are recorded in `docs/external_blocked_registry.md` and `PROJECT_STATE.md` without stopping local work.
+- Runtime defaults stay locked unless an active compare gate proves promotion.
+
 ## Current Active Track: 2026-06-16 架构偏差修复与执行清单收口
 
 Goal: 先修复当前已确认的架构偏差（`/api/chat/clear` 走 `ChatAdapter`/`RequestGateway`，RAG/AIOps 关键路径显式传递 `RequestContext`），暂不搬迁旧服务；随后完成 `docs/项目最后优化2执行清单.md` 的 P0a/P0b，推进 `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1-4，并把架构决策和 development record 写清楚。当前已完成到数据库 v2 Stage 4、P1 Database Catalog Browser 和 P2 Audit / Trace Ops Dashboard；下一步默认转向数据库 v2 P3/P4 触发条件 review，需用户明确选择。
@@ -447,3 +470,17 @@ Goal: From the real frontend experience, validate every user-facing feature and 
 | Real browser acceptance | completed | Playwright desktop/home/login/admin/dashboard screenshots captured under `output/playwright/`; desktop usable. Mobile 390px observation is now out of scope per user clarification and does not count against acceptance; `highlight.js` CDN request blocked by ORB. |
 | API-backed capability acceptance | completed | `output/playwright/live_full_feature_acceptance_20260613.json` ran 22 live checks; after correcting `/health` path, remaining product failure is uploaded document visibility/health for the uploading user. DB, permissions, admin, chat/SSE, review gate, shadow metrics, and security boundaries were live-verified. |
 | Closeout | completed | Final status under desktop-only scope: acceptance executed for all listed desktop functions, but project is not all-pass due uploaded-document visibility, MCP stability, current-env PDF tool exposure, and code-highlighting CDN degradation. |
+
+## Active Track Addendum: 2026-06-18 Production Mainline Month1
+
+Goal: Execute only the registered production-grade mainline `Week0_准备清单.md -> Month1_执行清单.md -> Month2_执行清单.md -> Month3_执行清单.md`, with baseline / scorecard / compare evidence for each meaningful gate.
+
+| Phase | Status | Verify |
+|---|---|---|
+| Week0 governance/eval foundation | completed | `docs/scorecards/scorecard_week0_governance_20260618.md`, `docs/scorecards/scorecard_week0_rag_eval_matrix_20260618.md`, and weekly review evidence exist. |
+| Month1 Week1 Day1 retrieval compare | completed | `docs/compare-reports/compare_month1_retrieval_candidates.md`; defaults remain `dense_only / off / false / top_k=3`. |
+| Month1 Week1 Day2 error handling | completed | `static/js/error-handler.js`, `static/styles_error.css`, frontend contract tests. |
+| Month1 Week1 Day3 loading states | completed | `docs/scorecards/scorecard_month1_frontend_loading_state.md`; Playwright loading smoke passed. |
+| Month1 Week1 Day4 frontend trace_id | completed | `docs/scorecards/scorecard_month1_frontend_trace_id.md`; Playwright request header smoke passed. |
+| Month1 Week1 Day5 acceptance | completed | `docs/milestones/week1_evidence.md`, `docs/scorecards/scorecard_month1_week1_acceptance.md`, 21/21 desktop smoke, browser smoke with error-card regression fixed. |
+| Month1 Week2 Day1 AIOps visualization | next | Start from `Month1_执行清单.md` Week2; do not enter Month2 until Month1 final gate passes. |

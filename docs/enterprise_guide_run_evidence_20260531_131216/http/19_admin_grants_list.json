@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"grants":[{"grant_id":"3ee83751-2afa-47cd-8a8b-55114aa4efb4","resource_type":"tool","resource_id":"database_demo.list_tables","action":"use","principal_type":"user","principal_id":"user_guide","effect":"allow","reason":"guide test","created_at":"2026-05-31T05:39:49.490161Z"}]}}

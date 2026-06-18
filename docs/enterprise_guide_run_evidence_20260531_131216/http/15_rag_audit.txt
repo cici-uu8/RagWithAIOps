@@ -1,0 +1,3 @@
+request_started|chat|allowed|
+routing_decision|chat|shadow|
+request_completed|chat|allowed|

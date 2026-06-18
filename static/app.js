@@ -9,6 +9,10 @@ class SuperBizAgentApp {
         this.chatHistories = []; // 当前登录用户的历史对话
         this.isCurrentChatFromHistory = false; // 标记当前对话是否是从历史记录加载的
         this.apiClient = window.EnterpriseApiClient || null;
+        this.errorHandler = window.errorHandler || null;
+        this.loadingStateManager = window.loadingStateManager || null;
+        this.traceManager = window.traceManager || null;
+        this.activeOverlayLoading = null;
         this.authToken = this.apiClient?.getToken?.() || localStorage.getItem('enterpriseAuthToken') || '';
         this.currentUser = null;
         this.currentProfile = null;
@@ -362,7 +366,7 @@ class SuperBizAgentApp {
                 if (error.category === 'unauthenticated') {
                     this.clearAuthState(false);
                 }
-                throw new Error(error.message);
+                throw this.normalizeError(error);
             }
         }
         const headers = this.getAuthHeaders(options.headers || {});
@@ -373,7 +377,10 @@ class SuperBizAgentApp {
                 headers,
             });
         } catch (error) {
-            throw new Error('无法连接后端服务。请确认“启动企业助手.command”窗口仍然打开，或重新双击启动。');
+            throw this.normalizeError(
+                error,
+                '无法连接后端服务。请确认“启动企业助手.command”窗口仍然打开，或重新双击启动。'
+            );
         }
 
         if (response.status === 401) {
@@ -408,6 +415,27 @@ class SuperBizAgentApp {
                 : '后端处理失败，请查看服务日志。';
         }
         return detail || `HTTP错误: ${response.status}`;
+    }
+
+    normalizeError(error, fallbackMessage = '') {
+        if (!this.errorHandler) {
+            return error instanceof Error ? error : new Error(fallbackMessage || String(error || '操作失败'));
+        }
+        const normalized = this.errorHandler.normalize(error, fallbackMessage);
+        const nextError = new Error(normalized.message);
+        nextError.category = normalized.type;
+        nextError.severity = normalized.severity;
+        nextError.traceId = normalized.traceId || error?.traceId || error?.trace_id || this.traceManager?.lastTraceId || '';
+        nextError.requestId = error?.requestId || error?.request_id || this.traceManager?.lastRequestId || '';
+        nextError.title = normalized.title;
+        return nextError;
+    }
+
+    renderErrorMessage(error, fallbackMessage = '') {
+        if (!this.errorHandler) {
+            return this.escapeHtml(error?.message || fallbackMessage || '操作失败');
+        }
+        return this.errorHandler.renderError(this.normalizeError(error, fallbackMessage));
     }
 
     updateUserUI() {
@@ -548,7 +576,7 @@ class SuperBizAgentApp {
             this.closeAccountModals();
             this.showNotification('登录成功', 'success');
         } catch (error) {
-            if (this.loginError) this.loginError.textContent = error.message;
+            if (this.loginError) this.loginError.innerHTML = this.renderErrorMessage(error, '登录失败');
         }
     }
 
@@ -2006,7 +2034,11 @@ class SuperBizAgentApp {
             }
         } catch (error) {
             console.error('发送消息失败:', error);
-            this.addMessage('assistant', '抱歉，发送消息时出现错误：' + error.message);
+            const errorMessage = this.addMessage('assistant', '', false, false);
+            const errorContent = errorMessage?.querySelector('.message-content');
+            if (errorContent) {
+                errorContent.innerHTML = this.renderErrorMessage(error, '发送消息失败');
+            }
         } finally {
             this.isStreaming = false;
             this.updateUI();
@@ -2023,6 +2055,7 @@ class SuperBizAgentApp {
     async sendQuickMessage(message) {
         // 添加等待提示消息
         const loadingMessage = this.addLoadingMessage('正在思考...');
+        const loadingState = this.startLoadingState('chat', loadingMessage);
         
         try {
             const response = await this.apiRequest('/chat', {
@@ -2043,6 +2076,7 @@ class SuperBizAgentApp {
             console.log('[sendQuickMessage] 响应数据:', JSON.stringify(data));
             
             // 移除等待提示消息
+            loadingState.stop();
             if (loadingMessage && loadingMessage.parentNode) {
                 loadingMessage.parentNode.removeChild(loadingMessage);
             }
@@ -2070,6 +2104,7 @@ class SuperBizAgentApp {
             }
         } catch (error) {
             // 出错时也要移除等待提示消息
+            loadingState.stop();
             if (loadingMessage && loadingMessage.parentNode) {
                 loadingMessage.parentNode.removeChild(loadingMessage);
             }
@@ -2340,6 +2375,13 @@ class SuperBizAgentApp {
 
         return messageDiv;
     }
+
+    startLoadingState(type, loadingElement) {
+        if (!this.loadingStateManager || !loadingElement) {
+            return { stop: () => {} };
+        }
+        return this.loadingStateManager.attach(type, loadingElement);
+    }
     
     // 检查并设置居中样式
     checkAndSetCentered() {
@@ -2387,11 +2429,15 @@ class SuperBizAgentApp {
     }
 
     // 显示通知
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', fallbackMessage = '') {
+        const normalized = type === 'error' && this.errorHandler
+            ? this.errorHandler.normalize(message, fallbackMessage)
+            : null;
+        const displayMessage = normalized ? normalized.message : String(message || fallbackMessage || '');
         // 创建通知元素
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        notification.textContent = message;
+        notification.textContent = displayMessage;
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -2500,7 +2546,7 @@ class SuperBizAgentApp {
             }
         } catch (error) {
             console.error('文件上传失败:', error);
-            this.showNotification('文件上传失败: ' + error.message, 'error');
+            this.showNotification(error, 'error', '文件上传失败');
         } finally {
             // 清空文件输入
             if (this.fileInput) {
@@ -2945,6 +2991,7 @@ class SuperBizAgentApp {
         
         // 添加"分析中..."的消息（带旋转动画）
         const loadingMessage = this.addLoadingMessage('分析中...');
+        const loadingState = this.startLoadingState('aiops', loadingMessage);
         this.currentAIOpsMessage = loadingMessage; // 保存消息引用用于后续更新
         
         // 设置发送状态
@@ -2959,10 +3006,11 @@ class SuperBizAgentApp {
             if (loadingMessage) {
                 const messageContent = loadingMessage.querySelector('.message-content');
                 if (messageContent) {
-                    messageContent.textContent = '抱歉，智能运维分析时出现错误：' + error.message;
+                    messageContent.innerHTML = this.renderErrorMessage(error, '智能运维分析失败');
                 }
             }
         } finally {
+            loadingState.stop();
             this.isStreaming = false;
             this.currentAIOpsMessage = null;
             this.updateUI();
@@ -2979,9 +3027,11 @@ class SuperBizAgentApp {
                 const loadingSubtext = this.loadingOverlay.querySelector('.loading-subtext');
                 if (loadingText) loadingText.textContent = '智能运维分析中，请稍候...';
                 if (loadingSubtext) loadingSubtext.textContent = '后端正在处理，请耐心等待';
+                this.startOverlayLoadingState('aiops', '后端正在处理，请耐心等待');
                 // 防止页面滚动
                 document.body.style.overflow = 'hidden';
             } else {
+                this.stopOverlayLoadingState();
                 this.loadingOverlay.style.display = 'none';
                 // 恢复页面滚动
                 document.body.style.overflow = '';
@@ -2999,13 +3049,30 @@ class SuperBizAgentApp {
                 const loadingSubtext = this.loadingOverlay.querySelector('.loading-subtext');
                 if (loadingText) loadingText.textContent = '正在上传文件...';
                 if (loadingSubtext) loadingSubtext.textContent = fileName ? `上传: ${fileName}` : '请稍候';
+                this.startOverlayLoadingState('file_upload', fileName ? `上传: ${fileName}` : '请稍候');
                 // 防止页面滚动
                 document.body.style.overflow = 'hidden';
             } else {
+                this.stopOverlayLoadingState();
                 this.loadingOverlay.style.display = 'none';
                 // 恢复页面滚动
                 document.body.style.overflow = '';
             }
+        }
+    }
+
+    startOverlayLoadingState(type, subtext) {
+        this.stopOverlayLoadingState();
+        if (!this.loadingStateManager || !this.loadingOverlay) {
+            return;
+        }
+        this.activeOverlayLoading = this.loadingStateManager.bindOverlay(type, this.loadingOverlay, { subtext });
+    }
+
+    stopOverlayLoadingState() {
+        if (this.activeOverlayLoading) {
+            this.activeOverlayLoading.stop();
+            this.activeOverlayLoading = null;
         }
     }
 }

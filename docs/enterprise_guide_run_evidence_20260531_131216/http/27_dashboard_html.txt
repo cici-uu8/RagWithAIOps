@@ -1,0 +1,150 @@
+HTTP/1.1 200 OK
+date: Sun, 31 May 2026 05:40:22 GMT
+server: uvicorn
+content-type: text/html; charset=utf-8
+accept-ranges: bytes
+content-length: 6286
+last-modified: Sat, 30 May 2026 17:33:25 GMT
+etag: "e16a8f315bec1d277599d62e9ecead28"
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业助手 Vue3 执行看板</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/enterprise-dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+    <div id="e11-app" class="execution-dashboard" v-cloak>
+        <aside class="dashboard-sidebar">
+            <div class="brand-block">
+                <div class="brand-mark">EA</div>
+                <div>
+                    <h1>企业助手执行看板</h1>
+                    <p>Vue3 SSE Consumer</p>
+                </div>
+            </div>
+
+            <div class="route-switch" role="tablist" aria-label="SSE endpoint">
+                <button
+                    type="button"
+                    :class="{ active: route === 'chat_stream' }"
+                    @click="selectRoute('chat_stream')"
+                    :disabled="isRunning"
+                >
+                    Chat Stream
+                </button>
+                <button
+                    type="button"
+                    :class="{ active: route === 'aiops' }"
+                    @click="selectRoute('aiops')"
+                    :disabled="isRunning"
+                >
+                    AIOps
+                </button>
+            </div>
+
+            <section class="run-list" aria-label="Trace history">
+                <div class="section-heading">本地 Trace</div>
+                <button
+                    v-for="run in runs"
+                    :key="run.localId"
+                    type="button"
+                    class="run-list-item"
+                    :class="{ active: activeRun && activeRun.localId === run.localId }"
+                    @click="activeRun = run"
+                >
+                    <span class="run-route">{{ routeLabel(run.route) }}</span>
+                    <span class="run-title">{{ run.title }}</span>
+                    <span class="run-status" :data-status="run.finalStatus">{{ terminalLabel(run.finalStatus) }}</span>
+                </button>
+                <p v-if="runs.length === 0" class="empty-note">还没有运行记录</p>
+            </section>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-header">
+                <div>
+                    <div class="eyebrow">E11 Execution Visualizer</div>
+                    <h2>{{ route === 'chat_stream' ? 'Chat / RAG 流式执行' : 'AIOps 诊断执行' }}</h2>
+                </div>
+                <div class="trace-pills" v-if="activeRun">
+                    <span :data-status="activeRun.finalStatus">{{ terminalLabel(activeRun.finalStatus) }}</span>
+                    <code>{{ activeRun.traceId || 'trace pending' }}</code>
+                    <code>{{ activeRun.requestId || 'request pending' }}</code>
+                </div>
+            </header>
+
+            <section class="control-band">
+                <label>
+                    <span>Session</span>
+                    <input v-model="sessionId" :disabled="isRunning" autocomplete="off">
+                </label>
+                <label class="prompt-box">
+                    <span>{{ route === 'chat_stream' ? '问题' : '诊断目标' }}</span>
+                    <textarea v-model="prompt" :disabled="isRunning" rows="3"></textarea>
+                </label>
+                <div class="button-row">
+                    <button type="button" class="primary-action" @click="startRun" :disabled="!canStart">
+                        运行
+                    </button>
+                    <button type="button" class="secondary-action" @click="cancelRun" :disabled="!isRunning">
+                        停止
+                    </button>
+                </div>
+            </section>
+
+            <div class="workspace-grid" v-if="activeRun">
+                <section class="stream-surface" aria-label="Stream output">
+                    <div class="panel-heading">
+                        <h3>实时输出</h3>
+                        <span>{{ activeRun.timeline.length }} events</span>
+                    </div>
+                    <pre v-if="displayText(activeRun)" class="stream-output">{{ displayText(activeRun) }}</pre>
+                    <div v-else class="empty-state">等待 SSE 事件...</div>
+                </section>
+
+                <section class="timeline-surface" aria-label="Trace timeline">
+                    <div class="panel-heading">
+                        <h3>阶段时间线</h3>
+                        <span>{{ activeRun.traceId || 'pending' }}</span>
+                    </div>
+                    <ol class="timeline-list">
+                        <li
+                            v-for="event in activeRun.timeline"
+                            :key="event.localId"
+                            class="timeline-event"
+                            :data-status="event.status"
+                        >
+                            <div class="event-topline">
+                                <strong>{{ event.stage }}</strong>
+                                <span>{{ event.status }}</span>
+                            </div>
+                            <p>{{ event.message }}</p>
+                            <details>
+                                <summary>{{ event.type }}</summary>
+                                <pre>{{ prettyJson(event.raw) }}</pre>
+                            </details>
+                        </li>
+                    </ol>
+                    <div v-if="activeRun.timeline.length === 0" class="empty-state">暂无阶段事件</div>
+                </section>
+            </div>
+
+            <div v-else class="workspace-grid">
+                <section class="stream-surface">
+                    <div class="empty-state">选择 Chat Stream 或 AIOps 后运行一次请求</div>
+                </section>
+                <section class="timeline-surface">
+                    <div class="empty-state">Trace 面板会显示 trace_id、request_id、阶段和终态</div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/enterprise-dashboard.js"></script>
+</body>
+</html>

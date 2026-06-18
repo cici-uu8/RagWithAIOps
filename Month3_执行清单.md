@@ -510,7 +510,7 @@ def desensitize_log(message: str) -> str:
 - [ ] 日志脱敏已实现
 - [ ] 测试：日志轮转正常
 
-### Day 5: 资源限制配置
+### Day 5: 资源限制配置 + 长期运行风险评估
 
 **修改 app/main.py**:
 ```python
@@ -541,11 +541,28 @@ location /api/ {
 - [ ] 并发限流已配置
 - [ ] 测试：触发限制正常
 
+### Day 5 补充: 长期运行风险评估
+
+**目标**: 不只验证功能能跑，还要评估连续运行后的稳定性风险。
+
+**评估项**:
+
+- [ ] 24h 或可接受替代时长的 soak test 计划已创建
+- [ ] 内存曲线采集并判断是否单调增长
+- [ ] 日志增长速度估算完成，推算 30 天磁盘占用
+- [ ] 日志轮转实际验证完成
+- [ ] 数据库连接池使用情况采集，确认无连接泄漏
+- [ ] Redis/RQ/document worker 健康检查和异常恢复路径验证
+- [ ] 缓存容量和过期策略检查完成
+- [ ] 生成 `docs/scorecards/scorecard_month3_long_run_risk.md`
+- [ ] 生成 `docs/compare-reports/compare_month3_long_run_before_after.md`（如做了优化）
+
 **Week 11 验收**:
 - [ ] 备份恢复演练通过 ✅
 - [ ] 降级预案已实现 ✅
 - [ ] 日志管理已配置 ✅
 - [ ] 资源限制已配置 ✅
+- [ ] 长期运行风险评估完成 ✅
 - [ ] week11_evidence.md已填写 ✅
 
 ---
@@ -628,6 +645,30 @@ locust -f tests/performance/locustfile.py \
 - [ ] 架构图已生成
 - [ ] 关键页面截图已保存
 
+### Day 5 补充: 最终生产级综合Scorecard
+
+**创建**: `docs/scorecards/scorecard_final_production_ready.md`
+
+必须汇总:
+
+- [ ] governance: `docs/plan_registry.md` / `docs/plan_timeline_report.md` 状态一致
+- [ ] RAG: embedding / retrieval / rerank / query rewrite / answer 全链路 scorecard
+- [ ] Frontend: 架构、交互、错误、加载、trace、浏览器 smoke
+- [ ] AIOps: 场景覆盖、诊断成功率、MCP 稳定性
+- [ ] Database/Admin: 权限、审计、sample rows、ops dashboard
+- [ ] Ops: 性能、监控、告警、备份恢复、降级限流
+- [ ] Long-run: 内存、日志、连接池、worker、缓存
+- [ ] Security: permission / scope / source_ref / secrets / 高危漏洞
+- [ ] Delivery: 部署手册、用户手册、开发者文档、演示材料
+
+**最终决策**:
+
+- [ ] `production-ready`
+- [ ] `beta-ready-only`
+- [ ] `not-ready`
+
+不得只凭“测试通过”给出 production-ready；必须由综合 scorecard 证明。
+
 ---
 
 ## Month 3 最终验收（Week 12 Friday）
@@ -645,12 +686,14 @@ locust -f tests/performance/locustfile.py \
 - [ ] 压力测试50并发30分钟无崩溃 ✅
 - [ ] 安全扫描高危漏洞清零 ✅
 - [ ] 代码审查清单全部通过 ✅
+- [ ] 长期运行风险 scorecard 通过 ✅
 
 **文档验收**:
 - [ ] 部署运维手册完成 ✅
 - [ ] 用户使用手册完成 ✅
 - [ ] 开发者文档完成 ✅
 - [ ] 演示视频录制完成 ✅
+- [ ] `docs/scorecards/scorecard_final_production_ready.md` 完成 ✅
 
 ---
 

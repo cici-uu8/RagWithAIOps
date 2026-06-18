@@ -1,0 +1,2 @@
+{"detail":[{"type":"missing","loc":["body","user_id"],"msg":"Field required","input":{"username":"missing_password_user"}},{"type":"missing","loc":["body","password"],"msg":"Field required","input":{"username":"missing_password_user"}},{"type":"missing","loc":["body","department_id"],"msg":"Field required","input":{"username":"missing_password_user"}},{"type":"missing","loc":["body","department_name"],"msg":"Field required","input":{"username":"missing_password_user"}}]}
+HTTP 422

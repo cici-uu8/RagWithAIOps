@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"grant":{"grant_id":"bbda2ef5-7ce6-4dce-9c7b-ce5a91c73c51","resource_type":"document","resource_id":"not-a-real-doc-id","action":"read","principal_type":"user","principal_id":"user_demo_dept1","effect":"allow","reason":"validation nonexistent resource","created_at":"2026-05-31T10:44:16.462577Z"}}}

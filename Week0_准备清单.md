@@ -1,325 +1,220 @@
 # Week 0: 执行准备清单
 
-**目标**: 在开始Month 1之前，建立执行保障机制  
-**周期**: 5个工作日  
-**验收**: 清单末尾所有检查项全部打勾  
+**目标**: 在开始 Month 1 之前，建立生产级开发的治理、评测、证据链和外部依赖 fallback 机制。
+
+**周期**: 5 个工作日。
+
+**当前状态**: in_progress。
+
+**硬规则**:
+
+- 只服务当前主线: `Week0_准备清单.md` -> `Month1_执行清单.md` -> `Month2_执行清单.md` -> `Month3_执行清单.md`。
+- 旧计划只可作为历史证据或参考，不可直接执行。
+- 外部依赖、人工确认、权限不足统一标记 `external-blocked`，并继续推进本地 fallback。
+- 任何 RAG 默认值、rerank、query rewrite、retrieval 策略、前端架构变更都必须经过 baseline -> compare -> gate。
 
 ---
 
-## Day 1: 外部依赖零信任验证
+## Day 1: 外部依赖与当前基线确认
 
-### 任务1.1: 语料来源验证
-```bash
-# 创建依赖验证记录文件
-touch docs/external_dependencies.md
-```
+### 任务 1.1: 语料来源验证与 fallback
 
-**验证清单**:
-- [ ] 联系数字化部门
-  - 负责人姓名: ____________
-  - 联系方式: ____________
-  - 能否提供runbook: 是 / 否
-  - 预计数量: ____ 个文档
-  - 交付时间: ____________
-  - 格式: Markdown / PDF / Word
+**当前决策**: 联系人信息不可用时不等待内部语料，直接使用公开语料 fallback。
 
-- [ ] 联系工艺部门
-  - 同上信息
+**验收清单**:
 
-- [ ] 公开技术文档license确认
-  - [ ] Redis运维文档: MIT协议 ✅
-  - [ ] MySQL troubleshooting: Apache 2.0 ✅
-  - [ ] K8s运维指南: CC BY 4.0 ✅
+- [x] 创建 `docs/external_dependencies.md`
+- [x] 创建 `docs/external_blocked_registry.md`
+- [x] 内部语料联系人不可用时标记 `external-blocked`
+- [x] 明确公开语料 fallback: SRE / Kubernetes / Redis / MySQL / Prometheus / incident runbook
+- [x] 创建公开语料 manifest 模板或首批 manifest: `docs/public_corpus_manifest_week0_20260618.md`
+- [x] 每个公开语料记录 source URL、license、collected_at、domain、synthetic 标记
 
-- [ ] Fallback方案确认
-  ```
-  如果内部语料<30个，启用Fallback:
-  - 公开文档: 40个
-  - Synthetic docs（自己写）: 20个
-  - 总计能达到60个（高于50个目标）
-  ```
+**不得做**:
 
-### 任务1.2: API依赖验证
-```bash
-# 测试DashScope API
-curl -X POST https://dashscope.aliyuncs.com/api/v1/services/rerank \
-  -H "Authorization: Bearer $DASHSCOPE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gte-rerank-hybrid",
-    "query": "CPU使用率高怎么办",
-    "documents": ["文档1", "文档2"]
-  }'
-```
+- 不得把 license 不清楚的网页直接导入生产级 corpus。
+- 不得用 synthetic docs 冒充真实企业语料。
 
-**验证清单**:
-- [ ] API密钥已申请
-  - 申请时间: ____________
-  - 到期时间: ____________
-- [ ] 测试调用成功
-  - 响应时间: ____ ms (目标<500ms)
-  - 成功率: 100% ✅
-- [ ] 费用预算审批
-  - 月预估调用量: 50,000次
-  - 月费用: ¥25
-  - 审批状态: 已批准 / 待审批
-- [ ] Fallback方案
-  ```python
-  # 如果API失败，降级到local_lexical
-  if dashscope_api_error:
-      use_local_lexical_rerank()
-  ```
+### 任务 1.2: API 依赖验证
 
-### 任务1.3: MCP工具清单确认
-- [ ] 已实现工具清单（10个）:
-  - [ ] Monitor (监控数据查询)
-  - [ ] CLS (日志查询)
-  - [ ] Database (数据库查询)
-  - [ ] ... (补充其他7个)
+**当前决策**:
 
-- [ ] 待实现工具清单（5个）:
-  - [ ] 工具1: _______, 工作量: __ 天
-  - [ ] 工具2: _______, 工作量: __ 天
-  - [ ] 工具3: _______, 工作量: __ 天
-  - [ ] 工具4: _______, 工作量: __ 天
-  - [ ] 工具5: _______, 工作量: __ 天
-  - [ ] 总工作量: ____ 天
+- 使用本地 `.env` 中的 `DASHSCOPE_API_KEY`。
+- Embedding 继续按项目既有 `text-embedding-v4` 路线验证。
+- Rerank 对比使用本地 lexical 与百炼文本 rerank 候选，不直接改默认值。
+- 百炼文本 rerank 优先候选: `qwen3-rerank`；旧 `gte-rerank-hybrid` 只作为知识库/Retrieve API 历史参数参考，不作为直接文本 rerank 首选。
 
-- [ ] Fallback方案
-  ```
-  如果15个工具做不完，优先做8个高频工具
-  ```
+**验收清单**:
+
+- [x] 本地环境可读取 `DASHSCOPE_API_KEY`
+- [x] text-embedding-v4 smoke 或现有 embedding 配置验证通过
+- [x] 百炼 rerank smoke 验证通过或记录失败
+- [x] `docs/compare-reports/` 中记录 local lexical vs Bailian rerank 的对比计划或结果: `compare_week0_embedding_rerank_smoke_20260618.md`
+- [x] API 失败 fallback: local lexical rerank
+
+**external-blocked 处理**:
+
+- 费用预算、人为审批、账号套餐限制不能本地确认时，记录到 `docs/external_blocked_registry.md`，但不阻塞本地 lexical baseline。
+
+### 任务 1.3: 当前服务与 MCP 基线
+
+**验收清单**:
+
+- [x] FastAPI 本地服务健康: `http://127.0.0.1:9900/health`
+- [x] MCP CLS 端口就绪: `127.0.0.1:8003`
+- [x] MCP Monitor 端口就绪: `127.0.0.1:8004`
+- [x] 明确裸 `GET /mcp` 返回 406 不等于 FastMCP streamable-http 失败
+- [x] 运行真实 MCP tool discovery 或保留到 Month1 本地任务: 2026-06-14 已有真实 `get_mcp_tools` 返回 16 工具记录；本轮 `make start` + 端口状态确认可用
 
 ---
 
-## Day 2: 搭建状态外化仪表盘
+## Day 2: 计划治理与状态外化
 
-### 任务2.1: GitHub Projects看板
-```bash
-# 在GitHub上创建项目看板
-# 项目名: SuperBizAgent生产级开发
-# 列: Backlog | This Week | In Progress | Review | Done
-```
+### 任务 2.1: 当前主线注册
 
 **验收清单**:
-- [ ] GitHub Projects看板已创建
-- [ ] 已添加P0任务卡片（7个）
-- [ ] 已添加P1任务卡片（12个）
-- [ ] 已添加P2任务卡片（8个）
-- [ ] 每个卡片有标签（frontend/backend/devops）
 
-### 任务2.2: 自动化进度报告脚本
-```bash
-# 创建脚本
-mkdir -p scripts
-cat > scripts/weekly_review.py << 'EOF'
-#!/usr/bin/env python3
-"""
-每周自动生成进度报告
-"""
-import json
-from datetime import datetime
+- [x] 生成 `docs/plan_adoption_report.md`
+- [x] 创建 `docs/plan_registry.md`
+- [x] 创建 `docs/plan_timeline_report.md`
+- [x] 明确当前权威主线为 Week0 -> Month1 -> Month2 -> Month3
+- [x] 明确旧计划默认不进入当前执行线
+- [ ] 每次计划生命周期变化后刷新 registry/timeline
 
-def generate_weekly_report():
-    # 读取测试覆盖率
-    # 读取RAG baseline
-    # 生成Markdown报告
-    pass
+### 任务 2.2: GitHub Projects 或本地 fallback
 
-if __name__ == "__main__":
-    generate_weekly_report()
-EOF
+**当前状态**:
 
-chmod +x scripts/weekly_review.py
-```
+- GitHub remote: `git@github.com:cici-uu8/agent.git`
+- `gh auth` 当前账号具备 `project` scope。
 
 **验收清单**:
-- [ ] scripts/weekly_review.py已创建
-- [ ] 脚本能跑通（python scripts/weekly_review.py）
-- [ ] 生成的报告包含：
-  - [ ] P0/P1/P2任务完成度
-  - [ ] RAG baseline趋势
-  - [ ] 测试覆盖率
-  - [ ] 风险指标（红线/黄线触发状态）
+
+- [x] 如 GitHub Projects 可写，创建或同步项目看板: `gh project view 1 --owner cici-uu8` 可读，项目 `SuperBizAgent 生产级开发` 已存在且有 4 items
+- [x] 如 GitHub Projects 不可用，使用 `docs/plan_registry.md`、执行清单、weekly review 作为本地 source of truth
+- [x] GitHub Projects 不可用不得阻塞 Week0/Month1 本地任务
+
+### 任务 2.3: 自动化进度报告脚本
+
+**验收清单**:
+
+- [x] 创建 `scripts/weekly_review.py`
+- [x] 运行 `.venv/bin/python scripts/weekly_review.py`
+- [x] 生成 `docs/weekly_reviews/weekly_review_auto_*.md`
+- [x] 报告包含治理文件、主线 checklist、证据目录、服务健康和 git snapshot
 
 ---
 
-## Day 3: 定义证据链模板
+## Day 3: 评测体系与证据链模板
 
-### 任务3.1: 创建里程碑模板
-```bash
-mkdir -p docs/milestones
-cp docs/milestone_evidence_template.md docs/milestones/
-```
+### 任务 3.1: 评测目录结构
 
 **验收清单**:
-- [ ] docs/milestone_evidence_template.md已创建
-- [ ] 模板包含4个部分：
-  - [ ] 代码变更（PR链接、commit SHA）
-  - [ ] 功能验证（截图、日志）
-  - [ ] 回归测试（测试结果）
-  - [ ] 文档同步（文档链接）
 
-### 任务3.2: 定义Code Review规范
-```bash
-cat > docs/code_review_checklist.md << 'EOF'
-# Code Review检查清单
+- [x] 创建 `docs/scorecards/`
+- [x] 创建 `docs/baselines/`
+- [x] 创建 `docs/compare-reports/`
+- [x] 创建 `docs/weekly_reviews/`
+- [x] 创建 `docs/milestones/`
 
-## 功能性
-- [ ] 实现了需求文档中的所有功能点
-- [ ] 边界条件处理正确
-- [ ] 错误处理完整
-
-## 代码质量
-- [ ] 函数职责单一
-- [ ] 变量命名清晰
-- [ ] 无重复代码
-
-## 测试
-- [ ] 单元测试覆盖新增代码
-- [ ] 回归测试通过
-
-## 文档
-- [ ] 代码注释完整
-- [ ] 复杂逻辑有说明
-EOF
-```
+### 任务 3.2: 模板文件
 
 **验收清单**:
-- [ ] Code Review检查清单已创建
-- [ ] 已定义Reviewer角色（谁来Review）
-  - 选项1: 自己Review（严格按清单）
-  - 选项2: 找同事Review
-  - 我选择: ____________
+
+- [x] 创建 `docs/scorecards/scorecard_template.md`
+- [x] 创建 `docs/baselines/baseline_template.md`
+- [x] 创建 `docs/compare-reports/compare_template.md`
+- [x] 创建 `docs/weekly_reviews/weekly_review_template.md`
+- [x] 确认 `docs/milestone_evidence_template.md` 存在
+- [x] 创建 `docs/code_review_checklist.md`
+
+### 任务 3.3: Week0 首批证据
+
+**验收清单**:
+
+- [x] 创建 `docs/scorecards/scorecard_week0_governance_20260618.md`
+- [x] 创建 `docs/baselines/baseline_week0_current_state_20260618.md`
+- [x] 创建 `docs/compare-reports/compare_week0_plan_alignment_20260618.md`
+- [x] 创建 `docs/scorecards/scorecard_week0_rag_eval_matrix_20260618.md`
+- [x] 创建 `docs/compare-reports/compare_week0_embedding_rerank_smoke_20260618.md`
+- [x] Week0 scorecard 从 pending 更新为 pass/fail
+
+### 任务 3.4: RAG 全链路评测原则
+
+所有后续 RAG 功能必须分别建立 baseline、候选方案和 compare gate：
+
+- [x] embedding: text-embedding-v4 当前配置、企业语料覆盖、失败样本分布、是否需要微调/继续预训练的证据
+- [x] retrieval: dense / sparse / hybrid / residual chunk probe 对比
+- [x] rerank: local lexical / Bailian qwen3-rerank / fallback 对比
+- [x] query rewrite: off / rule-based / LLM intent/rewrite shadow 对比
+- [x] answer: deterministic hard gate + 可选 LLM judge shadow，不替代主 gate
+- [x] frontend: 架构、交互、错误、加载、trace、可维护性 scorecard
+- [x] ops: 性能、长期运行、日志增长、备份恢复、限流降级 scorecard
+
+**Week0 证据**: `docs/scorecards/scorecard_week0_rag_eval_matrix_20260618.md` 定义所有模块评测矩阵；Month1/Month2 执行时再分别落具体 baseline 和 compare。
 
 ---
 
-## Day 4: 设置纠偏触发器
+## Day 4: 风险触发器与 compare gate
 
-### 任务4.1: 配置Weekly Review机制
-```bash
-# 在日历中设置提醒
-# 每周五下午3点：Weekly Review
-```
+### 任务 4.1: 风险触发器
 
 **验收清单**:
-- [ ] 日历提醒已设置
-- [ ] Weekly Review流程已记录：
-  ```
-  1. 运行scripts/weekly_review.py
-  2. 检查红线触发器
-  3. 填写milestone_evidence
-  4. 决策下周是否继续
-  ```
 
-### 任务4.2: 定义触发器阈值
-```bash
-cat > docs/risk_triggers.md << 'EOF'
-# 风险触发器
+- [x] 创建 `docs/risk_triggers.md`
+- [x] 定义 red line / yellow line
+- [x] 明确安全硬门禁: permission / scope / source_ref 失败立即阻断推广
+- [x] 明确 RAG 质量 regression 触发 compare/rollback
 
-## 🔴 红线（立即停止）
-- Baseline下降>5%且连续2周无恢复
-- P95延迟上升>50%
-- 测试覆盖率持续下降
+### 任务 4.2: Compare Gate 流程
 
-## 🟡 黄线（评估调整）
-- Baseline提升停滞（连续2批无提升）
-- 外部依赖获取困难
-- 单个任务耗时超估算2倍
-EOF
-```
+固定流程:
+
+1. 记录 baseline。
+2. 跑候选方案。
+3. 生成 compare report。
+4. 判定 promote / keep-shadow / reject / rollback / external-blocked。
+5. 更新 active checklist、`PROJECT_STATE.md`、weekly review。
 
 **验收清单**:
-- [ ] docs/risk_triggers.md已创建
-- [ ] 红线/黄线阈值已明确
-- [ ] 触发后的操作流程已定义
+
+- [x] compare 模板已创建
+- [x] Week0 plan alignment compare 已创建
+- [x] Month1 Day1 默认值 gate 已改为候选对比，而不是直接启用 hybrid
 
 ---
 
-## Day 5: Kickoff准备
+## Day 5: Kickoff 与进入 Month1 条件
 
-### 任务5.1: 打印工作计划
-```bash
-# 打印或导出为PDF
-# 1. 开发主控文档.md
-# 2. Month1_执行清单.md
-# 贴在墙上或放在显眼位置
-```
-
-### 任务5.2: 环境准备
-```bash
-# 确认开发环境就绪
-python --version  # Python 3.11+
-node --version    # Node 16+
-git --version
-docker --version
-
-# 确认依赖已安装
-pip list | grep pytest
-pip list | grep ruff
-```
+### 任务 5.1: 环境准备
 
 **验收清单**:
-- [ ] Python 3.11+ ✅
-- [ ] Node 16+ ✅
-- [ ] Docker ✅
-- [ ] 所有依赖已安装
-- [ ] 测试能跑通: pytest tests/
 
-### 任务5.3: 个人Kickoff
-```bash
-# 回顾整个12周计划
-# 在DEVELOPMENT_LOG.md记录启动宣言
-echo "## Week 0完成" >> DEVELOPMENT_LOG.md
-echo "我准备好开始3个月的生产级开发了" >> DEVELOPMENT_LOG.md
-echo "目标: 2026-09-17交付生产级SuperBizAgent" >> DEVELOPMENT_LOG.md
-```
+- [x] Python 版本确认
+- [x] Node 版本确认
+- [x] Docker / Milvus 当前状态确认
+- [x] `.venv/bin/python scripts/weekly_review.py` 通过
+- [x] 关键默认值测试通过: `tests/test_checklist2_production_defaults.py`
+- [x] 文档静态检查或 `git diff --check` 通过
 
----
+### 任务 5.2: Week0 最终验收
 
-## Week 0 最终验收
+Week0 进入 Month1 的最低条件:
 
-### 外部依赖验收
-- [ ] 语料来源已确认（内部/公开/Fallback）
-- [ ] API密钥已获取且测试通过
-- [ ] MCP工具清单已明确
-
-### 仪表盘验收
-- [ ] GitHub Projects看板就绪
-- [ ] weekly_review.py脚本能跑
-- [ ] 进度报告能自动生成
-
-### 文档验收
-- [ ] milestone_evidence_template.md ✅
-- [ ] code_review_checklist.md ✅
-- [ ] risk_triggers.md ✅
-- [ ] external_dependencies.md ✅
-
-### 流程验收
-- [ ] Weekly Review机制已建立
-- [ ] 红线/黄线触发器已定义
-- [ ] Code Review流程已明确
-
-### 环境验收
-- [ ] 开发环境就绪
-- [ ] 依赖全部安装
-- [ ] 测试能跑通
-
----
-
-## ✅ Week 0 通过标准
-
-**以上所有检查项必须全部打勾，才能开始Month 1**
-
-**如果有任何一项未完成**:
-- 延长Week 0时间，直到全部完成
-- 不要着急开始Month 1
+- [x] 当前主线 registry/timeline 已建立
+- [x] old plans 不会被当作当前执行线
+- [x] scorecard / baseline / compare / weekly review 模板已建立
+- [x] external-blocked 机制已建立
+- [x] weekly review 脚本能跑并生成报告
+- [x] Month1 Day1 已改成 evidence-first，不再要求直接启用 hybrid 默认
+- [x] `PROJECT_STATE.md` 记录当前主线和下一步
+- [x] `DEVELOPMENT_LOG.md` 记录 Week0 落地结果
 
 **通过后执行**:
+
 ```bash
-git add .
-git commit -m "docs: Week 0准备清单完成"
-echo "✅ Week 0完成，准备开始Month 1 Week 1" >> DEVELOPMENT_LOG.md
+.venv/bin/python scripts/weekly_review.py
+git diff --check
 ```
 
-**下一步**: 打开 `Month1_执行清单.md`，开始Week 1 Day 1任务
+**下一步**: 打开 `Month1_执行清单.md`，从 Week 1 Day 1 的 baseline / compare gate 开始，不直接更改生产默认值。

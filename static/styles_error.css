@@ -1,0 +1,47 @@
+.error-card {
+    display: grid;
+    gap: 6px;
+    margin: 12px 0;
+    padding: 12px 14px;
+    border: 1px solid #dadce0;
+    border-left-width: 4px;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #202124;
+    box-shadow: 0 2px 8px rgba(60, 64, 67, 0.08);
+}
+
+.error-red {
+    border-left-color: #d93025;
+    background: #fce8e6;
+}
+
+.error-amber {
+    border-left-color: #f9ab00;
+    background: #fef7e0;
+}
+
+.error-neutral {
+    border-left-color: #5f6368;
+    background: #f8fafd;
+}
+
+.error-card-title {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.error-card-message,
+.error-card-trace {
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.error-card-trace code {
+    word-break: break-all;
+}
+
+.login-error .error-card {
+    margin: 0;
+    box-shadow: none;
+}

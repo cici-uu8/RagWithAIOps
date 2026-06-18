@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"success":true,"answer":"要帮助您查询订单表中的最近两条订单，我需要了解一些额外的信息，比如您使用的数据库类型（例如 MySQL, PostgreSQL, MongoDB 等）以及是否有特定的字段用于确定订单的时间顺序。此外，如果可以提供表结构或者相关字段信息会更有助于准确完成您的请求。请补充这些细节，谢谢！如果没有特别指定数据库环境，我将假设一个常见的场景并给出相应的SQL查询语句。","errorMessage":null,"trace_id":"trace-guide-f3-route"}}

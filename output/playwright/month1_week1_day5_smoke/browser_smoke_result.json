@@ -1,0 +1,130 @@
+{
+  "generated_at": "2026-06-18T04:53:20.864Z",
+  "base_url": "http://127.0.0.1:9900",
+  "checks": {
+    "title": "智能OnCall助手",
+    "home_input_visible": true,
+    "login_visible_user": true,
+    "user_menu_text": "个人资料 我的权限 文件管理 数据库能力\n执行看板\n退出登录",
+    "user_menu_has_file_manager": true,
+    "file_manager_visible": true,
+    "loading_state_visible_during_chat": true,
+    "chat_answer_visible": true,
+    "loading_state_cleaned_after_chat": true,
+    "error_card_visible": true,
+    "error_trace_visible": true,
+    "trace_header_on_auth_or_chat": true,
+    "no_failed_requests_except_favicon": true,
+    "no_unexpected_console_error": true
+  },
+  "request_headers": [
+    {
+      "url": "http://127.0.0.1:9900/api/auth/me",
+      "method": "GET",
+      "x_trace_id": "fe-cj1ux0w9-1781758401540-mym0vux",
+      "x_request_id": "req-cj1ux0w9-1781758401540-cjwi1gg"
+    },
+    {
+      "url": "http://127.0.0.1:9900/api/chat/sessions",
+      "method": "GET",
+      "x_trace_id": "fe-cj1ux0w9-1781758401624-nktr5ex",
+      "x_request_id": "req-cj1ux0w9-1781758401624-gjnmtld"
+    },
+    {
+      "url": "http://127.0.0.1:9900/api/chat",
+      "method": "POST",
+      "x_trace_id": "fe-cj1ux0w9-1781758403729-8zu42qo",
+      "x_request_id": "req-cj1ux0w9-1781758403729-95ucrcm"
+    },
+    {
+      "url": "http://127.0.0.1:9900/api/chat",
+      "method": "POST",
+      "x_trace_id": "fe-cj1ux0w9-1781758405444-l07zva0",
+      "x_request_id": "req-cj1ux0w9-1781758405444-q5xvqpb"
+    }
+  ],
+  "console": [
+    {
+      "type": "log",
+      "text": "Markdown 渲染库初始化成功"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401524-jkajtu7] POST /api/auth/login"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401524-jkajtu7] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401540-mym0vux] GET /api/auth/me"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401540-mym0vux] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401541-4tam63u] GET /api/me/profile"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401541-4tam63u] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401624-nktr5ex] GET /api/chat/sessions"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758401624-nktr5ex] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758402841-vgi5mlz] GET /api/me/profile"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758402841-vgi5mlz] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758402913-q3p0sse] GET /api/documents?page=1&limit=20"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758402913-q3p0sse] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758403729-8zu42qo] POST /api/chat"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758403729-8zu42qo] Response 200"
+    },
+    {
+      "type": "log",
+      "text": "[sendQuickMessage] 响应数据: {\"code\":200,\"message\":\"ok\",\"data\":{\"success\":true,\"answer\":\"浏览器 smoke mock answer\",\"sources\":[],\"trace_id\":\"trace-browser-success\"}}"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758405444-l07zva0] POST /api/chat"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "type": "log",
+      "text": "[fe-cj1ux0w9-1781758405444-l07zva0] Response 500"
+    },
+    {
+      "type": "error",
+      "text": "发送消息失败: Error: 后端处理失败\n    at SuperBizAgentApp.normalizeError (http://127.0.0.1:9900/static/app.js?v=20260613-file-manager:425:27)\n    at SuperBizAgentApp.apiRequest (http://127.0.0.1:9900/static/app.js?v=20260613-file-manager:369:28)\n    at async SuperBizAgentApp.sendQuickMessage (http://127.0.0.1:9900/static/app.js?v=20260613-file-manager:2061:30)\n    at async SuperBizAgentApp.sendMessage (http://127.0.0.1:9900/static/app.js?v=20260613-file-manager:2031:17)"
+    }
+  ],
+  "failed_requests": [],
+  "unexpected_console_errors": []
+}

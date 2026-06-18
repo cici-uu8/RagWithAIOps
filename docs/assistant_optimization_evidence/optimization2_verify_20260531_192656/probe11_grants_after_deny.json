@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"grants":[{"grant_id":"68beef60-b6aa-4bee-92d3-4097fb94d324","resource_type":"tool","resource_id":"tool:retrieve_knowledge","action":"use","principal_type":"user","principal_id":"user_demo_dept1","effect":"deny","reason":"verify deny precedence","created_at":"2026-05-31T11:30:11.355711Z"}]}}

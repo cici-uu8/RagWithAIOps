@@ -1,0 +1,1 @@
+routing_decision|shadow|no specialized route intent detected|{"actual_route": "chat", "confidence": 0.62, "fallback_route": null, "provider": "rules", "reason": "no specialized route intent detected", "request_id": "request-guide-f3-route", "required_capabilities": [], "risk_level": "low", "suggested_route": "chat", "trace_id": "trace-guide-f3-route"}

@@ -1,0 +1,3 @@
+request_started|chat_stream|allowed|
+routing_decision|chat|shadow|no specialized route intent detected
+request_completed|chat_stream|allowed|

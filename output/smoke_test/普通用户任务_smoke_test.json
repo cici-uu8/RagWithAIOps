@@ -1,7 +1,7 @@
 {
   "test_type": "技术冒烟测试（非 Beta 测试）",
   "note": "不包含满意度、愿意继续用等主观反馈",
-  "generated_at": "2026-06-16T09:41:37.540751",
+  "generated_at": "2026-06-18T12:04:17.139655",
   "summary": {
     "total": 11,
     "passed": 11,
@@ -39,7 +39,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:30.346822"
+      "timestamp": "2026-06-18T12:04:10.292980"
     },
     {
       "category": "认证",
@@ -107,7 +107,7 @@
                   "queue_enabled": true,
                   "redis_connected": true,
                   "worker_seen_recently": "unknown",
-                  "failed_job_count": 0,
+                  "failed_job_count": 12,
                   "queue_name": "document_processing",
                   "stale_processing_count": 0,
                   "oldest_processing_age_seconds": 0,
@@ -149,12 +149,12 @@
                 "reason": null
               }
             },
-            "trace_id": "7ac541dd-fafd-41ef-8953-c8f11423abd2",
-            "request_id": "324cac69-e6d2-4b52-a6f4-ceb41837ee85"
+            "trace_id": "b4d230d1-dfb8-46fd-8a26-727e3cbd0ce9",
+            "request_id": "33958554-5e0a-4ebe-89f5-e2c31d615018"
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:30.493155"
+      "timestamp": "2026-06-18T12:04:10.426658"
     },
     {
       "category": "对话",
@@ -166,7 +166,7 @@
       "passed": true,
       "details": {
         "payload": {
-          "Id": "smoke-chat-1781574090",
+          "Id": "smoke-chat-1781755450",
           "Question": "CPU 使用率过高怎么办",
           "SelectedKbIds": [
             "process_digital_dept"
@@ -181,7 +181,7 @@
             "success": true,
             "answer": "没有找到相关信息。",
             "errorMessage": null,
-            "trace_id": "68a995cf-2d38-40c8-a23c-53d0bf16654e",
+            "trace_id": "9603885e-81e8-4603-b842-09d8357e4bfa",
             "query_intent_diagnostics": {
               "intent": "knowledge_qa",
               "knowledge_action": "retrieve",
@@ -219,13 +219,13 @@
                 "no_result_reason": "selected_kb_not_visible_or_no_indexed_documents",
                 "tool_called": true,
                 "tool_name": "retrieve_knowledge",
-                "trace_id": "68a995cf-2d38-40c8-a23c-53d0bf16654e"
+                "trace_id": "9603885e-81e8-4603-b842-09d8357e4bfa"
               }
             }
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:30.682985"
+      "timestamp": "2026-06-18T12:04:10.544418"
     },
     {
       "category": "对话",
@@ -242,6 +242,33 @@
           "message": "success",
           "data": {
             "sessions": [
+              {
+                "session_id": "smoke-chat-1781755450",
+                "id": "smoke-chat-1781755450",
+                "title": "CPU 使用率过高怎么办",
+                "kind": "chat",
+                "created_at": "2026-06-18T04:04:10.429641+00:00",
+                "updated_at": "2026-06-18T04:04:10.543468+00:00",
+                "archived_at": null
+              },
+              {
+                "session_id": "session-f3",
+                "id": "session-f3",
+                "title": "hello",
+                "kind": "chat",
+                "created_at": "2026-06-08T19:11:19.769676+00:00",
+                "updated_at": "2026-06-16T03:17:13.874854+00:00",
+                "archived_at": null
+              },
+              {
+                "session_id": "session-f3-aiops",
+                "id": "session-f3-aiops",
+                "title": "diagnose alert",
+                "kind": "aiops",
+                "created_at": "2026-06-08T19:11:19.762543+00:00",
+                "updated_at": "2026-06-16T03:17:13.867425+00:00",
+                "archived_at": null
+              },
               {
                 "session_id": "smoke-chat-1781574090",
                 "id": "smoke-chat-1781574090",
@@ -297,24 +324,6 @@
                 "archived_at": null
               },
               {
-                "session_id": "session-f3",
-                "id": "session-f3",
-                "title": "hello",
-                "kind": "chat",
-                "created_at": "2026-06-08T19:11:19.769676+00:00",
-                "updated_at": "2026-06-08T20:12:00.622894+00:00",
-                "archived_at": null
-              },
-              {
-                "session_id": "session-f3-aiops",
-                "id": "session-f3-aiops",
-                "title": "diagnose alert",
-                "kind": "aiops",
-                "created_at": "2026-06-08T19:11:19.762543+00:00",
-                "updated_at": "2026-06-08T20:12:00.615521+00:00",
-                "archived_at": null
-              },
-              {
                 "session_id": "aiops-lab-redis-backlog-data-sync",
                 "id": "aiops-lab-redis-backlog-data-sync",
                 "title": "只诊断 AIOps lab 用例 redis-backlog...",
@@ -354,7 +363,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:30.684688"
+      "timestamp": "2026-06-18T12:04:10.548020"
     },
     {
       "category": "文档",
@@ -379,11 +388,11 @@
             "status": "indexed",
             "artifact_dir": "/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21/uploads/documents/process_digital_dept/doc_636ca56c-b253-5004-aa22-37908d6b5d52/artifacts",
             "async_processing": false,
-            "trace_id": "6fee8668-4d63-4df3-8bed-60a9ba899f6f"
+            "trace_id": "c7235bc3-764b-4b33-a9ec-46c15d4f9e2e"
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:32.347198"
+      "timestamp": "2026-06-18T12:04:11.904782"
     },
     {
       "category": "文档",
@@ -409,10 +418,10 @@
                 "status": "indexed",
                 "status_detail": "plain-text chunks and vector rows were written successfully",
                 "parser_engine": "plain_text",
-                "created_at": "2026-06-16T09:41:30.704729",
-                "uploaded_at": "2026-06-16T09:41:30.704729",
-                "updated_at": "2026-06-16T09:41:32.305594",
-                "status_confirmed_at": "2026-06-16T09:41:32.305594",
+                "created_at": "2026-06-18T12:04:10.558029",
+                "uploaded_at": "2026-06-18T12:04:10.558029",
+                "updated_at": "2026-06-18T12:04:11.878427",
+                "status_confirmed_at": "2026-06-18T12:04:11.878427",
                 "error_message": "",
                 "trace_id": null,
                 "health_check": {
@@ -435,7 +444,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:34.439327"
+      "timestamp": "2026-06-18T12:04:14.002915"
     },
     {
       "category": "文档",
@@ -464,7 +473,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:37.450929"
+      "timestamp": "2026-06-18T12:04:17.035428"
     },
     {
       "category": "权限",
@@ -517,20 +526,20 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.incidents.created_at",
-                "name": "incidents.created_at",
-                "description": "",
+                "resource_id": "sandbox_sales.building_access_events.access_point_name",
+                "name": "building_access_events.access_point_name",
+                "description": "Access point name",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "incidents",
-                  "column_name": "created_at",
+                  "table_name": "building_access_events",
+                  "column_name": "access_point_name",
                   "data_type": "TEXT",
                   "sensitive": false,
                   "mask": null,
-                  "display_name": "incidents.created_at"
+                  "display_name": "building_access_events.access_point_name"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -543,46 +552,20 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.incidents.incident_id",
-                "name": "incidents.incident_id",
-                "description": "",
+                "resource_id": "sandbox_sales.building_access_events.building_name",
+                "name": "building_access_events.building_name",
+                "description": "Building name",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "incidents",
-                  "column_name": "incident_id",
-                  "data_type": "INTEGER",
-                  "sensitive": false,
-                  "mask": null,
-                  "display_name": "incidents.incident_id"
-                },
-                "already_granted": false,
-                "action_options": [
-                  {
-                    "action": "read",
-                    "display_name": "读取",
-                    "already_granted": false
-                  }
-                ]
-              },
-              {
-                "resource_type": "database_column",
-                "resource_id": "sandbox_sales.incidents.severity",
-                "name": "incidents.severity",
-                "description": "",
-                "actions_supported": [
-                  "read"
-                ],
-                "metadata": {
-                  "database_id": "sandbox_sales",
-                  "table_name": "incidents",
-                  "column_name": "severity",
+                  "table_name": "building_access_events",
+                  "column_name": "building_name",
                   "data_type": "TEXT",
                   "sensitive": false,
                   "mask": null,
-                  "display_name": "incidents.severity"
+                  "display_name": "building_access_events.building_name"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -595,20 +578,20 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.incidents.title",
-                "name": "incidents.title",
-                "description": "",
+                "resource_id": "sandbox_sales.building_access_events.department_name",
+                "name": "building_access_events.department_name",
+                "description": "Department name",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "incidents",
-                  "column_name": "title",
+                  "table_name": "building_access_events",
+                  "column_name": "department_name",
                   "data_type": "TEXT",
                   "sensitive": false,
                   "mask": null,
-                  "display_name": "incidents.title"
+                  "display_name": "building_access_events.department_name"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -621,46 +604,20 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.orders.created_at",
-                "name": "orders.created_at",
-                "description": "Order date",
+                "resource_id": "sandbox_sales.building_access_events.device_id",
+                "name": "building_access_events.device_id",
+                "description": "Device id, masked in results",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "orders",
-                  "column_name": "created_at",
-                  "data_type": "TEXT",
-                  "sensitive": false,
-                  "mask": null,
-                  "display_name": "orders.created_at"
-                },
-                "already_granted": false,
-                "action_options": [
-                  {
-                    "action": "read",
-                    "display_name": "读取",
-                    "already_granted": false
-                  }
-                ]
-              },
-              {
-                "resource_type": "database_column",
-                "resource_id": "sandbox_sales.orders.customer_email",
-                "name": "orders.customer_email",
-                "description": "Customer email, masked in results",
-                "actions_supported": [
-                  "read"
-                ],
-                "metadata": {
-                  "database_id": "sandbox_sales",
-                  "table_name": "orders",
-                  "column_name": "customer_email",
+                  "table_name": "building_access_events",
+                  "column_name": "device_id",
                   "data_type": "TEXT",
                   "sensitive": true,
-                  "mask": "email",
-                  "display_name": "orders.customer_email"
+                  "mask": "redact",
+                  "display_name": "building_access_events.device_id"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -673,20 +630,20 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.orders.customer_name",
-                "name": "orders.customer_name",
-                "description": "Customer display name",
+                "resource_id": "sandbox_sales.building_access_events.direction",
+                "name": "building_access_events.direction",
+                "description": "Access direction: entry or exit",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "orders",
-                  "column_name": "customer_name",
+                  "table_name": "building_access_events",
+                  "column_name": "direction",
                   "data_type": "TEXT",
                   "sensitive": false,
                   "mask": null,
-                  "display_name": "orders.customer_name"
+                  "display_name": "building_access_events.direction"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -699,20 +656,72 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.orders.order_id",
-                "name": "orders.order_id",
-                "description": "Order id",
+                "resource_id": "sandbox_sales.building_access_events.employee_id",
+                "name": "building_access_events.employee_id",
+                "description": "Employee id",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "orders",
-                  "column_name": "order_id",
+                  "table_name": "building_access_events",
+                  "column_name": "employee_id",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "building_access_events.employee_id"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.building_access_events.employee_name",
+                "name": "building_access_events.employee_name",
+                "description": "Employee name, masked in results",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "building_access_events",
+                  "column_name": "employee_name",
+                  "data_type": "TEXT",
+                  "sensitive": true,
+                  "mask": "name",
+                  "display_name": "building_access_events.employee_name"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.building_access_events.event_id",
+                "name": "building_access_events.event_id",
+                "description": "Event id",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "building_access_events",
+                  "column_name": "event_id",
                   "data_type": "INTEGER",
                   "sensitive": false,
                   "mask": null,
-                  "display_name": "orders.order_id"
+                  "display_name": "building_access_events.event_id"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -725,20 +734,254 @@
               },
               {
                 "resource_type": "database_column",
-                "resource_id": "sandbox_sales.orders.total_amount",
-                "name": "orders.total_amount",
-                "description": "Order total amount",
+                "resource_id": "sandbox_sales.building_access_events.event_time",
+                "name": "building_access_events.event_time",
+                "description": "Event timestamp",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "orders",
-                  "column_name": "total_amount",
-                  "data_type": "REAL",
+                  "table_name": "building_access_events",
+                  "column_name": "event_time",
+                  "data_type": "TEXT",
                   "sensitive": false,
                   "mask": null,
-                  "display_name": "orders.total_amount"
+                  "display_name": "building_access_events.event_time"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.building_access_events.floor_name",
+                "name": "building_access_events.floor_name",
+                "description": "Floor name",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "building_access_events",
+                  "column_name": "floor_name",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "building_access_events.floor_name"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.badge_id",
+                "name": "factory_access_events.badge_id",
+                "description": "Badge id, masked in results",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "badge_id",
+                  "data_type": "TEXT",
+                  "sensitive": true,
+                  "mask": "badge",
+                  "display_name": "factory_access_events.badge_id"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.department_name",
+                "name": "factory_access_events.department_name",
+                "description": "Department name",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "department_name",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "factory_access_events.department_name"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.direction",
+                "name": "factory_access_events.direction",
+                "description": "Access direction: entry or exit",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "direction",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "factory_access_events.direction"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.employee_id",
+                "name": "factory_access_events.employee_id",
+                "description": "Employee id",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "employee_id",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "factory_access_events.employee_id"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.employee_name",
+                "name": "factory_access_events.employee_name",
+                "description": "Employee name, masked in results",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "employee_name",
+                  "data_type": "TEXT",
+                  "sensitive": true,
+                  "mask": "name",
+                  "display_name": "factory_access_events.employee_name"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.event_id",
+                "name": "factory_access_events.event_id",
+                "description": "Event id",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "event_id",
+                  "data_type": "INTEGER",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "factory_access_events.event_id"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.event_time",
+                "name": "factory_access_events.event_time",
+                "description": "Event timestamp",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "event_time",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "factory_access_events.event_time"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "read",
+                    "display_name": "读取",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "database_column",
+                "resource_id": "sandbox_sales.factory_access_events.gate_name",
+                "name": "factory_access_events.gate_name",
+                "description": "Factory gate name",
+                "actions_supported": [
+                  "read"
+                ],
+                "metadata": {
+                  "database_id": "sandbox_sales",
+                  "table_name": "factory_access_events",
+                  "column_name": "gate_name",
+                  "data_type": "TEXT",
+                  "sensitive": false,
+                  "mask": null,
+                  "display_name": "factory_access_events.gate_name"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -820,16 +1063,16 @@
               },
               {
                 "resource_type": "database_table",
-                "resource_id": "sandbox_sales.incidents",
-                "name": "incidents",
-                "description": "Sandbox incident records for read-only database demos.",
+                "resource_id": "sandbox_sales.building_access_events",
+                "name": "building_access_events",
+                "description": "Employee building and floor access events.",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "incidents",
-                  "display_name": "incidents"
+                  "table_name": "building_access_events",
+                  "display_name": "building_access_events"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -842,16 +1085,16 @@
               },
               {
                 "resource_type": "database_table",
-                "resource_id": "sandbox_sales.orders",
-                "name": "orders",
-                "description": "Sandbox order records for read-only database demos.",
+                "resource_id": "sandbox_sales.factory_access_events",
+                "name": "factory_access_events",
+                "description": "Employee factory gate entry and exit access events.",
                 "actions_supported": [
                   "read"
                 ],
                 "metadata": {
                   "database_id": "sandbox_sales",
-                  "table_name": "orders",
-                  "display_name": "orders"
+                  "table_name": "factory_access_events",
+                  "display_name": "factory_access_events"
                 },
                 "already_granted": false,
                 "action_options": [
@@ -1852,6 +2095,31 @@
               },
               {
                 "resource_type": "tool",
+                "resource_id": "database_demo.retrieve_context",
+                "name": "database_demo.retrieve_context",
+                "description": "Retrieve permission-scoped Q-SQL examples and schema context for the sqlite database sandbox_sales",
+                "actions_supported": [
+                  "use"
+                ],
+                "metadata": {
+                  "category": "database",
+                  "database_id": "sandbox_sales",
+                  "dialect": "sqlite",
+                  "operation_type": "context_retrieval",
+                  "read_only": true,
+                  "display_name": "database_demo.retrieve_context"
+                },
+                "already_granted": false,
+                "action_options": [
+                  {
+                    "action": "use",
+                    "display_name": "使用",
+                    "already_granted": false
+                  }
+                ]
+              },
+              {
+                "resource_type": "tool",
                 "resource_id": "database_demo.safe_select",
                 "name": "database_demo.safe_select",
                 "description": "Run an allowlisted read-only SELECT in the sqlite database sandbox_sales",
@@ -1942,7 +2210,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:37.521854"
+      "timestamp": "2026-06-18T12:04:17.121022"
     },
     {
       "category": "权限",
@@ -1968,7 +2236,7 @@
           "message": "success",
           "data": {
             "permission_request": {
-              "request_id": "e6e2480d-d90c-457b-b0c7-42048773b8f8",
+              "request_id": "26ce382a-dab5-46b8-9b2a-60428af071f9",
               "requester_user_id": "user_demo_dept1",
               "requester_username": "demo_user_dept1",
               "requester_department_id": "dept_1",
@@ -1986,7 +2254,7 @@
               "candidate_department_ids": [
                 "dept_1"
               ],
-              "created_at": "2026-06-16T01:41:37.532610Z",
+              "created_at": "2026-06-18T04:04:17.127940Z",
               "decided_at": null,
               "resource_display_name": "retrieve_knowledge",
               "resource_description": "Knowledge retrieval tool",
@@ -1998,7 +2266,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:37.536846"
+      "timestamp": "2026-06-18T12:04:17.130521"
     },
     {
       "category": "权限",
@@ -2016,7 +2284,7 @@
           "data": {
             "permission_requests": [
               {
-                "request_id": "e6e2480d-d90c-457b-b0c7-42048773b8f8",
+                "request_id": "26ce382a-dab5-46b8-9b2a-60428af071f9",
                 "requester_user_id": "user_demo_dept1",
                 "requester_username": "demo_user_dept1",
                 "requester_department_id": "dept_1",
@@ -2034,7 +2302,7 @@
                 "candidate_department_ids": [
                   "dept_1"
                 ],
-                "created_at": "2026-06-16T01:41:37.532610Z",
+                "created_at": "2026-06-18T04:04:17.127940Z",
                 "decided_at": null,
                 "resource_display_name": "retrieve_knowledge",
                 "resource_description": "Knowledge retrieval tool",
@@ -2047,7 +2315,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:37.539681"
+      "timestamp": "2026-06-18T12:04:17.136292"
     },
     {
       "category": "认证",
@@ -2067,7 +2335,7 @@
           }
         }
       },
-      "timestamp": "2026-06-16T09:41:37.540737"
+      "timestamp": "2026-06-18T12:04:17.139653"
     }
   ]
 }

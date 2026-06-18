@@ -1,0 +1,3 @@
+request_started|upload|trace-guide-upload-001|request-guide-upload-001|allowed
+upload_saved|upload|trace-guide-upload-001|request-guide-upload-001|allowed
+request_completed|upload|trace-guide-upload-001|request-guide-upload-001|allowed

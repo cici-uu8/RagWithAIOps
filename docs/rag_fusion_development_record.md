@@ -12619,3 +12619,23 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: 为什么不做自动修正，明明已经知道怎么提示了？**
 
 答：知道为什么被拒绝，不等于可以安全地替用户重写 SQL。只要进入 auto-correction，就要定义重试次数、重试审计、失败归因、修正后的权限重检，以及模型是否可能借修正路径突破原始约束。轻量版 v2 的目标是“看得见 schema、看得见 sample、看得懂拒绝原因”，不是“自动把不安全 SQL 修好”。这条边界在当前阶段更重要。
+
+## 2026-06-18 (生产级主线 Month1 Week1 Day5：本地验收与前端错误卡片修复)
+
+- 背景：当前生产级开发主线固定为 `Week0_准备清单.md -> Month1_执行清单.md -> Month2_执行清单.md -> Month3_执行清单.md`。Week0 已通过，Month1 Week1 Day1-Day4 已完成 retrieval compare、错误提示、loading state 和 trace_id 前端追踪；Day5 目标是用本地回归、21 场景 smoke、浏览器 smoke 和 milestone evidence 判断 Week1 是否可以进入 Week2。
+- 验收过程：全量本地回归 `uv run pytest -q --no-cov` 通过；前端静态契约 `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` 通过 32/32；`node --check static/app.js static/js/error-handler.js static/js/loading-states.js static/js/trace-utils.js` 通过；桌面技术 smoke `uv run python smoke_test_desktop_beta.py` 通过 21/21。
+- 发现的问题：Day5 浏览器 smoke 对 `/api/chat` 500 做确定性 mock 时，页面能显示 `trace-browser-error`，但 `.error-card` DOM 不存在。这个问题说明 Day2 的静态契约只能证明 error renderer 存在，不能证明聊天错误路径真的把结构化错误卡片渲染出来。
+- 根因：`renderErrorMessage()` 返回可信内部 HTML；但 `sendMessage()` catch 原来调用 `addMessage('assistant', this.renderErrorMessage(...))`。`addMessage()` 对非流式 assistant 消息统一调用 `renderMarkdown(content)`，导致错误卡片 HTML 被降级为 Markdown/文本路径，trace 字符串仍可见但结构化 DOM 丢失。
+- 修复：`static/app.js` 的 `sendMessage()` catch 分支现在先创建空 assistant 消息 `addMessage('assistant', '', false, false)`，再将 `renderErrorMessage(error, '发送消息失败')` 写入该消息的 `.message-content.innerHTML`。普通 assistant 回答仍保持 Markdown 渲染，AIOps 错误路径原本就是直接更新 message content，因此行为一致。
+- 测试锁定：`tests/test_assistant_frontend_optimization.py` 新增静态断言，确认聊天错误路径不再直接把 `renderErrorMessage(...)` 传给 `addMessage()`，而是写入 `errorContent.innerHTML`。
+- 复验：重新打开干净 Playwright session 后，`output/playwright/month1_week1_day5_smoke/browser_smoke_result.json` 显示 `error_card_visible=true`、`error_trace_visible=true`、`loading_state_visible_during_chat=true`、`loading_state_cleaned_after_chat=true`、`trace_header_on_auth_or_chat=true`、`no_unexpected_console_error=true`。浏览器截图保存在 `output/playwright/month1_week1_day5_smoke/`。
+- 证据归档：新增 `docs/milestones/week1_evidence.md`、`docs/baselines/baseline_month1_week1_acceptance.md`、`docs/scorecards/scorecard_month1_week1_acceptance.md`、`docs/compare-reports/compare_month1_week1_acceptance.md`。`Month1_执行清单.md`、`PROJECT_STATE.md`、`docs/plan_registry.md`、`docs/plan_timeline_report.md`、`开发主控文档.md`、`task_plan.md`、`findings.md`、`progress.md` 已同步。
+- 边界：本轮没有修改 retrieval / rerank / query rewrite / embedding 默认值。远程 GitHub Actions 仍按 `EXT-M1-CI-REMOTE` 记录为 external-blocked。`make start-api` / `make restart` 的 FastAPI plain `nohup` 生命周期问题已记录为 launcher robustness 风险，但不阻塞 Week1 产品验收。
+
+**追问: 为什么不直接让 `addMessage()` 支持 HTML 参数？**
+
+答：`addMessage()` 是主聊天消息入口，历史消息、普通 assistant 回答、流式回答和用户消息都经过它。给它加通用 HTML 参数会扩大可信 HTML 渲染面，还可能让未来调用者误把模型输出当 HTML 注入。Day5 只需要修复内部错误卡片，最小边界是在 catch 分支中创建空 assistant 消息后只对 `.message-content` 注入 `renderErrorMessage(...)` 的内部输出。
+
+**追问: 21/21 smoke 通过后为什么还要补浏览器 smoke？**
+
+答：`smoke_test_desktop_beta.py` 主要验证 HTTP/API 合约和角色流程，不能证明前端 DOM 是否出现 `.error-card`、loading progress 是否可见、trace/request header 是否由浏览器发出。Week1 的 P0 目标是用户体验修复，所以必须补浏览器层证据，否则 Day2-Day4 的静态测试可能漏掉真实交互退化。
