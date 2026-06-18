@@ -28,6 +28,13 @@
   - `git diff --check` passed.
 - Updated `Week0_准备清单.md`, `PROJECT_STATE.md`, `DEVELOPMENT_LOG.md`, `task_plan.md`, `findings.md`, `progress.md`, and governance evidence. Month1 should now start from retrieval defaults baseline/compare gate, with defaults still locked.
 
+## 2026-06-18 Evaluation Matrix Plan Update
+
+- Added the fixed evaluation contract: shared baseline/compare/gate governance, module-specific metrics.
+- Added Month1 Week3 `retrieval_top_k / rerank_top_n / final_context_k` shadow matrix before RAG 30->50 docs expansion.
+- Added Month2 Week5 100-doc rerun of the same matrix for local lexical vs Bailian rerank and high-recall pressure cases.
+- Runtime defaults remain unchanged: `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`.
+
 ## 2026-06-16
 
 - Started architecture cleanup before new execution plans. User-confirmed order: first fix `ChatAdapter.clear_session` and key `get_current_request_context()` drift, then start `docs/项目最后优化2执行清单.md` P0a, then `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1, then record docs/development state.

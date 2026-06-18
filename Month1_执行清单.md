@@ -418,6 +418,45 @@ git push origin enterprise3
 
 ## Week 3: RAG质量提升第一波（30→50 docs）
 
+### Day 0: RAG top_k / rerank shadow compare gate（语料扩充前置）
+
+**目的**: 把 `top_k` 的“找全”和 `rerank` 的“找准”拆开验证，避免在 30->50 docs 扩充时把召回、排序、答案质量、成本问题混成一类。
+
+**固定默认值**: 运行时默认仍保持 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`，本节只做 shadow compare。
+
+**关键参数定义**:
+
+| 参数 | 含义 | 计划候选 |
+|---|---|---|
+| `retrieval_top_k` | 第一阶段从向量/检索层取多少候选，偏“找全” | `3 / 5 / 10 / 20 / 50` |
+| `rerank_top_n` | rerank 后保留多少候选，偏“找准” | `3 / 5 / 8` |
+| `final_context_k` | 最终送入 LLM 的上下文数量，影响答案、成本、污染 | `3 / 5 / 8` |
+
+**对比矩阵**:
+
+| 方案 | retrieval_top_k | rerank | rerank_top_n | final_context_k | 观察重点 |
+|---|---:|---|---:|---:|---|
+| 当前默认 | 3 | off | n/a | 3 | 当前生产/beta 基线 |
+| 扩召回无 rerank | 5 / 10 / 20 | off | n/a | 3 / 5 | 正确 chunk 是否进入候选池，噪声是否增加 |
+| 扩召回 + rerank | 10 / 20 / 50 | local lexical / Bailian shadow | 3 / 5 / 8 | 3 / 5 | rerank 是否把正确 chunk 前移 |
+| 高召回压力 | 50 / 100 | Bailian shadow | 5 / 8 | 5 / 8 | 延迟、成本、上下文污染、超时 |
+
+**指标拆分**:
+
+- Retrieval: `Recall@k`、命中文档率、正确 chunk 是否进入候选池、`wrong_scope`、`source_ref_complete`。
+- Rerank: `MRR`、`nDCG@k`、正确 chunk 排名是否前移、`rerank_latency_ms`、fallback rate。
+- Answer: groundedness、引用正确率、幻觉率、人工可接受率。
+- 工程指标: P50/P95 延迟、token 成本、外部 API 调用数、失败率、超时率。
+
+**任务清单**:
+
+- [ ] 创建 `docs/baselines/baseline_month1_rag_topk_rerank_current.md`。
+- [ ] 生成 `docs/compare-reports/compare_month1_rag_topk_rerank_matrix.md`。
+- [ ] 生成 `docs/scorecards/scorecard_month1_rag_topk_rerank_gate.md`。
+- [ ] 至少覆盖一个 dense-only 默认组、两个扩召回无 rerank 组、两个扩召回+rerank shadow 组。
+- [ ] 任一候选 promote 前必须证明 Retrieval/Rerank/Answer/工程指标综合收益，而不是单点命中提升。
+- [ ] 若第一阶段没有召回正确文档，不把失败归因给 rerank；若候选召回变大但答案退化，归入 context pollution / answer failure triage。
+
 ### Day 1-2: 语料收集
 ### Day 3: 批量导入
 ### Day 4: 回归测试
@@ -425,11 +464,12 @@ git push origin enterprise3
 
 **RAG评测硬要求**:
 - [ ] 语料扩充前创建 `docs/baselines/baseline_month1_rag_30doc.md`
+- [ ] 语料扩充前完成 `compare_month1_rag_topk_rerank_matrix.md` 或记录 external-blocked / insufficient-samples 原因
 - [ ] 语料扩充后创建 `docs/compare-reports/compare_month1_rag_30_to_50_docs.md`
 - [ ] embedding 覆盖、retrieval 命中、rerank 候选、query rewrite off 基线分别记录
 - [ ] 任一模块退化必须分流到 failure triage，不得只归咎于 embedding
 - [ ] 公开语料必须有 manifest、license、synthetic 标记
-- [ ] 不因语料扩充自动开启 hybrid/rerank/query rewrite 默认值
+- [ ] 不因语料扩充自动开启 hybrid/rerank/query rewrite/top_k 默认值
 
 ---
 

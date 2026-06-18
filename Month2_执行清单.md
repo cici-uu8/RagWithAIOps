@@ -10,10 +10,11 @@
 
 **硬规则**:
 
-- 语料扩充、retrieval、rerank、query rewrite 都必须有 baseline / compare / scorecard。
-- 默认值继续保持 `dense_only / query_rewrite=off / rerank_enabled=false`，除非 compare gate 明确通过。
+- 语料扩充、embedding、retrieval、top_k、rerank、query rewrite、answer 都必须有 baseline / compare / scorecard。
+- 默认值继续保持 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`，除非 compare gate 明确通过。
 - 公开语料扩充不等待内部联系人，但必须记录 manifest、license、synthetic 标记。
 - Rerank 以现有 `app/services/rerank_service.py` 边界扩展，不新建平行 RAG 框架。
+- Month2 必须复用 Month1 的 `retrieval_top_k / rerank_top_n / final_context_k` 矩阵，在 100 docs 语料上重跑，避免小语料结论误导。
 
 ### Day 1-3: 语料扩充Phase 2
 
@@ -113,13 +114,29 @@ python -m evals.rag_layer.shadow_rerank \
 python -m evals.rag_layer.analyze_rerank_lift
 ```
 
+**必须复跑的 top_k / rerank 矩阵**:
+
+| 方案 | retrieval_top_k | rerank | rerank_top_n | final_context_k | 观察重点 |
+|---|---:|---|---:|---:|---|
+| 当前默认 | 3 | off | n/a | 3 | 100 docs 后默认基线是否稳定 |
+| 扩召回无 rerank | 10 / 20 | off | n/a | 3 / 5 | 找全收益与噪声变化 |
+| 扩召回 + local rerank | 10 / 20 / 50 | local lexical | 3 / 5 | 3 / 5 | 本地 rerank 是否有稳定 rank lift |
+| 扩召回 + Bailian rerank | 10 / 20 / 50 | qwen3-rerank shadow | 3 / 5 / 8 | 3 / 5 | 外部 rerank 是否值得成本和延迟 |
+| 高召回压力 | 50 / 100 | qwen3-rerank shadow | 5 / 8 | 5 / 8 | 延迟、成本、上下文污染、超时 |
+
 **决策点**:
 ```yaml
-如果 lift_proven ≥ 5个样本:
+如果 retrieval_top_k 扩大带来 Recall@k 提升但 Answer 退化:
+  → keep-shadow，进入 context pollution / final_context_k 分析
+
+如果 rerank 只在已召回候选内稳定提升 MRR/nDCG 且 Answer/成本不过线:
   → 继续 shadow 或申请 active gate；不得自动改默认值
-  
-如果 lift_proven < 5个样本:
-  → reject 或 keep-shadow，继续使用当前默认 dense_only
+
+如果第一阶段未召回正确文档:
+  → 归入 retrieval / corpus / chunk / query rewrite triage，不归因于 rerank
+
+如果 lift_proven < 5个样本 或 P95/成本不可接受:
+  → reject 或 keep-shadow，继续使用当前默认 dense_only/top_k=3/rerank=false
 ```
 
 **Week 5 验收**:
@@ -127,6 +144,7 @@ python -m evals.rag_layer.analyze_rerank_lift
 - [ ] Baseline保持80-85% ✅
 - [ ] Rerank方案有数据支撑决策 ✅
 - [ ] `docs/compare-reports/compare_month2_rerank_local_vs_bailian.md` 已生成 ✅
+- [ ] `docs/compare-reports/compare_month2_rag_topk_rerank_matrix_100docs.md` 已生成 ✅
 - [ ] week5_evidence.md已填写 ✅
 
 ---

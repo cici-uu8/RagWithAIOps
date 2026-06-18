@@ -275,6 +275,18 @@ Week0 已通过，Month1 Week1 Day1 已启动。
 **下一步**:
 - 进入 Month1 Week2 Day1 AIOps诊断流程可视化。
 
+### 2026-06-18 评测体系与 top_k/rerank 矩阵补充
+
+**决策**:
+- 评测体系固定为统一治理骨架，但指标按模块分层，不把所有任务套同一组指标。
+- RAG 策略评测必须拆开 Retrieval / Rerank / Answer / 工程指标。
+- Month1 Week3 前置新增 `retrieval_top_k / rerank_top_n / final_context_k` shadow compare gate。
+- Month2 Week5 在 100 docs 语料上复跑同类矩阵，避免小语料结论误导。
+
+**边界**:
+- 本次只补充计划和门禁，不改变运行时默认值。
+- 当前默认仍为 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`。
+
 ---
 
 ## Month 2: 能力扩展 + 质量保证

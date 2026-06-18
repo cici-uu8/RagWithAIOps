@@ -11,6 +11,8 @@
 - GitHub Projects is available enough to read the project (`SuperBizAgent 生产级开发`, 4 items), but local plan registry/checklists/weekly review remain the source of truth for autonomous work.
 - The next useful Month1 task is not frontend work yet; first create retrieval baseline/scorecard/compare evidence for dense/sparse/hybrid/hybrid_rerank candidates so later UI/RAG tasks do not inherit unproven defaults.
 
+- Evaluation system decision: use one governance skeleton for every module, but keep module-specific metrics. RAG top_k/rerank work must separate Retrieval, Rerank, Answer, and engineering metrics; rerank cannot repair candidates never retrieved by first-stage retrieval.
+
 ## 2026-06-18 Month1 Day3 Frontend Loading State
 
 - Existing `static/app.js` loading UX was fragmented: chat used `addLoadingMessage('正在思考...')`, upload used static overlay text, and AIOps used static loading/error replacement. There was no shared loading-state module or progress semantics.
