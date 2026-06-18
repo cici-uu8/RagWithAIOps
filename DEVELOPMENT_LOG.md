@@ -287,6 +287,119 @@ Week0 已通过，Month1 Week1 Day1 已启动。
 - 本次只补充计划和门禁，不改变运行时默认值。
 - 当前默认仍为 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`。
 
+### 2026-06-18 Month1 Week2 Day1 AIOpsVisualizer 基础落地
+
+**为什么现在做**:
+- Month1 Week2 的目标是把 AIOps 诊断过程从文本流推进到结构化流程视图，但 Day1 只允许先落组件边界，不直接把 SSE 全部接完。
+
+**改动文件**:
+- `static/js/aiops-visualizer.js`
+- `static/styles_aiops.css`
+- `static/index.html`
+- `tests/test_assistant_frontend_optimization.py`
+- `docs/baselines/baseline_month1_aiops_visualizer_day1.md`
+- `docs/scorecards/scorecard_month1_aiops_visualizer_day1.md`
+- `docs/compare-reports/compare_month1_aiops_visualizer_day1.md`
+- `Month1_执行清单.md`
+- `PROJECT_STATE.md`
+
+**风险与取舍**:
+- 风险是把 Day1 做成“大而全”的 SSE 重构，会和 Day2/Day3 混在一起。
+- 取舍是先做纯前端组件和契约锁定：类、样式、加载顺序、静态测试都先落地，SSE 行为留到 Day2。
+
+**验证**:
+- `node --check static/js/aiops-visualizer.js`
+- `node --check static/app.js`
+- `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov`（32/32）
+
+**面试可解释点**:
+- 为什么先拆 visualizer 而不是直接改 SSE handler: 先把显示层和事件层解耦，Day2 接事件时不会被 DOM 结构绑死。
+- 为什么保持 frontend-only: AIOps 诊断展示是产品层可视化，不应在 Day1 顺带改后端协议或默认值。
+
+### 2026-06-18 Month1 Week2 Day2-Day3 AIOpsVisualizer SSE 接入与浏览器 smoke
+
+**为什么现在做**:
+- Week2 Day1 只完成组件边界，用户还不能从真实 AIOps SSE 流看到结构化步骤；Day2/Day3 需要把事件接入并用浏览器验证 DOM 行为。
+
+**改动文件**:
+- `static/app.js`
+- `static/js/aiops-visualizer.js`
+- `static/styles_aiops.css`
+- `tests/test_assistant_frontend_optimization.py`
+- `docs/baselines/baseline_month1_aiops_visualizer_sse_day2.md`
+- `docs/scorecards/scorecard_month1_aiops_visualizer_sse_day2.md`
+- `docs/compare-reports/compare_month1_aiops_visualizer_sse_day2.md`
+- `docs/baselines/baseline_month1_aiops_visualizer_day3_smoke.md`
+- `docs/scorecards/scorecard_month1_aiops_visualizer_day3_smoke.md`
+- `docs/compare-reports/compare_month1_aiops_visualizer_day3_smoke.md`
+- `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json`
+
+**风险与取舍**:
+- 风险是用 live AIOps 模型/MCP 链路做前端 visualizer 验收会引入运行时噪声，反而无法判断 UI 是否正确。
+- 取舍是 Day3 用真实静态页面和真实 `app.js`，只 mock `/api/aiops` SSE；这能验证前端 consumer / DOM / 样式，同时把模型、MCP、告警环境留给后续 AIOps 质量验收。
+- Day2 保留文本流和最终 Markdown fallback；visualizer 是 shadow UI，而不是替换最终报告。
+
+**验证**:
+- `node --check static/app.js`
+- `node --check static/js/aiops-visualizer.js`
+- `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov`（32/32）
+- Playwright browser smoke: `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json`
+
+**结果**:
+- visualizer 可见，完成步骤数 `3`，running `0`，failed `0`，工具调用可见，进度 `100%`。
+- final report fallback 可见。
+- `complete` 后的迟到 `status` 没有重新打开 running 状态。
+
+**面试可解释点**:
+- 为什么不是直接替换 AIOps 文本输出：生产级 UI 改造先做 shadow 可视化，保留原来的最终 Markdown 报告作为稳定 fallback，回滚和对比都更清楚。
+- 为什么 Day3 用 mocked SSE：这一步验证前端消费者和 DOM 行为；live 模型/MCP 诊断质量属于更高层验收，混在这里会让失败归因不清。
+
+### 2026-06-18 Month1 Week2 Day4-Day5 PermissionViewer 与 Week2 验收
+
+**为什么现在做**:
+- Week2 Day1-Day3 已完成 AIOps 流程可视化，Day4 需要补上企业用户最容易困惑的权限边界可视化；Day5 需要把 Week2 作为一个完整 gate 收口。
+
+**改动文件**:
+- `static/js/permission-viewer.js`
+- `static/styles.css`
+- `static/index.html`
+- `static/app.js`
+- `tests/test_assistant_frontend_optimization.py`
+- `docs/baselines/baseline_month1_permission_viewer_day4.md`
+- `docs/scorecards/scorecard_month1_permission_viewer_day4.md`
+- `docs/compare-reports/compare_month1_permission_viewer_day4.md`
+- `docs/milestones/week2_evidence.md`
+- `docs/baselines/baseline_month1_week2_acceptance.md`
+- `docs/scorecards/scorecard_month1_week2_acceptance.md`
+- `docs/compare-reports/compare_month1_week2_acceptance.md`
+
+**风险与取舍**:
+- 风险是新增后端 capabilities API 会复制 profile/resources 的权限解释语义。
+- 取舍是 `PermissionViewer` 只做前端解释性分类和表单预填，后端 `PermissionService`、grant review 和 ToolGateway 仍是权限权威。
+- Day4 截图接口在 in-app browser CDP 路径连续超时；验收证据使用已保存的 JSON DOM smoke。
+
+**验证**:
+- `uv run pytest -q --no-cov`
+- `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov`（33/33）
+- `node --check static/js/permission-viewer.js`
+- `node --check static/js/aiops-visualizer.js`
+- `node --check static/app.js`
+- `node --check static/js/error-handler.js`
+- `node --check static/js/loading-states.js`
+- `node --check static/js/trace-utils.js`
+- `git diff --check`
+- Browser DOM smoke: `output/playwright/month1_week2_day4_permission_viewer/browser_smoke_result.json`
+
+**结果**:
+- Permission viewer 可见，granted=3、requestable=2、forbidden=2。
+- 黄色申请按钮能预填现有快捷/高级申请表。
+- Week2 local acceptance gate 通过，下一步是 Week3 Day0 top_k/rerank shadow compare gate。
+
+**面试可解释点**:
+- 为什么不新增后端 API：当前 profile/resources 已经是权限事实来源，Day4 只是把这些事实组织成可读视图。
+- 为什么按钮只预填现有表单：保持申请路径、字段校验和审批记录不变，避免新建平行流程。
+- 为什么 Week2 不声称 live AIOps 质量：Week2 验收对象是前端可视化 consumer 和 DOM 行为，live AIOps 诊断质量属于后续 AIOps 质量验收。
+
 ---
 
 ## Month 2: 能力扩展 + 质量保证

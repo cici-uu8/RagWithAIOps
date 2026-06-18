@@ -35,6 +35,25 @@
 - Added Month2 Week5 100-doc rerun of the same matrix for local lexical vs Bailian rerank and high-recall pressure cases.
 - Runtime defaults remain unchanged: `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`.
 
+## 2026-06-18 Month1 Week2 Day1 AIOps Visualizer
+
+- Created `static/js/aiops-visualizer.js` as a reusable frontend class with `init`, `handleEvent`, `updateStep`, and `addToolCall`.
+- Added `static/styles_aiops.css` and loaded it in `static/index.html` before `app.js`.
+- Locked the new asset contract in `tests/test_assistant_frontend_optimization.py`.
+- Verified `node --check static/js/aiops-visualizer.js`, `node --check static/app.js`, and `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` (32/32).
+- Day1 is a component boundary only; live SSE event wiring is intentionally deferred to Day2.
+
+## 2026-06-18 Month1 Week2 Day2-Day3 AIOps Visualizer SSE + Smoke
+
+- Wired parsed `/api/aiops` SSE events in `static/app.js::sendAIOpsRequest(...)` into `AIOpsVisualizer` via `attachAIOpsVisualizer(...)` and `updateAIOpsVisualizer(...)`.
+- Preserved the existing streamed text and final Markdown fallback; the visualizer is a shadow UI in the same assistant message, not a replacement for the final report.
+- Added terminal-state locking in `static/js/aiops-visualizer.js` so late `status` events after `report` / `complete` do not reopen a completed flow.
+- Added `.aiops-visualizer-container` layout styling in `static/styles_aiops.css`.
+- Added Day2 and Day3 baseline / scorecard / compare evidence under `docs/baselines`, `docs/scorecards`, and `docs/compare-reports`.
+- Verified `node --check static/app.js`, `node --check static/js/aiops-visualizer.js`, and `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` (32/32).
+- Playwright browser smoke produced `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json`: visualizer visible, completed steps `3`, running `0`, failed `0`, progress `100%`, tool call visible, final report visible, no unexpected console errors.
+- Next step is Month1 Week2 Day4 permission-state three-color visualization; do not enter Week3 yet.
+
 ## 2026-06-16
 
 - Started architecture cleanup before new execution plans. User-confirmed order: first fix `ChatAdapter.clear_session` and key `get_current_request_context()` drift, then start `docs/项目最后优化2执行清单.md` P0a, then `docs/数据库能力升级执行清单_v2_轻量版.md` Stage 1, then record docs/development state.
@@ -1336,3 +1355,48 @@
   - `docs/scorecards/scorecard_month1_week1_acceptance.md`
   - `docs/compare-reports/compare_month1_week1_acceptance.md`
 - Updated active-plan governance docs and state docs. Current next step is Month1 Week2 Day1; Month1 is still in progress and Month2 is not started.
+
+## 2026-06-18 Production Mainline Month1 Week2 Day4
+
+- Implemented frontend-only permission-state three-color visualization:
+  - `static/js/permission-viewer.js`
+  - `static/index.html`
+  - `static/app.js`
+  - `static/styles.css`
+  - `tests/test_assistant_frontend_optimization.py`
+- Added Day4 evidence artifacts:
+  - `docs/baselines/baseline_month1_permission_viewer_day4.md`
+  - `docs/scorecards/scorecard_month1_permission_viewer_day4.md`
+  - `docs/compare-reports/compare_month1_permission_viewer_day4.md`
+  - `output/playwright/month1_week2_day4_permission_viewer/browser_smoke_result.json`
+- TDD red/green:
+  - Red: `test_permission_viewer_renders_three_color_capability_states` failed because `static/js/permission-viewer.js` did not exist.
+  - Green: after implementing the component and integration, the same test passed.
+- Verification passed:
+  - `node --check static/js/permission-viewer.js`
+  - `node --check static/app.js`
+  - `node --check static/js/aiops-visualizer.js && node --check static/js/error-handler.js && node --check static/js/loading-states.js && node --check static/js/trace-utils.js`
+  - `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` -> 33/33
+- Browser DOM smoke passed with mocked permission APIs: viewer visible, granted=3, requestable=2, forbidden=2, request buttons=2, quick KB prefill `guide`, advanced resource prefill `database_demo.list_tables`, advanced action `use`, error cards=0, console errors=0.
+- Browser screenshot capture timed out twice through the in-app CDP path, so Day4 browser evidence is the saved JSON DOM result rather than a PNG screenshot.
+- Next step: Month1 Week2 Day5 acceptance gate. Do not enter Week3 before closing Week2.
+
+## 2026-06-18 Production Mainline Month1 Week2 Day5
+
+- Closed Week2 local acceptance gate.
+- Created Week2 evidence artifacts:
+  - `docs/milestones/week2_evidence.md`
+  - `docs/baselines/baseline_month1_week2_acceptance.md`
+  - `docs/scorecards/scorecard_month1_week2_acceptance.md`
+  - `docs/compare-reports/compare_month1_week2_acceptance.md`
+- Verification passed:
+  - `uv run pytest -q --no-cov`
+  - `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` -> 33/33
+  - `node --check static/js/permission-viewer.js && node --check static/js/aiops-visualizer.js && node --check static/app.js && node --check static/js/error-handler.js && node --check static/js/loading-states.js && node --check static/js/trace-utils.js`
+  - `git diff --check`
+- Week2 acceptance conclusion:
+  - AIOps visualizer local gate passed.
+  - PermissionViewer local gate passed.
+  - Existing text/Markdown fallback, permission request forms, and database confirmations remain covered.
+  - RAG defaults, AIOps backend protocol, and backend permission authority remain unchanged.
+- Next step: Month1 Week3 Day0 top_k / rerank shadow compare gate. Week3 has not started yet.

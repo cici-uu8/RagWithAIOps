@@ -12,6 +12,8 @@
 - The next useful Month1 task is not frontend work yet; first create retrieval baseline/scorecard/compare evidence for dense/sparse/hybrid/hybrid_rerank candidates so later UI/RAG tasks do not inherit unproven defaults.
 
 - Evaluation system decision: use one governance skeleton for every module, but keep module-specific metrics. RAG top_k/rerank work must separate Retrieval, Rerank, Answer, and engineering metrics; rerank cannot repair candidates never retrieved by first-stage retrieval.
+- Month1 Week2 Day1 result: the AIOps visualizer boundary is now explicit in `static/js/aiops-visualizer.js` and `static/styles_aiops.css`. This is a frontend-only component boundary, not a live SSE integration yet; Day2 should wire events into this class rather than deepening `static/app.js` further.
+- Month1 Week2 Day2-Day3 result: AIOps SSE events are now wired into the visualizer and browser-smoke verified on the real static page with mocked `/api/aiops` SSE. The right interpretation is frontend consumer / DOM pass, not live AIOps quality pass. Keep using text / Markdown fallback as the authoritative final response until a later AIOps live acceptance gate proves the end-to-end chain.
 
 ## 2026-06-18 Month1 Day3 Frontend Loading State
 
@@ -422,3 +424,21 @@
 - Browser recheck passed: `error_card_visible=true`, `error_trace_visible=true`, loading state appears and cleans up, and `/api/auth/me` / `/api/chat` requests carry `x-trace-id` and `x-request-id`.
 - Week1 local gate can pass, but Month1 remains in progress. Next task is Week2 Day1 AIOps diagnosis visualization.
 - Runtime note: `make start-api` / `make restart` can lose FastAPI under the command runner due to plain `nohup`; current runtime was started via independent session. This is a launcher robustness risk to revisit if later gates depend on restart automation.
+
+## 2026-06-18 Month1 Week2 Day4 Permission Viewer Findings
+
+- The existing `我的权限` modal already loads the right backend facts: `/me/profile`, `/permission-requests/resources`, `/permission-requests/mine`, and `/database/confirmations`. Adding a new `/users/{id}/capabilities` API would duplicate profile/resource semantics and create another permission explanation surface to keep in sync.
+- `PermissionViewer` is therefore a frontend-only explanatory layer. It reads `visible_kb_ids`, `visible_tools`, `feature_flags`, `database_demo.enabled`, `unavailable_reasons`, and requestable resources, but it does not make authorization decisions. Backend `PermissionService`, grants, request review, and ToolGateway remain authoritative.
+- Three-color classification is intentionally pragmatic:
+  - granted: facts already visible in profile (`visible_kb_ids`, `visible_tools`, enabled feature flags, enabled database demo);
+  - requestable: resources with `already_granted=false`;
+  - forbidden: profile `unavailable_reasons` plus fixed `production_operation` high-risk capability.
+- Request buttons should not navigate to a new page. The current product already has quick KB and advanced resource request forms, so Day4 buttons prefill those existing forms: knowledge-base cards fill `quickPermissionKbId`; tool/database/document cards fill the advanced form.
+- Browser DOM smoke with mocked APIs is sufficient for Day4 because the risk is frontend classification/rendering/regression, not backend permission correctness. Screenshot capture timed out via the in-app CDP path, so saved JSON DOM evidence is the source of truth for browser verification.
+
+## 2026-06-18 Month1 Week2 Acceptance Findings
+
+- Week2 can close locally because it has both slice-level evidence and a week-level gate: Day1-Day3 AIOps visualizer evidence, Day4 PermissionViewer evidence, full pytest, frontend contract tests, JS syntax checks, and `git diff --check`.
+- The acceptance scope is intentionally frontend/core-visibility only. It does not prove live AIOps model/MCP diagnosis quality and does not change backend permission semantics.
+- The next Month1 task is Week3 Day0 top_k / rerank shadow compare gate. This must start from the locked default posture `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3` and compare candidates before any runtime change.
+- Week3 should split `retrieval_top_k`, `rerank_top_n`, and `final_context_k`. Do not ask "top_k best value" as a single question; test recall pool size, rerank ordering, answer context size, latency, cost, timeout, and context pollution separately.

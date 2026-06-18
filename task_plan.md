@@ -12,7 +12,11 @@ Goal: execute the current production-grade mainline in fixed order: `Week0_å‡†å¤
 | Month1 Week1 Day2 frontend error handling | completed | `static/js/error-handler.js`, `static/styles_error.css`, `static/index.html`, and `static/app.js` integrated; `node --check` and frontend static contract tests passed. |
 | Month1 Week1 Day3 frontend loading states | completed | `static/js/loading-states.js`, `static/styles_loading.css`, `static/index.html`, and `static/app.js` integrated; browser smoke confirmed staged chat loading; targeted checks passed. |
 | Month1 Week1 Day4 frontend trace_id tracking | completed | `static/js/trace-utils.js` injects `X-Trace-Id` / `X-Request-Id`; browser smoke confirmed headers and console logs; targeted checks passed. |
-| Month1 remaining local tasks | in_progress | Continue Day5 Week1 acceptance next; use external-blocked for GitHub/CI/permission items that cannot be finished locally. |
+| Month1 Week2 Day1-Day3 AIOps visualization | completed | `static/js/aiops-visualizer.js`, `static/styles_aiops.css`, `static/app.js`, Day1/Day2/Day3 scorecards and compare reports, and `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json`; targeted JS checks and frontend contract tests passed. |
+| Month1 Week2 Day4 permission-state visualization | completed | `static/js/permission-viewer.js`, `static/styles.css`, `static/index.html`, `static/app.js`, Day4 scorecard/compare reports, and `output/playwright/month1_week2_day4_permission_viewer/browser_smoke_result.json`; JS checks and frontend contract tests passed 33/33. |
+| Month1 Week2 Day5 acceptance gate | completed | `docs/milestones/week2_evidence.md`, `baseline_month1_week2_acceptance.md`, `scorecard_month1_week2_acceptance.md`, and `compare_month1_week2_acceptance.md`; full pytest, frontend contract 33/33, JS checks, and diff check passed. |
+| Month1 Week3 Day0 top_k / rerank shadow compare gate | pending | Start next. Keep defaults locked; compare `retrieval_top_k`, `rerank_top_n`, and `final_context_k` before any runtime change. |
+| Month1 remaining local tasks | in_progress | Next is Month1 Week3 Day0 top_k / rerank shadow compare gate; use external-blocked for GitHub/CI/permission items that cannot be finished locally. |
 | Month2 | pending | Start only after Month1 scorecard/compare gates. |
 | Month3 | pending | Start only after Month2 scorecard/compare gates. |
 

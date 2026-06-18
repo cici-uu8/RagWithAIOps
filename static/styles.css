@@ -1350,6 +1350,103 @@ body {
     opacity: 0.48;
 }
 
+.permission-viewer {
+    display: grid;
+    gap: 12px;
+}
+
+.permission-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 4px;
+}
+
+.permission-viewer-header h4 {
+    margin: 0;
+    color: #202124;
+    font-size: 16px;
+}
+
+.permission-viewer-header p {
+    margin: 4px 0 0;
+    color: #5f6368;
+    font-size: 13px;
+}
+
+.permission-state-section {
+    display: grid;
+    gap: 8px;
+}
+
+.permission-state-title {
+    color: #3c4043;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.permission-state-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.permission-state-empty {
+    padding: 10px 12px;
+    border: 1px dashed #dadce0;
+    border-radius: 8px;
+    color: #5f6368;
+    font-size: 13px;
+}
+
+.permission-capability-card {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #e8eaed;
+    border-left-width: 4px;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.permission-capability-card[data-tone="granted"] {
+    border-left-color: #34a853;
+    background: #f3fbf5;
+}
+
+.permission-capability-card[data-tone="requestable"] {
+    border-left-color: #f9ab00;
+    background: #fff8e1;
+}
+
+.permission-capability-card[data-tone="forbidden"] {
+    border-left-color: #d93025;
+    background: #fce8e6;
+}
+
+.permission-capability-header {
+    display: grid;
+    gap: 4px;
+}
+
+.permission-capability-header strong {
+    color: #202124;
+    font-size: 14px;
+}
+
+.permission-capability-header span,
+.permission-capability-card p {
+    margin: 0;
+    color: #5f6368;
+    font-size: 13px;
+}
+
+.permission-capability-actions {
+    display: flex;
+    justify-content: flex-start;
+}
+
 .permission-request-form {
     display: grid;
     gap: 14px;

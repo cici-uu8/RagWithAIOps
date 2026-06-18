@@ -328,6 +328,8 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         trace_js = (static_root / "js" / "trace-utils.js").read_text(encoding="utf-8")
         loading_js = (static_root / "js" / "loading-states.js").read_text(encoding="utf-8")
         loading_css = (static_root / "styles_loading.css").read_text(encoding="utf-8")
+        aiops_js = (static_root / "js" / "aiops-visualizer.js").read_text(encoding="utf-8")
+        aiops_css = (static_root / "styles_aiops.css").read_text(encoding="utf-8")
         html = (static_root / "admin-console.html").read_text(encoding="utf-8")
         js = (static_root / "admin-console.js").read_text(encoding="utf-8")
         admin_css = (static_root / "admin-console.css").read_text(encoding="utf-8")
@@ -346,9 +348,11 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertIn("/static/enterprise-api-client.js", index_html)
         self.assertIn("/static/styles_error.css", index_html)
         self.assertIn("/static/styles_loading.css", index_html)
+        self.assertIn("/static/styles_aiops.css", index_html)
         self.assertIn("/static/js/trace-utils.js", index_html)
         self.assertIn("/static/js/error-handler.js", index_html)
         self.assertIn("/static/js/loading-states.js", index_html)
+        self.assertIn("/static/js/aiops-visualizer.js", index_html)
         self.assertLess(
             index_html.index("/static/js/trace-utils.js"),
             index_html.index("cdn.jsdelivr.net/npm/marked"),
@@ -367,6 +371,10 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         )
         self.assertLess(
             index_html.index("/static/js/loading-states.js"),
+            index_html.index("/static/js/aiops-visualizer.js"),
+        )
+        self.assertLess(
+            index_html.index("/static/js/aiops-visualizer.js"),
             index_html.index("/static/app.js"),
         )
         self.assertIn("/static/vendor/highlight/github.min.css", index_html)
@@ -387,6 +395,13 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertNotIn("this.addMessage('assistant', this.renderErrorMessage(error, '发送消息失败'))", app_js)
         self.assertIn("startLoadingState('chat', loadingMessage)", app_js)
         self.assertIn("startLoadingState('aiops', loadingMessage)", app_js)
+        self.assertIn("const aiopsVisualizer = this.attachAIOpsVisualizer(loadingMessageElement)", app_js)
+        self.assertIn("attachAIOpsVisualizer(messageElement)", app_js)
+        self.assertIn("updateAIOpsVisualizer(visualizer, sseMessage)", app_js)
+        self.assertIn("this.updateAIOpsVisualizer(aiopsVisualizer, sseMessage)", app_js)
+        self.assertIn("event.step_id = sseMessage.step_id || visualizer.nextActiveStepId?.()", app_js)
+        self.assertIn("event.result = sseMessage.step_result || sseMessage.result || sseMessage.message", app_js)
+        self.assertIn("messageContent.textContent = content", app_js)
         self.assertIn("startOverlayLoadingState('file_upload'", app_js)
         self.assertIn("this.showNotification(error, 'error', '文件上传失败')", app_js)
         self.assertIn("class ErrorHandler", error_js)
@@ -412,6 +427,19 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertIn(".loading-state-card", loading_css)
         self.assertIn(".loading-progress-bar", loading_css)
         self.assertIn("transition: width 0.5s ease-out", loading_css)
+        self.assertIn("class AIOpsVisualizer", aiops_js)
+        self.assertIn("init(plan", aiops_js)
+        self.assertIn("handleEvent(event", aiops_js)
+        self.assertIn("updateStep(stepId", aiops_js)
+        self.assertIn("addToolCall(stepId", aiops_js)
+        self.assertIn("this.closed = false", aiops_js)
+        self.assertIn("if (this.closed) return this", aiops_js)
+        self.assertIn("this.closed = true", aiops_js)
+        self.assertIn("window.AIOpsVisualizer = AIOpsVisualizer", aiops_js)
+        self.assertIn(".aiops-visualizer-container", aiops_css)
+        self.assertIn(".aiops-flow-container", aiops_css)
+        self.assertIn(".aiops-flow-step-running", aiops_css)
+        self.assertIn(".aiops-tool-call", aiops_css)
         self.assertIn("/static/enterprise-api-client.js", html)
         self.assertLess(
             html.index("/static/enterprise-api-client.js"),
@@ -609,6 +637,37 @@ class AssistantFrontendOptimizationTests(unittest.TestCase):
         self.assertIn(".database-confirmation-row", css)
         self.assertIn(".database-confirmation-actions", css)
         self.assertIn(".database-confirmation-status", css)
+
+    def test_permission_viewer_renders_three_color_capability_states(self):
+        static_root = Path(__file__).resolve().parents[1] / "static"
+        html = (static_root / "index.html").read_text(encoding="utf-8")
+        js = (static_root / "app.js").read_text(encoding="utf-8")
+        viewer_js = (static_root / "js" / "permission-viewer.js").read_text(encoding="utf-8")
+        css = (static_root / "styles.css").read_text(encoding="utf-8")
+
+        self.assertIn("/static/js/permission-viewer.js", html)
+        self.assertIn("window.PermissionViewer", viewer_js)
+        self.assertIn("class PermissionViewer", viewer_js)
+        self.assertIn("classify", viewer_js)
+        self.assertIn("granted", viewer_js)
+        self.assertIn("requestable", viewer_js)
+        self.assertIn("forbidden", viewer_js)
+        self.assertIn("already_granted", viewer_js)
+        self.assertIn("visible_tools", viewer_js)
+        self.assertIn("visible_kb_ids", viewer_js)
+        self.assertIn("unavailable_reasons", viewer_js)
+        self.assertIn("prefillPermissionRequest", viewer_js)
+        self.assertIn("permissionViewerRoot", js)
+        self.assertIn("new window.PermissionViewer", js)
+        self.assertIn("prefillPermissionRequest", js)
+        self.assertIn('data-tone="granted"', viewer_js)
+        self.assertIn('data-tone="requestable"', viewer_js)
+        self.assertIn('data-tone="forbidden"', viewer_js)
+        self.assertIn(".permission-viewer", css)
+        self.assertIn(".permission-capability-card", css)
+        self.assertIn('.permission-capability-card[data-tone="granted"]', css)
+        self.assertIn('.permission-capability-card[data-tone="requestable"]', css)
+        self.assertIn('.permission-capability-card[data-tone="forbidden"]', css)
 
     def test_user_database_catalog_panel_shows_capability_health(self):
         static_root = Path(__file__).resolve().parents[1] / "static"

@@ -404,15 +404,107 @@ git push origin enterprise3
 
 **任务**: 实现AIOpsVisualizer组件（参考前端优化方案.md完整代码）
 
-**Day 1**: 创建AIOpsVisualizer类
-**Day 2**: 集成SSE事件监听
-**Day 3**: 测试和样式调整
+**Day 1**: 创建AIOpsVisualizer类 ✅
+
+**Day 1 证据**:
+- [x] `static/js/aiops-visualizer.js` 已创建
+- [x] `static/styles_aiops.css` 已创建
+- [x] `static/index.html` 已加载 AIOps visualizer 资源
+- [x] `tests/test_assistant_frontend_optimization.py` 已锁定静态契约
+- [x] `docs/baselines/baseline_month1_aiops_visualizer_day1.md` 已创建
+- [x] `docs/scorecards/scorecard_month1_aiops_visualizer_day1.md` 已创建
+- [x] `docs/compare-reports/compare_month1_aiops_visualizer_day1.md` 已创建
+- [x] 验证通过: `node --check static/js/aiops-visualizer.js`
+- [x] 验证通过: `node --check static/app.js`
+- [x] 验证通过: `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` (`32/32`)
+
+**Day 1 边界**:
+- 只创建可复用 visualizer 类和样式，不声称 live AIOps SSE 已完成可视化接入。
+- 不改变 AIOps 后端协议、RAG 默认值、权限边界或现有文本流 fallback。
+
+**Day 2**: 集成SSE事件监听 ✅
+
+**Day 2 证据**:
+- [x] `static/app.js` 在 `sendAIOpsRequest(...)` 中为 AIOps loading message 挂载 `AIOpsVisualizer`
+- [x] `static/app.js` 将解析出的 `plan` / `status` / `tool_call` / `step_complete` / `report` / `complete` / `error` SSE 消息转发给 visualizer
+- [x] `static/js/aiops-visualizer.js` 增加终态锁定，`complete` / `report` 后的迟到 `status` 不会把流程重新标成 running
+- [x] `docs/baselines/baseline_month1_aiops_visualizer_sse_day2.md` 已创建
+- [x] `docs/scorecards/scorecard_month1_aiops_visualizer_sse_day2.md` 已创建
+- [x] `docs/compare-reports/compare_month1_aiops_visualizer_sse_day2.md` 已创建
+- [x] 验证通过: `node --check static/app.js`
+- [x] 验证通过: `node --check static/js/aiops-visualizer.js`
+- [x] 验证通过: `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` (`32/32`)
+
+**Day 2 边界**:
+- 保留现有文本流和最终 Markdown fallback，不替换 AIOps 最终报告渲染。
+- 不改变 `/api/aiops` 后端协议、AIOps planner/executor/replanner、权限边界或 RAG 默认值。
+
+**Day 3**: 测试和样式调整 ✅
+
+**Day 3 证据**:
+- [x] `static/styles_aiops.css` 增加 `.aiops-visualizer-container` 宽度/盒模型样式
+- [x] Playwright browser smoke 使用真实页面 + mock `/api/aiops` SSE 验证 visualizer DOM
+- [x] `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json` 已生成
+- [x] 截图: `output/playwright/month1_week2_day3_aiops_visualizer/01_home_before_aiops.png`
+- [x] 截图: `output/playwright/month1_week2_day3_aiops_visualizer/02_aiops_visualizer_complete.png`
+- [x] `docs/baselines/baseline_month1_aiops_visualizer_day3_smoke.md` 已创建
+- [x] `docs/scorecards/scorecard_month1_aiops_visualizer_day3_smoke.md` 已创建
+- [x] `docs/compare-reports/compare_month1_aiops_visualizer_day3_smoke.md` 已创建
+- [x] Browser smoke 结果: visualizer 可见、3 个步骤完成、running=0、failed=0、工具调用可见、进度 `100%`、最终报告可见、迟到 status 未重新打开 running
+
+**Day 3 边界**:
+- 本 smoke 隔离模型/MCP/告警运行时变量，只证明前端 consumer 和 DOM 行为。
+- live AIOps 诊断质量不在 Day3 声称范围内。
 
 ### Day 4: 权限状态三色可视化
 
-**任务**: 实现PermissionViewer组件
+**任务**: 实现PermissionViewer组件 ✅
 
-### Day 5: Week 2验收
+**Day 4 证据**:
+- [x] `static/js/permission-viewer.js` 已创建
+- [x] `static/index.html` 已加载 PermissionViewer，且位于 `app.js` 之前
+- [x] `static/app.js` 已在 `renderPermissions()` 中挂载 `permissionViewerRoot`
+- [x] PermissionViewer 从现有 `currentProfile` 和 `requestableResources` 分类，不新增后端权限 API
+- [x] 绿色已授权能力来自 `visible_kb_ids` / `visible_tools` / `feature_flags` / `database_demo.enabled`
+- [x] 黄色可申请能力来自 `requestableResources` 中 `already_granted=false` 的资源
+- [x] 红色不可用能力来自 `unavailable_reasons` 和固定高风险 `production_operation`
+- [x] 黄色卡片“申请权限”按钮预填现有快捷/高级申请表，不新增申请路径
+- [x] `docs/baselines/baseline_month1_permission_viewer_day4.md` 已创建
+- [x] `docs/scorecards/scorecard_month1_permission_viewer_day4.md` 已创建
+- [x] `docs/compare-reports/compare_month1_permission_viewer_day4.md` 已创建
+- [x] `output/playwright/month1_week2_day4_permission_viewer/browser_smoke_result.json` 已生成
+- [x] 验证通过: `node --check static/js/permission-viewer.js`
+- [x] 验证通过: `node --check static/app.js`
+- [x] 验证通过: `node --check static/js/aiops-visualizer.js && node --check static/js/error-handler.js && node --check static/js/loading-states.js && node --check static/js/trace-utils.js`
+- [x] 验证通过: `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` (`33/33`)
+- [x] Browser smoke 结果: viewer 可见、granted=3、requestable=2、forbidden=2、quick KB 预填 `guide`、advanced resource 预填 `database_demo.list_tables`、console errors=0
+
+**Day 4 边界**:
+- 本轮只改前端解释性可视层，后端 `PermissionService` / grant / review queue 仍是权限权威。
+- 不新增 `/api/users/{id}/capabilities` 等平行 API，避免 profile/resources 数据重复。
+- 截图接口在 in-app browser CDP 路径连续超时，Day4 浏览器证据以 JSON DOM smoke 为准。
+- 不改变 RAG 默认值、AIOps 后端协议、数据库权限链路或现有申请/确认流程。
+
+### Day 5: Week 2验收 ✅
+
+**Day 5 证据**:
+- [x] `docs/milestones/week2_evidence.md` 已创建
+- [x] `docs/baselines/baseline_month1_week2_acceptance.md` 已创建
+- [x] `docs/scorecards/scorecard_month1_week2_acceptance.md` 已创建
+- [x] `docs/compare-reports/compare_month1_week2_acceptance.md` 已创建
+- [x] AIOps visualizer evidence 已检查: `output/playwright/month1_week2_day3_aiops_visualizer/browser_smoke_result.json`
+- [x] Permission viewer evidence 已检查: `output/playwright/month1_week2_day4_permission_viewer/browser_smoke_result.json`
+- [x] 全量本地回归通过: `uv run pytest -q --no-cov`
+- [x] 前端静态契约通过: `uv run pytest tests/test_assistant_frontend_optimization.py -q --no-cov` (`33/33`)
+- [x] JS syntax 通过: `node --check static/js/permission-viewer.js && node --check static/js/aiops-visualizer.js && node --check static/app.js && node --check static/js/error-handler.js && node --check static/js/loading-states.js && node --check static/js/trace-utils.js`
+- [x] diff whitespace 通过: `git diff --check`
+
+**Week 2 验收结论**:
+- [x] AIOps 诊断流程可视化本地 gate 通过
+- [x] 权限状态三色可视化本地 gate 通过
+- [x] 现有前端权限申请、数据库确认、文本/Markdown fallback 未退化
+- [x] RAG 默认值、AIOps 后端协议、PermissionService 权限权威均未改变
+- [x] Month1 Week2 可本地关闭，下一步才进入 Week3 Day0 top_k / rerank shadow compare gate
 
 ---
 

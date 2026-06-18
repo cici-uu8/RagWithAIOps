@@ -1173,6 +1173,7 @@ class SuperBizAgentApp {
         const advancedType = this.defaultAdvancedPermissionType();
         const advancedResource = this.resourcesForPermissionType(advancedType)[0] || null;
         this.profileContent.innerHTML = `
+            <div id="permissionViewerRoot"></div>
             <div class="permission-request-form" id="permissionRequestForm">
                 <form class="permission-request-section" id="quickPermissionRequestForm">
                     <div class="profile-section-title">知识库快捷申请</div>
@@ -1257,6 +1258,56 @@ class SuperBizAgentApp {
         this.profileContent.querySelectorAll('[data-confirmation-action]').forEach((button) => {
             button.addEventListener('click', (event) => this.handleDatabaseConfirmationAction(event));
         });
+        this.renderPermissionViewer();
+    }
+
+    renderPermissionViewer() {
+        const container = document.getElementById('permissionViewerRoot');
+        if (!container || !window.PermissionViewer) {
+            return;
+        }
+        const viewer = new window.PermissionViewer(container, {
+            resourceDisplayName: (resource) => this.resourceDisplayName(resource),
+            prefillPermissionRequest: (capability) => this.prefillPermissionRequest(capability),
+        });
+        viewer.render({
+            profile: this.currentProfile || {},
+            requestableResources: this.requestableResources || [],
+        });
+    }
+
+    prefillPermissionRequest(capability) {
+        if (!capability) return;
+        if (capability.resource_type === 'knowledge_base') {
+            const kbSelect = document.getElementById('quickPermissionKbId');
+            const quickReason = document.getElementById('quickPermissionReason');
+            if (kbSelect) {
+                kbSelect.value = capability.resource_id || '';
+                kbSelect.focus();
+            }
+            if (quickReason && !quickReason.value) {
+                quickReason.value = `申请读取 ${capability.display_name || capability.resource_id || ''}`;
+            }
+            return;
+        }
+
+        const typeSelect = document.getElementById('advancedPermissionResourceType');
+        const resourceSelect = document.getElementById('advancedPermissionResourceId');
+        const actionSelect = document.getElementById('advancedPermissionAction');
+        const reasonInput = document.getElementById('advancedPermissionReason');
+        if (!typeSelect || !resourceSelect || !actionSelect) {
+            return;
+        }
+
+        typeSelect.value = capability.resource_type || '';
+        this.updateAdvancedPermissionOptions();
+        resourceSelect.value = capability.resource_id || '';
+        this.updateAdvancedPermissionActionOptions();
+        actionSelect.value = capability.action || '';
+        if (reasonInput && !reasonInput.value) {
+            reasonInput.value = `申请使用 ${capability.display_name || capability.resource_id || ''}`;
+        }
+        resourceSelect.focus();
     }
 
     defaultAdvancedPermissionType() {
@@ -2591,6 +2642,7 @@ class SuperBizAgentApp {
             }
 
             let fullResponse = '';
+            const aiopsVisualizer = this.attachAIOpsVisualizer(loadingMessageElement);
 
             // 处理 SSE 流式响应
             const reader = response.body.getReader();
@@ -2645,6 +2697,7 @@ class SuperBizAgentApp {
                                     for (const jsonStr of matches) {
                                         try {
                                             const sseMessage = JSON.parse(jsonStr);
+                                            this.updateAIOpsVisualizer(aiopsVisualizer, sseMessage);
                                             if (sseMessage.type === 'content') {
                                                 fullResponse += sseMessage.data || '';
                                             } else if (sseMessage.type === 'plan') {
@@ -2700,6 +2753,7 @@ class SuperBizAgentApp {
                                 try {
                                     const sseMessage = JSON.parse(rawData);
                                     if (sseMessage && sseMessage.type) {
+                                        this.updateAIOpsVisualizer(aiopsVisualizer, sseMessage);
                                         if (sseMessage.type === 'content') {
                                             fullResponse += sseMessage.data || '';
                                             if (loadingMessageElement) {
@@ -2774,6 +2828,41 @@ class SuperBizAgentApp {
         } catch (error) {
             throw error;
         }
+    }
+
+    attachAIOpsVisualizer(messageElement) {
+        if (!messageElement || !window.AIOpsVisualizer) {
+            return null;
+        }
+        const messageContentWrapper = messageElement.querySelector('.message-content-wrapper');
+        if (!messageContentWrapper) {
+            return null;
+        }
+        let container = messageContentWrapper.querySelector('.aiops-visualizer-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'aiops-visualizer-container';
+            messageContentWrapper.insertBefore(container, messageContentWrapper.firstChild);
+        }
+        const visualizer = new window.AIOpsVisualizer(container);
+        visualizer.init();
+        return visualizer;
+    }
+
+    updateAIOpsVisualizer(visualizer, sseMessage) {
+        if (!visualizer || !sseMessage || !sseMessage.type) {
+            return;
+        }
+        const event = { ...sseMessage };
+        if (sseMessage.type === 'step_complete') {
+            event.step_id = sseMessage.step_id || visualizer.nextActiveStepId?.();
+            event.result = sseMessage.step_result || sseMessage.result || sseMessage.message;
+        } else if (sseMessage.type === 'report') {
+            event.response = sseMessage.report || sseMessage.diagnosis || sseMessage.message;
+        } else if (sseMessage.type === 'complete') {
+            event.response = sseMessage.response || sseMessage.diagnosis || sseMessage.message;
+        }
+        visualizer.handleEvent(event);
     }
 
     // 更新智能运维流式内容（实时显示）
