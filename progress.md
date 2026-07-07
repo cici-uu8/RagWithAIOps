@@ -14,6 +14,7 @@
 - Next step is committing this worktree as an independent documentation asset, then choosing the smallest follow-up: preferably a doc-only `Agent评测门禁Scorecard.md` before verifier implementation.
 - First documentation asset commit created: `9d2c6f2 docs: add agent evaluation asset index`.
 - Added `docs/Agent评测门禁Scorecard.md` as the next doc-only minimum direction after the commit. It maps assets and RCA labels to P0 deterministic gates, P1 promotion gates, shadow gates, observation triggers, and smoke gates, without adding runtime code.
+- Added `docs/主仓库边界清理任务.md` as a separate review-only cleanup task. It records current main-checkout dirty boundary items, recommends keep/migrate decisions, and explicitly forbids deletion, moving, reset, checkout, or git clean.
 
 ## 2026-06-18 Production-Grade Mainline Week0 Gate
 

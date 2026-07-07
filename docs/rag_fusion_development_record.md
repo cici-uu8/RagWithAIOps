@@ -12757,3 +12757,10 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 - 关键边界：该 scorecard 仍是 documentation-only，不新增 verifier、不改 `evals/enterprise`、不训练模型、不改变 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`，也不把 Router candidate 或 BGE-M3 shadow 资产接入生产。
 - 设计取舍：Scorecard 先明确“哪些证据阻断什么”，再讨论代码实现。这样可以避免直接写 `AuditEvidenceVerifier` 时规则边界不清，也避免把 Answer 完整性、router 微调和 P0 governance gate 混到一个总分里。
 - 后续候选：第一个代码实现候选仍是 `AuditEvidenceVerifier`，因为它服务 P0 allow / deny / block / execute 审计证据；`ToolTrajectoryVerifier` 排第二；LLM Judge、router fine-tune 和 Q-SQL 离线草稿都后置。
+
+## 2026-07-07 (主仓库边界清理任务单)
+
+- 背景：用户明确要求单独开一个“主仓库边界清理”任务，只确认哪些保留、迁移，不能删除。当前主 checkout 仍是脏状态且不在 main 分支，本轮继续遵守“不在主 checkout 写入”的边界。
+- 新增文件：`docs/主仓库边界清理任务.md`。该任务单只读记录了 `plan-governance-experiment/`、`super_biz_agent_py-plan-update/` 以及 release 目录下 `.gitattributes`、CI、PlanGraph、Backlog、Closeout、GEMINI/KIMI 等治理/配置文件的候选处理方式。
+- 关键约束：任务单明确禁止删除、移动、`git clean`、`git reset --hard`、`git checkout -- <path>` 和直接 stash apply/pop。所有条目只给“保留 / 迁移 / 待确认”建议。
+- 分离原则：主仓库边界清理和 `AuditEvidenceVerifier` 不放在同一个提交里。`AuditEvidenceVerifier` 仍是后续最小代码实现候选，但要另开 worktree，从 `docs/Agent评测门禁Scorecard.md` 的 `G-P0-AUDIT-EVIDENCE` 抽验收规则。

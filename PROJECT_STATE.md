@@ -12,10 +12,13 @@ New documentation assets:
 - `docs/Agent评测RCA标签体系.md`: project-level badcase RCA labels and regression-entry rules.
 - `docs/Agent评测文档评审收口.md`: review closeout confirming asset grading, RCA ownership, and documentation-only status.
 - `docs/Agent评测门禁Scorecard.md`: executable documentation scorecard mapping assets/RCA labels to P0/P1/shadow/observation/smoke gate decisions.
+- `docs/主仓库边界清理任务.md`: review-only task plan for deciding which dirty main-checkout artifacts to keep or migrate; deletion is explicitly forbidden.
 
 Current decision: micro-finetuning and model comparison are indexed as assets only. Router 52 candidate JSONL remains a shadow candidate set in `/Users/cici/oncall agent/.worktrees/phaseA-bge-m3-smoke/llm_finetuning_workspace/`, not a reviewed training set. BGE-M3 remains `keep-shadow` evidence, not a production embedding switch.
 
 Review closeout completed and first documentation asset commit created as `9d2c6f2 docs: add agent evaluation asset index`. The next minimal direction is now the doc-only `Agent评测门禁Scorecard.md`; after that, the first code implementation candidate remains `AuditEvidenceVerifier`.
+
+Main-checkout boundary cleanup is opened as a separate review-only task. Current rule: do not delete or move files; first confirm keep/migrate decisions for `plan-governance-experiment/`, `super_biz_agent_py-plan-update/`, and the listed release-root governance/config files. `AuditEvidenceVerifier` remains the next implementation candidate after boundary decisions are separated.
 
 ## Current Production Mainline Status (2026-06-18)
 
