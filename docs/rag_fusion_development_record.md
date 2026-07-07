@@ -12749,3 +12749,11 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 - 评审收口：新增 `docs/Agent评测文档评审收口.md`，确认三类风险没有 blocker：资产分级没有把 observation/shadow 误写成生产 gate，RCA 主责没有把 corpus gap / permission / SafeSQL 阻断全甩给 LLM，状态文件没有把 documentation-only 误写成评测体系实现完成。
 - 解释口径：如果被问“这轮做了什么”，回答应是：把分散在 RAG、DB、AIOps、Trace Eval、Verifier、模型对比和微调准备里的证据统一成资产目录和 RCA 归因语言，先解决“做过什么、哪些能当门禁、哪些只是 shadow”的可解释性问题，再决定是否需要改 trace eval 或补 verifier。
 - 后续判断：如果资产索引显示只是证据散，继续补文档和 scorecard；如果 RCA 暴露 trace eval 表达不了期望路径，再改 `evals/enterprise`；如果 P0 风险缺规则判定，再补 `AuditEvidenceVerifier`、`ToolTrajectoryVerifier` 或 human-review 类 verifier。
+
+## 2026-07-07 (Agent 评测门禁 Scorecard)
+
+- 背景：文档评审收口后，第一批资产索引/RCA 文档已独立提交为 `9d2c6f2 docs: add agent evaluation asset index`。用户要求提交后再选一个最小实现方向；当前最小方向不应是 LLM Judge 或训练 router，而应先把门禁执行口径固化。
+- 新增文件：`docs/Agent评测门禁Scorecard.md`。它把 `docs/Agent评测资产索引.md` 和 `docs/Agent评测RCA标签体系.md` 收敛成一张 gate scorecard，按 P0 deterministic gate、P1 promotion gate、shadow gate、observation trigger 和 smoke gate 分层。
+- 关键边界：该 scorecard 仍是 documentation-only，不新增 verifier、不改 `evals/enterprise`、不训练模型、不改变 `dense_only / query_rewrite=off / rerank_enabled=false / top_k=3`，也不把 Router candidate 或 BGE-M3 shadow 资产接入生产。
+- 设计取舍：Scorecard 先明确“哪些证据阻断什么”，再讨论代码实现。这样可以避免直接写 `AuditEvidenceVerifier` 时规则边界不清，也避免把 Answer 完整性、router 微调和 P0 governance gate 混到一个总分里。
+- 后续候选：第一个代码实现候选仍是 `AuditEvidenceVerifier`，因为它服务 P0 allow / deny / block / execute 审计证据；`ToolTrajectoryVerifier` 排第二；LLM Judge、router fine-tune 和 Q-SQL 离线草稿都后置。

@@ -12,6 +12,8 @@
 - Added `docs/Agent评测文档评审收口.md` to record the review conclusion: asset grading is not overstated, RCA ownership does not collapse corpus/permission/SafeSQL issues into LLM, and state files keep the work documentation-only.
 - Kept the scope documentation-only: no code changes, no test/eval reruns, no production default changes, no model training, no Q-SQL experiment.
 - Next step is committing this worktree as an independent documentation asset, then choosing the smallest follow-up: preferably a doc-only `Agent评测门禁Scorecard.md` before verifier implementation.
+- First documentation asset commit created: `9d2c6f2 docs: add agent evaluation asset index`.
+- Added `docs/Agent评测门禁Scorecard.md` as the next doc-only minimum direction after the commit. It maps assets and RCA labels to P0 deterministic gates, P1 promotion gates, shadow gates, observation triggers, and smoke gates, without adding runtime code.
 
 ## 2026-06-18 Production-Grade Mainline Week0 Gate
 

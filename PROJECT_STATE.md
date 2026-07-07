@@ -11,10 +11,11 @@ New documentation assets:
 - `docs/Agent评测资产索引.md`: project-grounded index of RAG, Answer, Boundary, Beta, AIOps, Database, Trace, Verifier, model-comparison, and router fine-tuning candidate assets.
 - `docs/Agent评测RCA标签体系.md`: project-level badcase RCA labels and regression-entry rules.
 - `docs/Agent评测文档评审收口.md`: review closeout confirming asset grading, RCA ownership, and documentation-only status.
+- `docs/Agent评测门禁Scorecard.md`: executable documentation scorecard mapping assets/RCA labels to P0/P1/shadow/observation/smoke gate decisions.
 
 Current decision: micro-finetuning and model comparison are indexed as assets only. Router 52 candidate JSONL remains a shadow candidate set in `/Users/cici/oncall agent/.worktrees/phaseA-bge-m3-smoke/llm_finetuning_workspace/`, not a reviewed training set. BGE-M3 remains `keep-shadow` evidence, not a production embedding switch.
 
-Review closeout completed: no blocking asset-grade or RCA-owner issue was found. Next step is to commit this worktree as an independent documentation asset, then choose between a doc-only `Agent评测门禁Scorecard.md`, an `evals/enterprise` trace-expression change, or a deterministic verifier such as `AuditEvidenceVerifier` / `ToolTrajectoryVerifier`.
+Review closeout completed and first documentation asset commit created as `9d2c6f2 docs: add agent evaluation asset index`. The next minimal direction is now the doc-only `Agent评测门禁Scorecard.md`; after that, the first code implementation candidate remains `AuditEvidenceVerifier`.
 
 ## Current Production Mainline Status (2026-06-18)
 
