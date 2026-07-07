@@ -1,5 +1,20 @@
 # PROJECT_STATE
 
+## Agent Eval Scorecard Runner Worktree Status (2026-07-07)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/agent-scorecard-runner` on branch `codex/agent-scorecard-runner`. It was branched from `codex/audit-evidence-trace-sources` because the Git remote fetch path is SSH-only in this environment and `origin` fetch failed with `Permission denied (publickey)`. PR #2 had already been merged, so this branch starts from the same content as the accepted audit evidence trace-source slice.
+
+Current implementation goal: add a small offline scorecard runner that composes the existing trace trajectory eval and audit evidence gate into one pre-release check. This is eval tooling only; it does not change `AuditService.record()`, production routes, CI, RequestGateway, ToolGateway, database execution, RAG defaults, model defaults, router behavior, or any live policy enforcement.
+
+Implemented files in this slice:
+- `evals/enterprise/run_agent_eval_scorecard.py`: offline scorecard runner. It requires at least one `--trace-evalset` plus an audit source (`--audit-events` or `--audit-source-kind/--audit-path/--audit-trace-id`), runs `run_trace_eval(...)` and `run_audit_evidence_gate(...)`, writes JSON/Markdown scorecard reports, and returns exit code 1 when either gate fails.
+- `tests/test_enterprise_agent_eval_scorecard.py`: TDD coverage for all-pass aggregation, audit-gate failure, trace-eval failure, and missing-audit-source CLI rejection.
+- `docs/Agent评测门禁Scorecard.md`: adds the new aggregate command and keeps the offline-only boundary explicit.
+
+Verification: baseline `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_trace_eval.py -q` passed 22/22 before this slice. TDD red failed on missing `evals.enterprise.run_agent_eval_scorecard`; after implementation, `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py -q` passed 4/4. Final targeted regression `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_trace_eval.py tests/test_enterprise_verifiers.py tests/test_enterprise_database_operation_audit.py tests/test_enterprise_tool_gateway.py tests/test_enterprise_gateway_routes.py -q --no-cov` passed 61/61. `ruff check`, `compileall`, aggregate CLI smoke, and `git diff --check` passed.
+
+Next step: commit this isolated branch, then open review/PR if requested. Do not add CI integration, production route gating, a new verifier, LLM Judge, router fine-tuning, or Q-SQL work in this slice.
+
 ## AuditEvidenceVerifier Worktree Status (2026-07-07)
 
 Active worktree: `/Users/cici/oncall agent/.worktrees/audit-evidence-verifier` on branch `codex/audit-evidence-verifier`. It was branched from `codex/agent-eval-assets` so `docs/Agent评测门禁Scorecard.md` is available as the governing design source.

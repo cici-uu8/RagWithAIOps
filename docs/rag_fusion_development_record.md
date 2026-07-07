@@ -12825,3 +12825,22 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 - 文档同步：`evals/enterprise/fixtures/audit_evidence/README.md` 和 `docs/Agent评测门禁Scorecard.md` 增加 JSONL / SQLite trace-source 命令示例，并说明没有匹配事件时返回 `audit_events_missing` 和 exit code `1`，不能静默通过。
 - 绿色验证：实现后，`uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py -q` 通过 7/7，覆盖旧 fixture 模式、JSONL trace 过滤、SQLite trace + request_id 过滤、无匹配事件 fail、以及 CLI 参数互斥。后续还需跑 targeted regression、ruff 和 `git diff --check` 后再提交。
 - 边界：本轮仍然只是 eval/offline runner 能力。它不改变 `AuditEvidenceVerifier` 的 policy 表，不改变 `SQLiteAuditSink.query()`，不接 `run_trace_eval.py` matcher，不上 CI，不接生产 route，也不影响 RAG / DB / AIOps / router / model 默认行为。
+
+## 2026-07-07 (Agent Eval Scorecard Runner 离线聚合入口)
+
+- 背景：PR #2 已把 `G-P0-AUDIT-EVIDENCE` 的输入源从 fixture 文件扩展到 JSONL / SQLite trace source。用户要求下一步开独立切片，做一个离线 scorecard runner，把现有 trace eval 和 audit evidence gate 串成一个发布前检查入口，但仍然不接 CI、不改生产链路。
+- 工作区边界：本轮在新 worktree `/Users/cici/oncall agent/.worktrees/agent-scorecard-runner`、分支 `codex/agent-scorecard-runner` 实现。主 checkout 仍然很脏且不在 main 分支，因此没有在主 checkout 写入。因为当前 `origin` 是 SSH remote，`git fetch origin codex/agent-eval-assets` 失败于 `Permission denied (publickey)`；本轮从已 review/merged 的 `codex/audit-evidence-trace-sources` 本地分支派生，保证包含 PR #2 的 runner 能力。
+- 设计选择：新增 `evals/enterprise/run_agent_eval_scorecard.py`，而不是把 audit evidence 逻辑塞进 `run_trace_eval.py`。原因是两类 gate 的职责不同：`G-P1-TRACE-TRAJECTORY` 判断 required stage / audit event / forbidden tool / SSE / contract 是否符合期望，`G-P0-AUDIT-EVIDENCE` 判断已经出现的 allow / deny / block / execute 事件是否有足够审计字段。聚合 runner 只编排两个已有离线入口，不改变任何 verifier policy 或 matcher 语义。
+- CLI 行为：`run_agent_eval_scorecard.py` 要求至少一个 `--trace-evalset`，并要求一份 audit source：旧模式 `--audit-events <json/jsonl>`，或 trace-source 模式 `--audit-source-kind jsonl|sqlite --audit-path <path> --audit-trace-id <trace-id> [--audit-request-id <request-id>]`。缺 audit source 会 parser error，避免发布前入口静默跳过 P0 audit gate。
+- 报告行为：runner 会调用 `run_trace_eval(...)` 和 `run_audit_evidence_gate(...)`，然后输出 `agent_eval_scorecard_<timestamp>.json` 和 `.md`。聚合报告包含 `scorecard_id=AGENT-EVAL-PRE-RELEASE`、两个 gate 的 `passed` 状态、trace 汇总指标、audit finding 汇总、子报告路径，并在任一 gate 失败时返回 exit code `1`。
+- TDD 红灯：先新增 `tests/test_enterprise_agent_eval_scorecard.py`。红灯命令 `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py -q` 失败于 `ModuleNotFoundError: No module named 'evals.enterprise.run_agent_eval_scorecard'`，说明测试锁定的是新聚合入口。
+- 绿色验证：实现后，同一测试通过 4/4，覆盖 all-pass、audit gate failure、trace eval mismatch、missing audit source CLI rejection。最终 targeted regression 通过 61/61：`tests/test_enterprise_agent_eval_scorecard.py`、`tests/test_enterprise_audit_evidence_gate.py`、`tests/test_enterprise_trace_eval.py`、`tests/test_enterprise_verifiers.py`、`tests/test_enterprise_database_operation_audit.py`、`tests/test_enterprise_tool_gateway.py`、`tests/test_enterprise_gateway_routes.py`。`ruff check`、`compileall`、聚合 CLI smoke 和 `git diff --check` 均通过。文档同步更新 `docs/Agent评测门禁Scorecard.md`，加入聚合命令和 offline-only 边界。
+- 边界：这一步仍然只是 eval/offline runner 能力。它不接 CI，不改 `AuditService.record()`，不接生产 route，不改变 RequestGateway / ToolGateway / database execution，不新增 verifier，不做 LLM Judge、router fine-tune 或 Q-SQL 实验，也不影响 RAG / DB / AIOps / router / model 默认行为。
+
+**追问: 为什么 scorecard runner 要强制 audit source，不能没有就跳过？**
+
+答：这个入口被定义为“发布前检查项”，而不是普通 trace eval convenience wrapper。`G-P0-AUDIT-EVIDENCE` 是 P0 治理 gate，如果缺输入就自动跳过，会让人误以为发布前检查已经覆盖审计证据链。第一版选择 parser 层强制 audit source，缺失时直接 exit 2，迫使调用方明确提供 audit events 或 trace source。
+
+**追问: 为什么不直接上 CI？**
+
+答：当前 runner 已经能离线串联两个 gate，但真实发布门禁还需要确定用哪些 evalset、从哪里取 audit trace、哪些环境必须跑、失败后如何归档。直接接 CI 会把尚未固化的输入选择变成强拦截，风险太大。本轮只做可手动执行、可报告、可 review 的离线入口，后续再单独决定 CI 或 release workflow 集成。
