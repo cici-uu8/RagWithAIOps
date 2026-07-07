@@ -5,6 +5,10 @@ from pathlib import Path
 
 from evals.enterprise.run_audit_evidence_gate import main, run_audit_evidence_gate
 
+FIXTURE_DIR = (
+    Path(__file__).resolve().parents[1] / "evals" / "enterprise" / "fixtures" / "audit_evidence"
+)
+
 
 class EnterpriseAuditEvidenceGateTests(unittest.TestCase):
     def test_runner_outputs_json_and_markdown_for_complete_audit_events(self):
@@ -103,6 +107,34 @@ class EnterpriseAuditEvidenceGateTests(unittest.TestCase):
                 {
                     "audit_request_id_missing": 1,
                     "audit_reason_missing": 1,
+                },
+            )
+
+    def test_fixture_examples_match_gate_expectations(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir)
+            pass_report = run_audit_evidence_gate(
+                audit_events_path=FIXTURE_DIR / "pass_events.jsonl",
+                output_dir=output_dir,
+                write_report=True,
+            )
+            fail_report = run_audit_evidence_gate(
+                audit_events_path=FIXTURE_DIR / "fail_missing_evidence.json",
+                output_dir=output_dir,
+                write_report=True,
+            )
+
+            self.assertTrue(pass_report.passed)
+            self.assertEqual(pass_report.summary["event_count"], 5)
+            self.assertEqual(pass_report.summary["finding_count"], 0)
+            self.assertFalse(fail_report.passed)
+            self.assertEqual(fail_report.summary["event_count"], 2)
+            self.assertEqual(
+                fail_report.summary["finding_codes"],
+                {
+                    "audit_metadata_missing": 1,
+                    "audit_reason_missing": 1,
+                    "audit_request_id_missing": 1,
                 },
             )
 

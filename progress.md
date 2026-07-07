@@ -18,9 +18,14 @@
   - runs `AuditEvidenceVerifier`;
   - writes JSON and Markdown reports under `evals/enterprise/reports` or a supplied `--output-dir`;
   - returns exit code 1 when evidence is missing.
+- Added `evals/enterprise/fixtures/audit_evidence/`:
+  - `pass_events.jsonl` shows complete permission/tool/database/human-review/verification evidence;
+  - `fail_missing_evidence.json` shows missing `request_id`, missing `reason`, and missing permission resource metadata;
+  - `README.md` gives one-command pass/fail runner examples.
 - Added `tests/test_enterprise_audit_evidence_gate.py`:
   - complete audit evidence produces JSON/Markdown reports and passes;
   - missing `request_id` / `reason` produces a failed report and `main()` returns 1.
+  - fixture examples are checked so the pass/fail samples do not drift from verifier behavior.
 - Boundary: no production route is wired to the verifier yet; no `AuditService` schema change; no RAG / DB / AIOps behavior change; no LLM Judge, model training, or router fine-tune work.
 - Verification so far:
   - baseline `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` passed 4/4 before implementation;

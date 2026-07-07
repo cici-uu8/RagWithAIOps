@@ -12799,3 +12799,12 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: 这个 runner 现在能不能当发布门禁？**
 
 答：能作为发布前检查项的雏形，但还不是完整发布门禁。它已经能对给定 audit events 文件返回 pass/fail 和报告；缺口是事件来源编排还没统一，比如从 SQLite audit sink、trace eval report、或 CI smoke 输出中自动抽取事件。下一步如果继续，应做一个小的 scorecard/gate orchestrator，或者给 `run_audit_evidence_gate.py` 增加 SQLite/trace-source 输入，而不是改生产写入路径。
+
+## 2026-07-07 (AuditEvidenceVerifier fixtures)
+
+- 背景：离线 runner 已经可执行，但如果只靠测试代码解释 gate，别人还需要读 Python 才能明白“什么样的 audit event 会过、什么样会失败”。用户要求补一个小的 fixtures 目录，放 pass/fail 样例，让一条命令就能理解这个 gate 怎么跑。
+- 新增样例：`evals/enterprise/fixtures/audit_evidence/pass_events.jsonl` 覆盖完整证据链，包括 `permission_checked`、`tool_call`、`database_operation_executed`、`human_review_rejected` 和 `verification_result`。它体现的规则是：基础追踪字段完整，阻断/拒绝类事件有 `reason`，资源相关事件有对应 metadata。
+- 新增反例：`evals/enterprise/fixtures/audit_evidence/fail_missing_evidence.json` 使用 `{ "audit_events": [...] }` 输入形态，故意保留三类缺口：`tool_blocked` 缺 `request_id`、拒绝类事件缺 `reason`、`permission_checked` 缺 `metadata.resource_id` / `metadata.action`。
+- 说明文件：`evals/enterprise/fixtures/audit_evidence/README.md` 给出 pass/fail 两条 CLI 命令，输出目录使用 `/tmp/audit_evidence_gate_reports`，避免示例运行时污染仓库报告目录。
+- 回归保护：`tests/test_enterprise_audit_evidence_gate.py` 增加 `test_fixture_examples_match_gate_expectations`，直接跑两个 fixture，断言 pass 样例 `event_count=5/findings=0`，fail 样例返回 `audit_request_id_missing`、`audit_reason_missing`、`audit_metadata_missing`。这样以后 verifier 规则变动时，示例不会悄悄过期。
+- 边界：本轮仍然只增加离线 eval fixture、测试和文档示例；没有接 `AuditService.record()`，没有接生产路由，也没有改 RAG / DB / AIOps / router / model 默认行为。

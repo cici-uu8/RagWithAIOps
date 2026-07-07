@@ -100,11 +100,27 @@ uv run python -m evals.enterprise.run_audit_evidence_gate \
 - `audit_evidence_gate_<input>_<timestamp>.md`
 - exit code `0` 表示通过，exit code `1` 表示失败。
 
+最小样例：
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --audit-events evals/enterprise/fixtures/audit_evidence/pass_events.jsonl \
+  --output-dir /tmp/audit_evidence_gate_reports
+```
+
+反例样例：
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --audit-events evals/enterprise/fixtures/audit_evidence/fail_missing_evidence.json \
+  --output-dir /tmp/audit_evidence_gate_reports
+```
+
 ## 6. 最小后续实现候选
 
 | 候选 | 为什么排在这里 | 是否现在做 |
 |---|---|---|
-| `AuditEvidenceVerifier` fixtures | 让别人不用读测试代码，也能用 pass/fail 样例理解离线 gate 怎么跑。 | 推荐作为下一个最小切片。 |
+| `AuditEvidenceVerifier` fixtures | 让别人不用读测试代码，也能用 pass/fail 样例理解离线 gate 怎么跑。 | 已有 `evals/enterprise/fixtures/audit_evidence/`。 |
 | `ToolTrajectoryVerifier` | 服务 trace trajectory：required tool / forbidden tool 的确定性检查。 | 第二候选，适合接 `evals/enterprise`。 |
 | LLM Judge | 适合解释质量、答案完整性等主观项。 | 暂不优先。P0 不交给 Judge。 |
 | Router fine-tune | 需要 reviewed samples 和真实路由错误证据。 | 后置。当前只有 candidate set。 |

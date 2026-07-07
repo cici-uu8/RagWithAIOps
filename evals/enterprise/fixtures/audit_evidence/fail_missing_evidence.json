@@ -1,0 +1,27 @@
+{
+  "audit_events": [
+    {
+      "event_type": "tool_blocked",
+      "route": "tool_gateway",
+      "trace_id": "trace-fixture-fail",
+      "request_id": "",
+      "user_id": "user_fixture",
+      "decision": "denied",
+      "metadata": {
+        "tool_id": "admin.drop_table",
+        "status": "blocked"
+      }
+    },
+    {
+      "event_type": "permission_checked",
+      "route": "permission",
+      "trace_id": "trace-fixture-fail",
+      "request_id": "request-fixture-fail",
+      "user_id": "user_fixture",
+      "decision": "allowed",
+      "metadata": {
+        "resource_type": "tool"
+      }
+    }
+  ]
+}
