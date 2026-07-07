@@ -45,7 +45,7 @@ class AuditEvidenceVerifier(BaseVerifier):
             "operation_type",
             "resource_ids",
         ),
-        "database_operation_prepare_rejected": ("database_id", "operation_type"),
+        "database_operation_prepare_rejected": ("database_id",),
         "database_operation_confirmation_confirmed": (
             "confirmation_id",
             "database_id",
@@ -58,6 +58,22 @@ class AuditEvidenceVerifier(BaseVerifier):
             "database_id",
             "operation_type",
             "resource_ids",
+        ),
+        "database_operation_direct_execute_rejected": ("database_id",),
+        "database_operation_direct_executed": (
+            "database_id",
+            "operation_type",
+            "resource_ids",
+            "sql_hash",
+            "parameters_hash",
+            "rows_affected",
+        ),
+        "database_operation_direct_execution_failed": (
+            "database_id",
+            "operation_type",
+            "resource_ids",
+            "sql_hash",
+            "parameters_hash",
         ),
         "database_operation_execution_failed": (
             "confirmation_id",

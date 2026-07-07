@@ -12808,3 +12808,10 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 - 说明文件：`evals/enterprise/fixtures/audit_evidence/README.md` 给出 pass/fail 两条 CLI 命令，输出目录使用 `/tmp/audit_evidence_gate_reports`，避免示例运行时污染仓库报告目录。
 - 回归保护：`tests/test_enterprise_audit_evidence_gate.py` 增加 `test_fixture_examples_match_gate_expectations`，直接跑两个 fixture，断言 pass 样例 `event_count=5/findings=0`，fail 样例返回 `audit_request_id_missing`、`audit_reason_missing`、`audit_metadata_missing`。这样以后 verifier 规则变动时，示例不会悄悄过期。
 - 边界：本轮仍然只增加离线 eval fixture、测试和文档示例；没有接 `AuditService.record()`，没有接生产路由，也没有改 RAG / DB / AIOps / router / model 默认行为。
+
+## 2026-07-07 (AuditEvidenceVerifier PR review 修复)
+
+- 背景：合并前 review 指出两个真实 DB 审计边界问题。第一，`database_operation_direct_executed` 是当前 MySQL direct execute 路径会写的真实事件，但第一版 verifier 没有为它配置 metadata 要求，导致 direct DB 操作即使缺 `resource_ids/sql_hash/parameters_hash/rows_affected` 也可能通过 P0 audit gate。第二，`database_operation_prepare_rejected` 对 `operation_type` 要求过严，因为 `database_not_configured` 这类早期拒绝发生在 SQL 分类之前，真实 audit 只能稳定提供 `database_id`。
+- TDD 红灯：先在 `tests/test_enterprise_verifiers.py` 增加两条 review 回归。`uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` 按预期失败 2 条：direct executed 缺 metadata 被误判为 passed，early prepare rejected 缺 `operation_type` 被误判为 failed。
+- 代码修复：`app/enterprise/verifiers/audit_evidence.py` 的 `required_metadata_by_event_type` 新增 direct DB 系列事件要求：`database_operation_direct_executed` 要求 `database_id`、`operation_type`、`resource_ids`、`sql_hash`、`parameters_hash`、`rows_affected`；`database_operation_direct_execution_failed` 要求 `database_id`、`operation_type`、`resource_ids`、`sql_hash`、`parameters_hash`；`database_operation_direct_execute_rejected` 只要求 `database_id`，以兼容 `database_not_configured` 这类早期拒绝。同时把 `database_operation_prepare_rejected` 的要求从 `database_id + operation_type` 放宽为只要求 `database_id`。
+- 绿色验证：同一 verifier 单测随后通过。该修复仍然只改变离线 verifier 判断规则，不改 `AuditService.record()`、数据库运行链路、direct execute 行为、trace-source 输入或生产 gate。

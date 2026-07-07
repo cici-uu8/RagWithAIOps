@@ -218,6 +218,118 @@ class EnterpriseVerifierF4Tests(unittest.IsolatedAsyncioTestCase):
             ["metadata.resource_id", "metadata.action"],
         )
 
+    def test_audit_evidence_verifier_checks_direct_database_execution_metadata(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_direct_executed",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="allowed",
+                        metadata={
+                            "database_id": "mysql_sales_write",
+                            "operation_type": "update",
+                        },
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.FAILED)
+        self.assertEqual(result.findings[0].code, "audit_metadata_missing")
+        self.assertEqual(
+            result.findings[0].metadata["missing_fields"],
+            [
+                "metadata.resource_ids",
+                "metadata.sql_hash",
+                "metadata.parameters_hash",
+                "metadata.rows_affected",
+            ],
+        )
+
+    def test_audit_evidence_verifier_checks_direct_database_failure_metadata(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_direct_execution_failed",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="database_operation_execution_failed",
+                        metadata={
+                            "database_id": "mysql_sales_write",
+                            "operation_type": "update",
+                        },
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.FAILED)
+        self.assertEqual(result.findings[0].code, "audit_metadata_missing")
+        self.assertEqual(
+            result.findings[0].metadata["missing_fields"],
+            [
+                "metadata.resource_ids",
+                "metadata.sql_hash",
+                "metadata.parameters_hash",
+            ],
+        )
+
+    def test_audit_evidence_verifier_allows_early_direct_database_rejection_without_operation_type(
+        self,
+    ):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_direct_execute_rejected",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="database_not_configured",
+                        metadata={"database_id": "unknown_database"},
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.PASSED)
+
+    def test_audit_evidence_verifier_allows_early_database_prepare_rejection_without_operation_type(
+        self,
+    ):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_prepare_rejected",
+                        route="/api/database/operations/prepare",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="database_not_configured",
+                        metadata={"database_id": "unknown_database"},
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.PASSED)
+
     def test_citation_verifier_uses_source_ref_not_display_citation_text(self):
         response = RetrievalResponse(
             query=RetrievalQuery(query="restart procedure"),

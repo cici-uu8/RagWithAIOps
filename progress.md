@@ -27,6 +27,9 @@
   - missing `request_id` / `reason` produces a failed report and `main()` returns 1.
   - fixture examples are checked so the pass/fail samples do not drift from verifier behavior.
 - Boundary: no production route is wired to the verifier yet; no `AuditService` schema change; no RAG / DB / AIOps behavior change; no LLM Judge, model training, or router fine-tune work.
+- PR review follow-up:
+  - added coverage for direct DB events so direct success/failure operations cannot pass without `resource_ids`, `sql_hash`, and `parameters_hash`; successful direct execution also requires `rows_affected`;
+  - relaxed early `database_operation_prepare_rejected` and `database_operation_direct_execute_rejected` metadata requirements to avoid false positives for `database_not_configured` rejections before SQL classification produces `operation_type`.
 - Verification so far:
   - baseline `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` passed 4/4 before implementation;
   - red phase failed on missing `AuditEvidenceVerifier`;
