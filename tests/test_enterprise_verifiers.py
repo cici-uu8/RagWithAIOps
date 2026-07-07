@@ -13,6 +13,7 @@ from app.enterprise.observability.audit_service import (
     InMemoryAuditSink,
     SQLiteAuditSink,
 )
+from app.enterprise.observability.models import AuditEvent
 from app.enterprise.permissions.models import GrantEffect, PrincipalType, ResourceGrant
 from app.enterprise.permissions.repository import InMemoryGovernanceRepository
 from app.enterprise.permissions.service import PermissionService
@@ -20,6 +21,7 @@ from app.enterprise.tasks.repository import InMemoryTaskContractRepository
 from app.enterprise.tasks.service import TaskContractService
 from app.enterprise.tasks.validator import ContractValidator
 from app.enterprise.verifiers import (
+    AuditEvidenceVerifier,
     CitationVerifier,
     PlanVerifier,
     SqlResultVerifier,
@@ -111,6 +113,223 @@ class FakePlanThenCompleteAIOpsService:
 
 
 class EnterpriseVerifierF4Tests(unittest.IsolatedAsyncioTestCase):
+    def test_audit_evidence_verifier_accepts_gateway_tool_and_database_decisions(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="request_failed",
+                        route="chat",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="blocked",
+                        reason="guardrail_blocked",
+                        metadata={"recovery_decision": "abort"},
+                    ),
+                    AuditEvent(
+                        event_type="tool_blocked",
+                        route="tool_gateway",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="default_deny",
+                        metadata={
+                            "tool_id": "hidden_tool",
+                            "status": "blocked",
+                            "recovery_decision": "abort",
+                        },
+                    ),
+                    AuditEvent(
+                        event_type="database_operation_executed",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="allowed",
+                        metadata={
+                            "confirmation_id": "confirm-001",
+                            "database_id": "sandbox_sales",
+                            "operation_type": "update",
+                            "resource_ids": ["database_operation:sandbox_sales:update"],
+                        },
+                    ),
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.PASSED)
+        self.assertEqual(result.metadata["event_count"], 3)
+        self.assertEqual(result.metadata["checked_event_count"], 3)
+
+    def test_audit_evidence_verifier_fails_missing_trace_request_and_reason(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    {
+                        "event_type": "tool_blocked",
+                        "route": "tool_gateway",
+                        "trace_id": "",
+                        "request_id": "",
+                        "user_id": "user_f4",
+                        "decision": "denied",
+                        "metadata": {"tool_id": "hidden_tool", "status": "blocked"},
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.FAILED)
+        self.assertEqual(
+            [finding.code for finding in result.findings],
+            [
+                "audit_trace_id_missing",
+                "audit_request_id_missing",
+                "audit_reason_missing",
+            ],
+        )
+
+    def test_audit_evidence_verifier_fails_resource_scoped_event_without_metadata(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="permission_checked",
+                        route="permission",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="default_deny",
+                        metadata={"resource_type": "tool"},
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.FAILED)
+        self.assertEqual(result.findings[0].code, "audit_metadata_missing")
+        self.assertEqual(
+            result.findings[0].metadata["missing_fields"],
+            ["metadata.resource_id", "metadata.action"],
+        )
+
+    def test_audit_evidence_verifier_checks_direct_database_execution_metadata(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_direct_executed",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="allowed",
+                        metadata={
+                            "database_id": "mysql_sales_write",
+                            "operation_type": "update",
+                        },
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.FAILED)
+        self.assertEqual(result.findings[0].code, "audit_metadata_missing")
+        self.assertEqual(
+            result.findings[0].metadata["missing_fields"],
+            [
+                "metadata.resource_ids",
+                "metadata.sql_hash",
+                "metadata.parameters_hash",
+                "metadata.rows_affected",
+            ],
+        )
+
+    def test_audit_evidence_verifier_checks_direct_database_failure_metadata(self):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_direct_execution_failed",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="database_operation_execution_failed",
+                        metadata={
+                            "database_id": "mysql_sales_write",
+                            "operation_type": "update",
+                        },
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.FAILED)
+        self.assertEqual(result.findings[0].code, "audit_metadata_missing")
+        self.assertEqual(
+            result.findings[0].metadata["missing_fields"],
+            [
+                "metadata.resource_ids",
+                "metadata.sql_hash",
+                "metadata.parameters_hash",
+            ],
+        )
+
+    def test_audit_evidence_verifier_allows_early_direct_database_rejection_without_operation_type(
+        self,
+    ):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_direct_execute_rejected",
+                        route="/api/database/operations/execute",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="database_not_configured",
+                        metadata={"database_id": "unknown_database"},
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.PASSED)
+
+    def test_audit_evidence_verifier_allows_early_database_prepare_rejection_without_operation_type(
+        self,
+    ):
+        result = AuditEvidenceVerifier().verify(
+            request_context(),
+            {
+                "audit_events": [
+                    AuditEvent(
+                        event_type="database_operation_prepare_rejected",
+                        route="/api/database/operations/prepare",
+                        trace_id="trace-f4",
+                        request_id="request-f4",
+                        user_id="user_f4",
+                        decision="denied",
+                        reason="database_not_configured",
+                        metadata={"database_id": "unknown_database"},
+                    )
+                ],
+            },
+        )
+
+        self.assertEqual(result.status, VerificationStatus.PASSED)
+
     def test_citation_verifier_uses_source_ref_not_display_citation_text(self):
         response = RetrievalResponse(
             query=RetrievalQuery(query="restart procedure"),

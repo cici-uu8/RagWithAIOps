@@ -1,5 +1,30 @@
 # PROJECT_STATE
 
+## AuditEvidenceVerifier Worktree Status (2026-07-07)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/audit-evidence-verifier` on branch `codex/audit-evidence-verifier`. It was branched from `codex/agent-eval-assets` so `docs/Agent评测门禁Scorecard.md` is available as the governing design source.
+
+Current implementation goal: turn Scorecard gate `G-P0-AUDIT-EVIDENCE` into the first deterministic verifier slice and a small offline gate runner. This is a verifier/eval asset only; it does not change `AuditService`, does not wire a production route, does not alter RequestGateway / ToolGateway / database operation behavior, and does not change any RAG / model / router default.
+
+Acceptance rules extracted from `G-P0-AUDIT-EVIDENCE`:
+- every checked audit event must carry `event_type`, `route`, `trace_id`, `request_id`, `user_id`, and `decision`;
+- denied / blocked / failed / needs_revision / degraded / pending_approval decisions must include `reason`;
+- resource-scoped P0 events must include event-specific metadata, for example permission `resource_id/action`, tool `tool_id/status`, confirmation-based database operation `confirmation_id/database_id/operation_type/resource_ids`, direct database success/failure operation `database_id/operation_type/resource_ids/sql_hash/parameters_hash` plus execution result fields where available, human review `review_id/task_id/risk_level`, and verification `verifier/status/result`;
+- early database prepare rejection only requires `database_id` metadata because `database_not_configured` can happen before SQL classification produces `operation_type`;
+- missing evidence returns deterministic `VerificationStatus.FAILED` findings instead of relying on LLM Judge or manual review.
+
+Implemented files:
+- `app/enterprise/verifiers/audit_evidence.py`: new `AuditEvidenceVerifier`.
+- `app/enterprise/verifiers/__init__.py`: exports the verifier.
+- `tests/test_enterprise_verifiers.py`: adds red/green acceptance coverage for passing mixed gateway/tool/database events, missing trace/request/reason, and missing resource metadata.
+- `evals/enterprise/run_audit_evidence_gate.py`: offline `G-P0-AUDIT-EVIDENCE` runner that reads audit event JSON/JSONL, runs `AuditEvidenceVerifier`, writes JSON/Markdown reports, and exits non-zero on missing evidence.
+- `evals/enterprise/fixtures/audit_evidence/`: pass/fail sample audit events plus README commands for understanding the offline gate without reading test code.
+- `tests/test_enterprise_audit_evidence_gate.py`: locks the offline runner pass/fail report behavior.
+
+Verification so far: initial baseline `uv run pytest tests/test_enterprise_verifiers.py -q` failed because the fresh worktree lacked the dev extra; rerun with `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` passed baseline 4/4. After the TDD red check failed on missing `AuditEvidenceVerifier`, the green run passed 7/7. The offline runner TDD red check failed on missing `evals.enterprise.run_audit_evidence_gate`; after implementation, `tests/test_enterprise_audit_evidence_gate.py` passed 2/2. Combined governance/audit regression now passes 33/33 with existing Pydantic warnings. Fixture coverage is now locked by `test_fixture_examples_match_gate_expectations`. PR review follow-up added regression checks for direct DB event coverage and early database rejection without `operation_type`; the first red check failed on the original two review points before the verifier table was adjusted.
+
+Next step: run final targeted verification after fixture/state/docs updates, then decide whether to commit this isolated implementation branch. Broader trace-eval integration, scorecard aggregation, release-gate orchestration, and production route gating remain future tasks.
+
 ## Agent Evaluation Assets Worktree Status (2026-07-07)
 
 Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-assets` on branch `codex/agent-eval-assets`. This worktree was opened to avoid adding more files to the dirty main checkout.

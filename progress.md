@@ -1,5 +1,43 @@
 # Progress
 
+## 2026-07-07 AuditEvidenceVerifier P0 Gate Slice
+
+- Opened implementation work only in `/Users/cici/oncall agent/.worktrees/audit-evidence-verifier` on branch `codex/audit-evidence-verifier`, leaving the dirty main checkout untouched.
+- Used `docs/Agent评测门禁Scorecard.md` gate `G-P0-AUDIT-EVIDENCE` as the acceptance source.
+- Extracted deterministic acceptance rules:
+  - audit events need `event_type`, `route`, `trace_id`, `request_id`, `user_id`, and `decision`;
+  - denied / blocked / failed / needs_revision / degraded / pending_approval decisions need `reason`;
+  - P0 resource-scoped events need concrete metadata such as `resource_id`, `tool_id`, `confirmation_id`, `database_id`, `review_id`, or verifier result metadata depending on event type.
+- Added TDD coverage in `tests/test_enterprise_verifiers.py`:
+  - mixed gateway/tool/database audit events pass when evidence is complete;
+  - missing trace/request/reason fails deterministically;
+  - permission audit without resource metadata fails deterministically.
+- Implemented `app/enterprise/verifiers/audit_evidence.py` and exported `AuditEvidenceVerifier` from `app/enterprise/verifiers/__init__.py`.
+- Added `evals/enterprise/run_audit_evidence_gate.py` as an offline gate runner:
+  - reads audit events from JSONL, JSON array, or JSON object with `audit_events`;
+  - runs `AuditEvidenceVerifier`;
+  - writes JSON and Markdown reports under `evals/enterprise/reports` or a supplied `--output-dir`;
+  - returns exit code 1 when evidence is missing.
+- Added `evals/enterprise/fixtures/audit_evidence/`:
+  - `pass_events.jsonl` shows complete permission/tool/database/human-review/verification evidence;
+  - `fail_missing_evidence.json` shows missing `request_id`, missing `reason`, and missing permission resource metadata;
+  - `README.md` gives one-command pass/fail runner examples.
+- Added `tests/test_enterprise_audit_evidence_gate.py`:
+  - complete audit evidence produces JSON/Markdown reports and passes;
+  - missing `request_id` / `reason` produces a failed report and `main()` returns 1.
+  - fixture examples are checked so the pass/fail samples do not drift from verifier behavior.
+- Boundary: no production route is wired to the verifier yet; no `AuditService` schema change; no RAG / DB / AIOps behavior change; no LLM Judge, model training, or router fine-tune work.
+- PR review follow-up:
+  - added coverage for direct DB events so direct success/failure operations cannot pass without `resource_ids`, `sql_hash`, and `parameters_hash`; successful direct execution also requires `rows_affected`;
+  - relaxed early `database_operation_prepare_rejected` and `database_operation_direct_execute_rejected` metadata requirements to avoid false positives for `database_not_configured` rejections before SQL classification produces `operation_type`.
+- Verification so far:
+  - baseline `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` passed 4/4 before implementation;
+  - red phase failed on missing `AuditEvidenceVerifier`;
+  - green phase passed 7/7 after implementation, with only existing Pydantic deprecation warnings.
+  - offline runner red phase failed on missing `evals.enterprise.run_audit_evidence_gate`;
+  - `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py -q` passed 2/2 after implementation;
+  - combined targeted regression `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_verifiers.py tests/test_enterprise_database_operation_audit.py tests/test_enterprise_tool_gateway.py tests/test_enterprise_gateway_routes.py -q` passed 33/33.
+
 ## 2026-07-07 Agent Evaluation Asset Index
 
 - Opened and continued work only in `/Users/cici/oncall agent/.worktrees/agent-eval-assets` on branch `codex/agent-eval-assets`, leaving the dirty main checkout untouched.

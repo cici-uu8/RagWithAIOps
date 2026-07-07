@@ -12764,3 +12764,54 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 - 新增文件：`docs/主仓库边界清理任务.md`。该任务单只读记录了 `plan-governance-experiment/`、`super_biz_agent_py-plan-update/` 以及 release 目录下 `.gitattributes`、CI、PlanGraph、Backlog、Closeout、GEMINI/KIMI 等治理/配置文件的候选处理方式。
 - 关键约束：任务单明确禁止删除、移动、`git clean`、`git reset --hard`、`git checkout -- <path>` 和直接 stash apply/pop。所有条目只给“保留 / 迁移 / 待确认”建议。
 - 分离原则：主仓库边界清理和 `AuditEvidenceVerifier` 不放在同一个提交里。`AuditEvidenceVerifier` 仍是后续最小代码实现候选，但要另开 worktree，从 `docs/Agent评测门禁Scorecard.md` 的 `G-P0-AUDIT-EVIDENCE` 抽验收规则。
+
+## 2026-07-07 (AuditEvidenceVerifier P0 审计证据门禁切片)
+
+- 背景：`docs/Agent评测门禁Scorecard.md` 已把 `G-P0-AUDIT-EVIDENCE` 标成第一个最小实现候选。该 gate 的风险不是“回答质量不好”，而是 allow / deny / block / execute 这类 P0 决策缺少可追踪审计证据，导致事后无法判断是谁、在什么 request/trace、基于什么资源和理由做了决策。
+- 工作区边界：本轮在新 worktree `/Users/cici/oncall agent/.worktrees/audit-evidence-verifier`、分支 `codex/audit-evidence-verifier` 实现，从 `codex/agent-eval-assets` 派生以复用 Scorecard 文档。主 checkout 仍然不动。
+- 验收规则抽取：从 `G-P0-AUDIT-EVIDENCE` 落成四条确定性规则：每条被检查的审计事件必须有 `event_type/route/trace_id/request_id/user_id/decision`；拒绝、阻断、失败、降级、待审批类决策必须有 `reason`；资源相关事件必须有对应 metadata，例如 `permission_checked` 的 `resource_id/action`、tool 事件的 `tool_id/status`、数据库操作事件的 `confirmation_id/database_id/operation_type/resource_ids`、human review 的 `review_id/task_id/risk_level`；缺失时返回 `VerificationStatus.FAILED` 和稳定 finding code，而不是交给 LLM Judge。
+- TDD 红灯：先在 `tests/test_enterprise_verifiers.py` 添加三条验收测试。红灯命令 `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` 在收集阶段失败于 `ImportError: cannot import name 'AuditEvidenceVerifier'`，说明测试确实锁定了新 verifier，而不是复用已有行为。
+- 代码实现：新增 `app/enterprise/verifiers/audit_evidence.py`，实现 `AuditEvidenceVerifier(BaseVerifier)`。它接受 `AuditEvent` 或 dict 形式的 `audit_events`，复用现有 `VerificationResult` / `VerificationFinding` / `VerificationStatus` 模型，不修改 `AuditEvent` schema，也不改 `AuditService.record/query`。`app/enterprise/verifiers/__init__.py` 只增加导出。
+- 绿色验证：实现后同一命令通过 7/7。已有 Pydantic deprecation warnings 仍存在，但不是本轮引入。测试覆盖三类关键样本：gateway/tool/database 混合完整证据通过；缺 `trace_id/request_id/reason` 失败；`permission_checked` 缺 `metadata.resource_id` 和 `metadata.action` 失败。
+- 风险边界：这一步只是 verifier 资产，不是生产链路接入。没有改 RequestGateway、ToolGateway、DatabaseOperation services、HumanReviewService 或任何默认策略。下一步如果继续，应先决定是把该 verifier 接入 trace eval / scorecard runner，还是继续做 `ToolTrajectoryVerifier`；不应跳到 LLM Judge、router fine-tune 或 Q-SQL 实验。
+
+**追问: 为什么不直接把缺字段校验写进 `AuditService.record()`？**
+
+答：`AuditService.record()` 是底层写入壳，当前已经服务 request、tool、permission、database、human review、verification 等多个事件类型。直接在写入层强校验会立刻改变运行时行为，甚至可能把已有非 P0 observation 事件误拦住。本轮目标是先做可复用 deterministic gate，所以把规则放进 `AuditEvidenceVerifier`：它可以在测试、trace eval 或发布门禁中检查证据完整性，但暂时不改变生产写入路径。
+
+**追问: 为什么 resource 字段有时叫 `resource_id`，有时叫 `tool_id` / `confirmation_id`？**
+
+答：这是现有项目资产的真实边界。权限事件的资源是统一 `resource_id`；工具事件已经用 `tool_id`；数据库写操作的可追踪资源通常是 `confirmation_id`、`database_id`、`operation_type` 和 `resource_ids` 的组合；human review 用 `review_id/task_id`。强行把所有事件改成单一字段会扩大迁移面。第一版 verifier 选择按事件类型定义 metadata 要求，既保留现有审计模型，又能稳定判断 P0 证据是否足够。
+
+## 2026-07-07 (AuditEvidenceVerifier 离线 gate runner)
+
+- 背景：第一版 `AuditEvidenceVerifier` 只是一个 verifier 类。用户判断方向正确，但指出下一步不要改 `AuditService.record()`，而应先把它接到离线 gate 或 trace eval runner，让它成为“发布前检查项”。本轮因此选择 `evals/enterprise` 下的独立离线 runner，而不是生产链路强约束。
+- 新增入口：`evals/enterprise/run_audit_evidence_gate.py`。它提供 `run_audit_evidence_gate(...)` 和 CLI：`uv run python -m evals.enterprise.run_audit_evidence_gate --audit-events <path> --output-dir <dir>`。输入支持 JSONL、JSON array、以及 `{ "audit_events": [...] }` 三种本地审计事件文件形状。
+- 报告行为：runner 调用 `AuditEvidenceVerifier` 后输出 `audit_evidence_gate_<input>_<timestamp>.json` 和 `.md`，报告字段包括 `gate_id=G-P0-AUDIT-EVIDENCE`、`verifier`、`passed`、`summary.event_count`、`summary.finding_count`、`summary.finding_codes` 和 findings 明细。CLI 在通过时返回 0，发现缺审计证据时返回 1。
+- TDD 红灯：先新增 `tests/test_enterprise_audit_evidence_gate.py`。红灯命令 `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py -q` 失败于 `ModuleNotFoundError: No module named 'evals.enterprise.run_audit_evidence_gate'`，说明测试锁定的是新离线入口，而不是已有 verifier 单测。
+- 绿色验证：实现 runner 后，单测 2/2 通过。随后 combined targeted regression 通过 33/33：`tests/test_enterprise_audit_evidence_gate.py`、`tests/test_enterprise_verifiers.py`、`tests/test_enterprise_database_operation_audit.py`、`tests/test_enterprise_tool_gateway.py`、`tests/test_enterprise_gateway_routes.py`。`ruff check` 也通过；警告仍是项目既有 Pydantic deprecation / ruff 配置迁移提示。
+- 边界：这一步没有把 verifier 塞进 `run_trace_eval.py` 的 matcher，也没有做 scorecard 聚合器。原因是 trace trajectory 和 audit evidence 是两个相关但不完全相同的 gate：trace eval 更关注 required stage/tool/event 是否出现，audit evidence gate 更关注出现的 allow/deny/block/execute 事件是否有足够字段。先独立成离线 runner，后续再由 scorecard 或发布前脚本编排，边界更清楚。
+
+**追问: 为什么不直接接进 `run_trace_eval.py`？**
+
+答：`run_trace_eval.py` 现在的职责是对照 evalset 检查轨迹是否满足 required stages、required audit events、forbidden tools、SSE 等期望；它的输入是 `ExpectedTrajectory`。`AuditEvidenceVerifier` 检查的是事件字段完整性，即使一个 trace 的事件类型都出现了，也可能缺 `request_id`、`reason` 或资源 metadata。直接混进 matcher 会把“轨迹缺步骤”和“审计字段缺证据”混成一种 mismatch。先做独立 runner，可以被发布前 gate 调用，也可以未来由 trace eval 在报告阶段组合。
+
+**追问: 这个 runner 现在能不能当发布门禁？**
+
+答：能作为发布前检查项的雏形，但还不是完整发布门禁。它已经能对给定 audit events 文件返回 pass/fail 和报告；缺口是事件来源编排还没统一，比如从 SQLite audit sink、trace eval report、或 CI smoke 输出中自动抽取事件。下一步如果继续，应做一个小的 scorecard/gate orchestrator，或者给 `run_audit_evidence_gate.py` 增加 SQLite/trace-source 输入，而不是改生产写入路径。
+
+## 2026-07-07 (AuditEvidenceVerifier fixtures)
+
+- 背景：离线 runner 已经可执行，但如果只靠测试代码解释 gate，别人还需要读 Python 才能明白“什么样的 audit event 会过、什么样会失败”。用户要求补一个小的 fixtures 目录，放 pass/fail 样例，让一条命令就能理解这个 gate 怎么跑。
+- 新增样例：`evals/enterprise/fixtures/audit_evidence/pass_events.jsonl` 覆盖完整证据链，包括 `permission_checked`、`tool_call`、`database_operation_executed`、`human_review_rejected` 和 `verification_result`。它体现的规则是：基础追踪字段完整，阻断/拒绝类事件有 `reason`，资源相关事件有对应 metadata。
+- 新增反例：`evals/enterprise/fixtures/audit_evidence/fail_missing_evidence.json` 使用 `{ "audit_events": [...] }` 输入形态，故意保留三类缺口：`tool_blocked` 缺 `request_id`、拒绝类事件缺 `reason`、`permission_checked` 缺 `metadata.resource_id` / `metadata.action`。
+- 说明文件：`evals/enterprise/fixtures/audit_evidence/README.md` 给出 pass/fail 两条 CLI 命令，输出目录使用 `/tmp/audit_evidence_gate_reports`，避免示例运行时污染仓库报告目录。
+- 回归保护：`tests/test_enterprise_audit_evidence_gate.py` 增加 `test_fixture_examples_match_gate_expectations`，直接跑两个 fixture，断言 pass 样例 `event_count=5/findings=0`，fail 样例返回 `audit_request_id_missing`、`audit_reason_missing`、`audit_metadata_missing`。这样以后 verifier 规则变动时，示例不会悄悄过期。
+- 边界：本轮仍然只增加离线 eval fixture、测试和文档示例；没有接 `AuditService.record()`，没有接生产路由，也没有改 RAG / DB / AIOps / router / model 默认行为。
+
+## 2026-07-07 (AuditEvidenceVerifier PR review 修复)
+
+- 背景：合并前 review 指出两个真实 DB 审计边界问题。第一，`database_operation_direct_executed` 是当前 MySQL direct execute 路径会写的真实事件，但第一版 verifier 没有为它配置 metadata 要求，导致 direct DB 操作即使缺 `resource_ids/sql_hash/parameters_hash/rows_affected` 也可能通过 P0 audit gate。第二，`database_operation_prepare_rejected` 对 `operation_type` 要求过严，因为 `database_not_configured` 这类早期拒绝发生在 SQL 分类之前，真实 audit 只能稳定提供 `database_id`。
+- TDD 红灯：先在 `tests/test_enterprise_verifiers.py` 增加两条 review 回归。`uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` 按预期失败 2 条：direct executed 缺 metadata 被误判为 passed，early prepare rejected 缺 `operation_type` 被误判为 failed。
+- 代码修复：`app/enterprise/verifiers/audit_evidence.py` 的 `required_metadata_by_event_type` 新增 direct DB 系列事件要求：`database_operation_direct_executed` 要求 `database_id`、`operation_type`、`resource_ids`、`sql_hash`、`parameters_hash`、`rows_affected`；`database_operation_direct_execution_failed` 要求 `database_id`、`operation_type`、`resource_ids`、`sql_hash`、`parameters_hash`；`database_operation_direct_execute_rejected` 只要求 `database_id`，以兼容 `database_not_configured` 这类早期拒绝。同时把 `database_operation_prepare_rejected` 的要求从 `database_id + operation_type` 放宽为只要求 `database_id`。
+- 绿色验证：同一 verifier 单测随后通过。该修复仍然只改变离线 verifier 判断规则，不改 `AuditService.record()`、数据库运行链路、direct execute 行为、trace-source 输入或生产 gate。

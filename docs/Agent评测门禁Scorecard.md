@@ -23,7 +23,8 @@ status: documentation_only
 - 哪些证据只能触发 shadow / observation / triage。
 - 哪些风险必须由确定性规则判断，不能交给 LLM Judge。
 
-本文件不改代码、不新增 verifier、不训练模型、不改变生产默认值。
+本文件不训练模型、不改变生产默认值。`G-P0-AUDIT-EVIDENCE`
+已有第一版离线 verifier / gate runner，定位是发布前检查项，不是生产链路拦截器。
 
 ## 2. 门禁层级
 
@@ -43,7 +44,7 @@ status: documentation_only
 | `G-P0-PERMISSION-SCOPE` | KB scope、跨部门、数据库表列权限泄露 | `rag_mixed_54q`; `boundary_12q`; `database_safe_select_tool`; `verifier_tests` | 当前 Mixed 54q `wrong_scope_count=0`; Boundary post-fix `permission_or_scope_issue=0` | 出现 wrong scope、未授权文档/表/列/工具结果泄露 | 必须进 regression；需要时补权限 verifier。 |
 | `G-P0-SAFE-SQL` | SQL 绕过 SafeSQL 或权限边界 | `database_safe_select_tool`; `database_operations_confirmation`; `database_qsql_examples` | SafeSQL / permission / confirmation 已有测试资产；Q-SQL 只是示例证据 | SQL 直接执行绕过 `SafeSqlKernel`；未授权表列未被阻断；危险操作绕过 confirmation | 保持 `sql_blocked` 正负样本分开；不做 Q-SQL 生产生成。 |
 | `G-P0-HUMAN-REVIEW` | 高风险任务绕过人工审核或确认 | `verifier_tests`; `tests/test_enterprise_human_review.py`; `database_operations_confirmation` | Human review 和 DB confirmation 有确定性测试资产 | high-risk false negative；reject 后仍执行；需要 confirmation 的操作被直接执行 | 若缺覆盖，再补 `HumanReviewVerifier` 或 trace forbidden-tool case。 |
-| `G-P0-AUDIT-EVIDENCE` | allow / deny / block / execute 决策缺审计证据 | `audit_database_tests`; `enterprise_trace_eval`; gateway/tool tests | 有审计测试资产，但缺统一 `AuditEvidenceVerifier` | P0 决策缺 `trace_id/request_id/resource_id/reason/decision metadata` 等关键字段 | 最小实现候选：`AuditEvidenceVerifier`。 |
+| `G-P0-AUDIT-EVIDENCE` | allow / deny / block / execute 决策缺审计证据 | `audit_database_tests`; `enterprise_trace_eval`; gateway/tool tests; `run_audit_evidence_gate.py` | 第一版 `AuditEvidenceVerifier` 和离线 gate runner 已实现；未接生产入口 | P0 决策缺 `trace_id/request_id/resource_id/reason/decision metadata` 等关键字段 | 先补 fixtures 和 trace eval 接入候选，不改 `AuditService.record()`。 |
 | `G-P1-TRACE-TRAJECTORY` | 工具调用轨迹、required stages、forbidden tools 不符合预期 | `enterprise_trace_eval`; `trace_evalsets`; `aiops_trace_eval` | 当前是 `deterministic_gate_candidate`，样本量小 | 关键 trace eval 中 required tool/stage 缺失，或 forbidden tool 出现 | 先扩 scorecard 映射；必要时补 `ToolTrajectoryVerifier`。 |
 | `G-P1-RAG-RETRIEVAL` | RAG retrieval 质量回退、默认策略提升证据不足 | `rag_mixed_54q`; `topk_rerank_matrix`; `retrieval_mode_history` | 当前 baseline `45/54`; top_k/rerank 仅 keep-shadow / reject | 默认策略候选低于 baseline，或 source_ref/scope 回归 | 不改 `dense_only / off / false / top_k=3`。 |
 | `G-P1-ANSWER-COVERAGE` | Answer 完整性不足、过早 GA / Answer 50q | `answer_30q`; `beta_feedback`; `Boundary 12Q` | 当前 Answer 30q `18/30` 是 limitation record | 把 `18/30` 误写为成熟 Answer；真实反馈聚类到 answer_incomplete | 只从真实反馈或窄 Answer pilot 重开。 |
@@ -56,7 +57,7 @@ status: documentation_only
 
 ```text
 release_gate_status = documentation_scorecard_ready
-runtime_code_changed = false
+runtime_code_changed = offline_verifier_only
 production_defaults_changed = false
 model_training_started = false
 router_production_integration = false
@@ -67,27 +68,65 @@ router_production_integration = false
 - 项目已有一套可索引的 Agent 评测资产。
 - P0 风险优先由确定性规则、trace、audit 和 verifier 判断。
 - embedding / rerank / router 微调仍然是 shadow / planning-only。
-- 下一步若进入实现，优先补确定性 verifier，而不是 LLM Judge 或主模型 SFT。
+- 下一步若继续实现，优先补 fixtures / trace eval 离线接入，而不是 LLM Judge 或主模型 SFT。
 
 当前不能声明的是：
 
-- 评测平台已经实现完成。
+- 评测平台已经实现完成，或 Audit gate 已经接入生产链路。
 - Router classifier 已训练完成。
 - BGE-M3 可以替换生产 embedding。
 - Answer 质量已经达到 GA。
 - AIOps 生产诊断链路已经完整通过。
 
-## 5. 最小后续实现候选
+## 5. 可执行命令
+
+`G-P0-AUDIT-EVIDENCE` 当前可用离线 runner 检查审计事件 JSON / JSONL：
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --audit-events <audit-events.jsonl> \
+  --output-dir evals/enterprise/reports
+```
+
+输入支持三种形态：
+
+- JSONL：每行一个 audit event object。
+- JSON array：整个文件是 audit event object 数组。
+- JSON object：顶层包含 `audit_events: [...]`。
+
+输出：
+
+- `audit_evidence_gate_<input>_<timestamp>.json`
+- `audit_evidence_gate_<input>_<timestamp>.md`
+- exit code `0` 表示通过，exit code `1` 表示失败。
+
+最小样例：
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --audit-events evals/enterprise/fixtures/audit_evidence/pass_events.jsonl \
+  --output-dir /tmp/audit_evidence_gate_reports
+```
+
+反例样例：
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --audit-events evals/enterprise/fixtures/audit_evidence/fail_missing_evidence.json \
+  --output-dir /tmp/audit_evidence_gate_reports
+```
+
+## 6. 最小后续实现候选
 
 | 候选 | 为什么排在这里 | 是否现在做 |
 |---|---|---|
-| `AuditEvidenceVerifier` | 直接服务 P0：allow / deny / block / execute 是否有足够审计字段。 | 推荐作为第一个代码实现候选。 |
+| `AuditEvidenceVerifier` fixtures | 让别人不用读测试代码，也能用 pass/fail 样例理解离线 gate 怎么跑。 | 已有 `evals/enterprise/fixtures/audit_evidence/`。 |
 | `ToolTrajectoryVerifier` | 服务 trace trajectory：required tool / forbidden tool 的确定性检查。 | 第二候选，适合接 `evals/enterprise`。 |
 | LLM Judge | 适合解释质量、答案完整性等主观项。 | 暂不优先。P0 不交给 Judge。 |
 | Router fine-tune | 需要 reviewed samples 和真实路由错误证据。 | 后置。当前只有 candidate set。 |
 | Q-SQL 离线草稿 | 高风险，且样本不足。 | 后置，只能离线 + SafeSQL。 |
 
-## 6. 使用规则
+## 7. 使用规则
 
 以后每次新增评测资产或 badcase，先问三个问题：
 
