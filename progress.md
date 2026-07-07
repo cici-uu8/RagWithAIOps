@@ -30,6 +30,12 @@
 - PR review follow-up:
   - added coverage for direct DB events so direct success/failure operations cannot pass without `resource_ids`, `sql_hash`, and `parameters_hash`; successful direct execution also requires `rows_affected`;
   - relaxed early `database_operation_prepare_rejected` and `database_operation_direct_execute_rejected` metadata requirements to avoid false positives for `database_not_configured` rejections before SQL classification produces `operation_type`.
+- Trace-source follow-up:
+  - opened stacked worktree `/Users/cici/oncall agent/.worktrees/audit-evidence-trace-sources` on branch `codex/audit-evidence-trace-sources` because PR #1 is still open;
+  - extended `evals/enterprise/run_audit_evidence_gate.py` so the offline gate can keep using `--audit-events` for fixtures, or use `--source-kind jsonl/sqlite --path ... --trace-id ... --request-id ...` for real trace sources;
+  - reused `AuditTraceExtractor` and `TraceSource` instead of writing a second JSONL/SQLite extractor;
+  - added report source fields `source_kind`, `source_path`, `trace_id`, and `request_id` while keeping `audit_events_path` for compatibility;
+  - kept the boundary offline-only: no `AuditService.record()` change, no production route gate, no CI gate, no scorecard aggregation.
 - Verification so far:
   - baseline `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` passed 4/4 before implementation;
   - red phase failed on missing `AuditEvidenceVerifier`;
@@ -37,6 +43,8 @@
   - offline runner red phase failed on missing `evals.enterprise.run_audit_evidence_gate`;
   - `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py -q` passed 2/2 after implementation;
   - combined targeted regression `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_verifiers.py tests/test_enterprise_database_operation_audit.py tests/test_enterprise_tool_gateway.py tests/test_enterprise_gateway_routes.py -q` passed 33/33.
+  - trace-source red phase failed on missing report source fields and unsupported source CLI args;
+  - trace-source green phase `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py -q` passed 7/7 after implementation.
 
 ## 2026-07-07 Agent Evaluation Asset Index
 

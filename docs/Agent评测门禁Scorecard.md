@@ -80,11 +80,33 @@ router_production_integration = false
 
 ## 5. 可执行命令
 
-`G-P0-AUDIT-EVIDENCE` 当前可用离线 runner 检查审计事件 JSON / JSONL：
+`G-P0-AUDIT-EVIDENCE` 当前可用离线 runner 检查审计事件 JSON / JSONL，也可以从真实 trace source 读取 JSONL / SQLite 审计记录。
+
+手写 fixture / 导出文件模式：
 
 ```bash
 uv run python -m evals.enterprise.run_audit_evidence_gate \
   --audit-events <audit-events.jsonl> \
+  --output-dir evals/enterprise/reports
+```
+
+真实 trace source 模式：
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --source-kind jsonl \
+  --path <audit-events.jsonl> \
+  --trace-id <trace-id> \
+  --request-id <request-id> \
+  --output-dir evals/enterprise/reports
+```
+
+```bash
+uv run python -m evals.enterprise.run_audit_evidence_gate \
+  --source-kind sqlite \
+  --path <enterprise-audit.sqlite> \
+  --trace-id <trace-id> \
+  --request-id <request-id> \
   --output-dir evals/enterprise/reports
 ```
 
@@ -94,11 +116,18 @@ uv run python -m evals.enterprise.run_audit_evidence_gate \
 - JSON array：整个文件是 audit event object 数组。
 - JSON object：顶层包含 `audit_events: [...]`。
 
+参数边界：
+
+- `--audit-events` 和 `--source-kind` / `--path` / `--trace-id` / `--request-id` 互斥。
+- trace source 必须提供 `--source-kind`、`--path`、`--trace-id`；`--request-id` 可选但建议提供。
+- trace source 没有匹配事件时返回失败报告，不允许静默通过。
+
 输出：
 
 - `audit_evidence_gate_<input>_<timestamp>.json`
 - `audit_evidence_gate_<input>_<timestamp>.md`
 - exit code `0` 表示通过，exit code `1` 表示失败。
+- report 保留 `audit_events_path` 兼容字段，并新增 `source_kind`、`source_path`、`trace_id`、`request_id`。
 
 最小样例：
 
