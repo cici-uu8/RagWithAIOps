@@ -1,5 +1,18 @@
 # Progress
 
+## 2026-07-07 Agent Evaluation Asset Index
+
+- Opened and continued work only in `/Users/cici/oncall agent/.worktrees/agent-eval-assets` on branch `codex/agent-eval-assets`, leaving the dirty main checkout untouched.
+- Added `docs/Agent评测资产索引.md` as a project-grounded inventory of existing evaluation assets:
+  - RAG Mixed 54q, Answer 30q, Boundary 12Q, Beta feedback, beta smoke, desktop smoke.
+  - top_k/rerank compare, BGE-M3 shadow evidence, model comparison overview.
+  - AIOps trace/lab assets, database Q-SQL/SafeSQL assets, enterprise trace eval, verifier tests.
+  - Router 52 candidate JSONL as a shadow candidate set, not a training set.
+- Added `docs/Agent评测RCA标签体系.md` with stable badcase labels, owner rules, fix actions, regression-entry rules, and release-blocking semantics.
+- Added `docs/Agent评测文档评审收口.md` to record the review conclusion: asset grading is not overstated, RCA ownership does not collapse corpus/permission/SafeSQL issues into LLM, and state files keep the work documentation-only.
+- Kept the scope documentation-only: no code changes, no test/eval reruns, no production default changes, no model training, no Q-SQL experiment.
+- Next step is committing this worktree as an independent documentation asset, then choosing the smallest follow-up: preferably a doc-only `Agent评测门禁Scorecard.md` before verifier implementation.
+
 ## 2026-06-18 Production-Grade Mainline Week0 Gate
 
 - Continued the active goal: execute the production-grade mainline in order `Week0 -> Month1 -> Month2 -> Month3`, without mixing old plans.

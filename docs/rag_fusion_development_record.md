@@ -12739,3 +12739,13 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: Bailian rerank 不是已经能调通了吗，为什么还 reject？**
 
 答：企业级 gate 看的不是“服务通没通”，而是“调通以后值不值得进默认路径”。`dense_k20_bailian_rn5_ctx3` 的结果很典型：`pool_expected_doc_hit_rate` 保持 `96.30%`，说明 dense recall 池本身没问题；但 rerank 后 `pass_rate` 降到 `68.52%`，`answer_proxy_regression_count=11`，而且还多了 `54` 次外部 API 调用和 `p95 +405ms` 的延迟。也就是说它现在更像一个“可调用的外部能力”，不是“可默认启用的生产策略”。
+
+## 2026-07-07 (Agent 评测资产索引与 RCA 标签体系)
+
+- 背景：主 checkout 当前分支不是 main 且工作区很脏，用户要求后续落文件先处理工作区边界。因此本轮只在新 worktree `/Users/cici/oncall agent/.worktrees/agent-eval-assets`、分支 `codex/agent-eval-assets` 下写文档，不继续污染主 checkout。
+- 新增资产索引：`docs/Agent评测资产索引.md` 将项目真实资产按 `gate / baseline / shadow / observation / historical / smoke` 分级，覆盖 RAG Mixed 54q、Answer 30q、Boundary 12Q、Beta feedback、beta smoke、桌面 smoke、top_k/rerank compare、BGE-M3 shadow、AIOps trace/lab、数据库 Q-SQL/SafeSQL、enterprise trace eval、verifier tests 和 Router 52 candidate JSONL。
+- 新增 RCA 标签体系：`docs/Agent评测RCA标签体系.md` 统一 `retrieval_wrong_doc`、`retrieval_no_hit`、`answer_incomplete`、`source_ref_unresolvable`、`permission_scope_issue`、`intent_misroute`、`tool_not_called`、`aiops_evidence_missing`、`sql_blocked`、`audit_missing`、`human_review_bypassed` 的定义、主责判断、修复动作和回归入库规则。
+- 边界：本轮没有改运行时代码、RAG 默认值、数据库路径、AIOps 行为、Router 生产路由或模型训练流程。BGE-M3 只作为 `keep-shadow` 模型对比证据索引；Router 52 条只作为 `quality_status=candidate` 的 shadow candidate set，不是 reviewed training set。
+- 评审收口：新增 `docs/Agent评测文档评审收口.md`，确认三类风险没有 blocker：资产分级没有把 observation/shadow 误写成生产 gate，RCA 主责没有把 corpus gap / permission / SafeSQL 阻断全甩给 LLM，状态文件没有把 documentation-only 误写成评测体系实现完成。
+- 解释口径：如果被问“这轮做了什么”，回答应是：把分散在 RAG、DB、AIOps、Trace Eval、Verifier、模型对比和微调准备里的证据统一成资产目录和 RCA 归因语言，先解决“做过什么、哪些能当门禁、哪些只是 shadow”的可解释性问题，再决定是否需要改 trace eval 或补 verifier。
+- 后续判断：如果资产索引显示只是证据散，继续补文档和 scorecard；如果 RCA 暴露 trace eval 表达不了期望路径，再改 `evals/enterprise`；如果 P0 风险缺规则判定，再补 `AuditEvidenceVerifier`、`ToolTrajectoryVerifier` 或 human-review 类 verifier。

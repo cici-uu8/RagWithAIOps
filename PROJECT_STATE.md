@@ -1,5 +1,21 @@
 # PROJECT_STATE
 
+## Agent Evaluation Assets Worktree Status (2026-07-07)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-assets` on branch `codex/agent-eval-assets`. This worktree was opened to avoid adding more files to the dirty main checkout.
+
+Current documentation goal: formalize the Agent evaluation asset layer without changing runtime code, RAG defaults, database paths, AIOps behavior, router production routing, or model training.
+
+New documentation assets:
+- `docs/Agent评测体系设计_基于054文章.md`: copied into this worktree as the high-level design baseline.
+- `docs/Agent评测资产索引.md`: project-grounded index of RAG, Answer, Boundary, Beta, AIOps, Database, Trace, Verifier, model-comparison, and router fine-tuning candidate assets.
+- `docs/Agent评测RCA标签体系.md`: project-level badcase RCA labels and regression-entry rules.
+- `docs/Agent评测文档评审收口.md`: review closeout confirming asset grading, RCA ownership, and documentation-only status.
+
+Current decision: micro-finetuning and model comparison are indexed as assets only. Router 52 candidate JSONL remains a shadow candidate set in `/Users/cici/oncall agent/.worktrees/phaseA-bge-m3-smoke/llm_finetuning_workspace/`, not a reviewed training set. BGE-M3 remains `keep-shadow` evidence, not a production embedding switch.
+
+Review closeout completed: no blocking asset-grade or RCA-owner issue was found. Next step is to commit this worktree as an independent documentation asset, then choose between a doc-only `Agent评测门禁Scorecard.md`, an `evals/enterprise` trace-expression change, or a deterministic verifier such as `AuditEvidenceVerifier` / `ToolTrajectoryVerifier`.
+
 ## Current Production Mainline Status (2026-06-18)
 
 Active execution line: `Week0_准备清单.md` -> `Month1_执行清单.md` -> `Month2_执行清单.md` -> `Month3_执行清单.md`. Do not execute old plan documents unless they are explicitly added to `docs/plan_registry.md`.
