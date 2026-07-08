@@ -1,5 +1,25 @@
 # PROJECT_STATE
 
+## Main Checkout Boundary Cleanup Inventory (2026-07-08)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/main-boundary-cleanup` on branch `codex/main-boundary-cleanup`. It was branched from local `codex/agent-eval-closeout-state` after PR #6 merged, so the Agent eval gate chain is already closed before this cleanup inventory starts.
+
+Current goal: do a read-only inventory for main checkout boundary cleanup. This slice does not implement features, does not change runtime code, does not move/delete files, does not clean the main checkout, and does not copy dirty artifacts into the clean branch.
+
+Main observation:
+- Parent workspace Git root `/Users/cici/oncall agent` is on `enterprise2`.
+- SuperBizAgent main checkout `/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21` is on `enterprise3` and dirty.
+- `plan-governance-experiment/` is an independent Git repo with no commits; keep until owner decides archive/workspace migration.
+- `super_biz_agent_py-plan-update/` is an independent dirty Git repo on `codex/update-production-plan`, about 670M, with `.env`, `.venv`, `.plangraph/`, and `.playwright-cli/`; keep frozen until source/value is confirmed.
+- `.gitattributes`, `.github/workflows/ci.yml`, `.plangraph.ignore`, `.plangraph.yml`, `BACKLOG.md`, `GEMINI.md`, and `KIMI.md` are already tracked in this clean worktree and byte-identical to the dirty main checkout versions.
+- `CLOSEOUT.md` exists only in the dirty main checkout; preserve as historical evidence candidate and migrate to `docs/` only in a separate docs PR if accepted.
+
+New/updated docs in this slice:
+- `docs/主仓库边界清理盘点_20260708.md`: inventory-only report with evidence, recommendations, and no-delete boundaries.
+- `docs/主仓库边界清理任务.md`: updated to point to the inventory report and mark first pass complete.
+
+Next step: ask reviewer/owner to confirm decisions for `plan-governance-experiment/`, `super_biz_agent_py-plan-update/`, and `CLOSEOUT.md`. Do not perform migration, deletion, `git clean`, `git reset`, checkout, or stash operations in this branch.
+
 ## Agent Eval Gate Chain Closeout (2026-07-08)
 
 Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-closeout-state` on branch `codex/agent-eval-closeout-state`. It was branched from `origin/codex/agent-eval-assets` at merge commit `2dd1118`, after PR #1-#5 had been merged into the Agent eval assets line.

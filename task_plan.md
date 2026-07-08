@@ -1,5 +1,17 @@
 # Task Plan
 
+## Current Active Track: 2026-07-08 主仓库边界清理盘点
+
+Goal: 在独立 worktree `codex/main-boundary-cleanup` 只做主仓库边界清理盘点；不写新功能，不移动/删除文件，不碰主 checkout，只给异常目录和根配置/治理文件做保留/迁移/待确认判断。
+
+| Phase | Status | Verify |
+|---|---|---|
+| Open isolated worktree | completed | `/Users/cici/oncall agent/.worktrees/main-boundary-cleanup` on branch `codex/main-boundary-cleanup` from `codex/agent-eval-closeout-state`. |
+| Read local rules/state | completed | Read `AGENTS.md`, `PROJECT_STATE.md`, `task_plan.md`, `progress.md`, and `docs/主仓库边界清理任务.md`; ran planning session catchup. |
+| Read-only inventory | completed | Inspected target paths from main checkout with `stat`, `du`, `git -C`, `find`, `sed`, `cmp`; no cleanup commands run. |
+| Write inventory docs | completed | Added `docs/主仓库边界清理盘点_20260708.md`; updated task/state/progress/findings/development records. |
+| Docs-only verification | completed | `git diff --check`, targeted `rg` cleanup-boundary checks, and `python3` boundary-doc basic check passed. |
+
 ## Current Active Track: 2026-07-08 Agent Eval PR #1-#5 状态收口
 
 Goal: 新开 `codex/agent-eval-closeout-state` worktree，只做 PR #1-#5 的状态收口文档，把 Agent eval gate 链路记录为“离线发布前检查链已完成到可见入口”，不写新功能、不改代码、不接 CI、不改生产链路。

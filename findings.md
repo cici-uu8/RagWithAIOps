@@ -1,5 +1,13 @@
 # Findings
 
+## 2026-07-08 Main Checkout Boundary Cleanup Findings
+
+- There are two relevant Git roots: parent workspace `/Users/cici/oncall agent` on branch `enterprise2`, and SuperBizAgent checkout `/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21` on branch `enterprise3`. This explains why the parent root can show SuperBizAgent files as untracked while a clean SuperBizAgent worktree already tracks them.
+- `plan-governance-experiment/` is an independent Git repo with no commits and should not be deleted. Treat it as a small plan-governance experiment to move/archive only after owner confirmation.
+- `super_biz_agent_py-plan-update/` is an independent dirty repo, about 670M, containing environment and local tooling state. It must not be merged wholesale into SuperBizAgent; first confirm whether it contains still-needed work.
+- The listed root files `.gitattributes`, `.github/workflows/ci.yml`, `.plangraph.*`, `BACKLOG.md`, `GEMINI.md`, and `KIMI.md` are already tracked in the clean `codex/main-boundary-cleanup` worktree and are byte-identical to the dirty main checkout versions. They no longer need a migration action in this branch line.
+- `CLOSEOUT.md` is the only listed root governance file absent from the clean worktree. It contains a 2026-06-25 beta-ready closeout index and should be preserved as historical evidence, likely under `docs/` in a separate docs PR if accepted.
+
 ## 2026-06-18 Production-Grade Week0 Findings
 
 - The active execution line is now unambiguous: `Week0_准备清单.md -> Month1_执行清单.md -> Month2_执行清单.md -> Month3_执行清单.md`; `docs/plan_registry.md` is the canonical guard against old-plan contamination.
