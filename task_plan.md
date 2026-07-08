@@ -1,5 +1,16 @@
 # Task Plan
 
+## Current Active Track: 2026-07-08 AIOps styles baseline restore
+
+Goal: 单独恢复缺失的 `static/styles_aiops.css` baseline 资产，让现有 `AIOpsVisualizer` 静态前端契约重新通过；不混入 Agent eval dashboard、新 AIOps 功能、后端 route 或 CI 改动。
+
+| Phase | Status | Verify |
+|---|---|---|
+| Reproduce missing asset | completed | `test_static_admin_console_assets_reference_existing_admin_apis` 红灯失败于 `FileNotFoundError: static/styles_aiops.css`。 |
+| Restore tracked stylesheet | completed | 从历史提交 `f7c204b` 恢复 `static/styles_aiops.css`；只新增该 CSS 文件。 |
+| Frontend verification | completed | 目标测试通过；完整 `tests/test_assistant_frontend_optimization.py` 通过 33/33；`node --check static/js/aiops-visualizer.js && node --check static/app.js` 通过；`git diff --check` 通过。 |
+| Commit / PR | completed | 已提交并推送；draft PR: https://github.com/cici-uu8/agent/pull/5。 |
+
 ## Current Active Track: 2026-07-08 Agent Eval Dashboard 发布门禁入口
 
 Goal: 在现有 `ops-dashboard` 管理后台页面里加一个最小 `发布门禁` tab，把 PR #1/#2/#3 形成的离线 gate 链路做成可见入口；不接 CI、不加后端执行入口、不改生产治理链路。

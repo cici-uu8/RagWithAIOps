@@ -1,8 +1,21 @@
 # PROJECT_STATE
 
+## AIOps Styles Baseline Worktree Status (2026-07-08)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/aiops-styles-baseline` on branch `codex/aiops-styles-baseline`. It was branched from remote `origin/codex/agent-eval-assets` at PR #4 merge commit `9443c7978c5a64d5c6c844223acb3f187a1155fd`.
+
+Current implementation goal: fix the known baseline asset gap where `static/index.html` and `tests/test_assistant_frontend_optimization.py` referenced `/static/styles_aiops.css`, but the file was missing from the PR #4 base. This is a baseline restore only; it does not change AIOps runtime behavior, Admin Console release gate behavior, backend routes, CI, RAG defaults, DB behavior, or any Agent eval gate logic.
+
+Implemented in this slice:
+- `static/styles_aiops.css`: restored from tracked history commit `f7c204b` (`codex/month1-week3-corpus`) so the existing `AIOpsVisualizer` class names have their expected stylesheet again.
+
+Verification: reproduced the failure first with `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_static_admin_console_assets_reference_existing_admin_apis -q --no-cov`, which failed on `FileNotFoundError: static/styles_aiops.css`. After restoring the CSS file, the same test passed. Full `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` now passes 33/33. `node --check static/js/aiops-visualizer.js && node --check static/app.js` and `git diff --check` also pass.
+
+Next step: ask reviewer to review draft PR #5: https://github.com/cici-uu8/agent/pull/5. Do not add new AIOps UI behavior, new Agent eval functionality, or CI wiring in this slice.
+
 ## Agent Eval Dashboard Worktree Status (2026-07-08)
 
-Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-dashboard` on branch `codex/agent-eval-dashboard`. It was branched from local `codex/agent-scorecard-runner`, then rebased onto remote `origin/codex/agent-eval-assets` after forcing git HTTPS to HTTP/1.1. GitHub PR #1, #2, and #3 are merged. Draft PR #4 is open: https://github.com/cici-uu8/agent/pull/4.
+Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-dashboard` on branch `codex/agent-eval-dashboard`. It was branched from local `codex/agent-scorecard-runner`, then rebased onto remote `origin/codex/agent-eval-assets` after forcing git HTTPS to HTTP/1.1. GitHub PR #1, #2, #3, and #4 are merged. PR #4: https://github.com/cici-uu8/agent/pull/4.
 
 Current implementation goal: add a small Admin Console product entry for the existing offline Agent eval gate chain. This is UI/documentation productization only: it does not add a backend route, does not run the scorecard from the browser, does not read report files, does not attach CI, does not change `AuditService.record()`, and does not alter RequestGateway / ToolGateway / database execution / AIOps / RAG / model defaults.
 
@@ -15,7 +28,7 @@ Implemented in this slice:
 
 Verification: TDD red failed on missing `发布门禁` in `test_admin_console_ops_dashboard_contract`; after implementation, `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_admin_console_ops_dashboard_contract -q --no-cov` passed. `node --check static/admin-console.js` passed. `git diff --check` passed. Full `tests/test_assistant_frontend_optimization.py` was attempted but fails on a pre-existing/base mismatch: `static/styles_aiops.css` is referenced by `static/index.html` and the test, but is not tracked in this worktree/base. That missing AIOps asset is not part of this release-gate UI slice and was not restored here.
 
-Next step: ask reviewer to review PR #4. Treat `static/styles_aiops.css` as a separate baseline cleanup if full frontend-suite verification is required.
+Next step: PR #4 is closed. The separate `static/styles_aiops.css` baseline cleanup is now being handled in `codex/aiops-styles-baseline`.
 
 ## Agent Eval Scorecard Runner Worktree Status (2026-07-07)
 
