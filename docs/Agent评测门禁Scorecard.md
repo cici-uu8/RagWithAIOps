@@ -8,7 +8,7 @@ topics:
   - scorecard
 doc_kind: scorecard
 created: 2026-07-07
-status: documentation_only
+status: offline_gate_chain_ready
 ---
 
 # Agent 评测门禁 Scorecard
@@ -23,8 +23,8 @@ status: documentation_only
 - 哪些证据只能触发 shadow / observation / triage。
 - 哪些风险必须由确定性规则判断，不能交给 LLM Judge。
 
-本文件不训练模型、不改变生产默认值。`G-P0-AUDIT-EVIDENCE`
-已有第一版离线 verifier / gate runner，定位是发布前检查项，不是生产链路拦截器。
+本文件不训练模型、不改变生产默认值。PR #1-#5 已把 `G-P0-AUDIT-EVIDENCE`
+从规则文档推进到离线 verifier、trace source 输入、scorecard 聚合和 Admin Console 可见入口；它仍然定位为发布前检查项，不是生产链路拦截器。
 
 ## 2. 门禁层级
 
@@ -56,8 +56,10 @@ status: documentation_only
 ## 4. 当前总判定
 
 ```text
-release_gate_status = documentation_scorecard_ready
-runtime_code_changed = offline_verifier_only
+release_gate_status = offline_pre_release_gate_visible
+offline_gate_chain = ready_through_dashboard_entry
+ci_gate_enabled = false
+production_route_gate_enabled = false
 production_defaults_changed = false
 model_training_started = false
 router_production_integration = false
@@ -66,13 +68,17 @@ router_production_integration = false
 当前可以声明的是：
 
 - 项目已有一套可索引的 Agent 评测资产。
-- P0 风险优先由确定性规则、trace、audit 和 verifier 判断。
+- `G-P0-AUDIT-EVIDENCE` 已有 deterministic verifier、fixture、JSON/JSONL/SQLite 输入、报告和非零退出码。
+- `G-P1-TRACE-TRAJECTORY` 已可由 scorecard runner 与 audit evidence gate 一起离线聚合。
+- Admin Console 的 Ops Dashboard 已有 `发布门禁` tab，让 reviewer / operator 能看见 `AGENT-EVAL-PRE-RELEASE` 的命令、gate 和边界。
+- PR #5 已恢复 `static/styles_aiops.css` baseline，PR #4 review 时暴露的静态前端测试缺口已经单独收口。
 - embedding / rerank / router 微调仍然是 shadow / planning-only。
-- 下一步若继续实现，优先补 fixtures / trace eval 离线接入，而不是 LLM Judge 或主模型 SFT。
 
 当前不能声明的是：
 
-- 评测平台已经实现完成，或 Audit gate 已经接入生产链路。
+- 完整 Agent 评测平台已经实现完成，或 Audit gate 已经接入生产链路。
+- CI 已经强制运行 scorecard，或生产 API 会自动拦截 gate 失败。
+- Admin Console 会运行 CLI、读取最新报告，或触发任何后端执行。
 - Router classifier 已训练完成。
 - BGE-M3 可以替换生产 embedding。
 - Answer 质量已经达到 GA。
@@ -167,12 +173,13 @@ uv run python -m evals.enterprise.run_audit_evidence_gate \
   --output-dir /tmp/audit_evidence_gate_reports
 ```
 
-## 6. 最小后续实现候选
+## 6. 后续候选
 
 | 候选 | 为什么排在这里 | 是否现在做 |
 |---|---|---|
-| `AuditEvidenceVerifier` fixtures | 让别人不用读测试代码，也能用 pass/fail 样例理解离线 gate 怎么跑。 | 已有 `evals/enterprise/fixtures/audit_evidence/`。 |
+| read-only scorecard report index | 让 Admin Console 只读展示最近一次离线报告，不从浏览器执行 CLI。 | 单独切片；不在 PR #1-#5 closeout 中做。 |
 | `ToolTrajectoryVerifier` | 服务 trace trajectory：required tool / forbidden tool 的确定性检查。 | 第二候选，适合接 `evals/enterprise`。 |
+| CI / release workflow gate | 把离线 scorecard 变成强拦截前，需要先固定 evalset、trace 来源、报告归档和失败处理。 | 暂不做。 |
 | LLM Judge | 适合解释质量、答案完整性等主观项。 | 暂不优先。P0 不交给 Judge。 |
 | Router fine-tune | 需要 reviewed samples 和真实路由错误证据。 | 后置。当前只有 candidate set。 |
 | Q-SQL 离线草稿 | 高风险，且样本不足。 | 后置，只能离线 + SafeSQL。 |

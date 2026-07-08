@@ -1,5 +1,19 @@
 # Progress
 
+## 2026-07-08 Agent Eval PR #1-#5 Closeout State
+
+- Opened documentation-only closeout work in `/Users/cici/oncall agent/.worktrees/agent-eval-closeout-state` on branch `codex/agent-eval-closeout-state`, leaving the dirty main checkout untouched.
+- Confirmed the branch starts from `origin/codex/agent-eval-assets` at merge commit `2dd1118`, after PR #1-#5 had been merged.
+- Closeout chain being recorded:
+  - PR #1: `AuditEvidenceVerifier` implements the deterministic `G-P0-AUDIT-EVIDENCE` rules layer.
+  - PR #2: audit evidence trace-source support lets the offline gate read JSONL / SQLite audit sources via `AuditTraceExtractor` and `TraceSource`.
+  - PR #3: `run_agent_eval_scorecard.py` aggregates `G-P0-AUDIT-EVIDENCE` and `G-P1-TRACE-TRAJECTORY` into `AGENT-EVAL-PRE-RELEASE`.
+  - PR #4: Admin Console Ops Dashboard `发布门禁` tab makes the offline gate chain visible to reviewer/operator.
+  - PR #5: `static/styles_aiops.css` baseline restore fixes the static frontend asset gap discovered during PR #4 review.
+- Updated state/docs only: `PROJECT_STATE.md`, `task_plan.md`, `progress.md`, `docs/Agent评测门禁Scorecard.md`, and `docs/rag_fusion_development_record.md`.
+- Boundary: no runtime code, no tests, no frontend behavior, no backend route, no CI gate, no `AuditService.record()`, no RequestGateway / ToolGateway / DB / AIOps / RAG behavior, no model/router default change.
+- Verification passed for this docs-only slice: `git diff --check`, targeted `rg` checks for PR/gate/boundary terms, and `python3` Scorecard frontmatter/basic-field check.
+
 ## 2026-07-07 Agent Eval Scorecard Runner Slice
 
 - Opened implementation work only in `/Users/cici/oncall agent/.worktrees/agent-scorecard-runner` on branch `codex/agent-scorecard-runner`, leaving the dirty main checkout untouched.
@@ -59,7 +73,7 @@
   - added coverage for direct DB events so direct success/failure operations cannot pass without `resource_ids`, `sql_hash`, and `parameters_hash`; successful direct execution also requires `rows_affected`;
   - relaxed early `database_operation_prepare_rejected` and `database_operation_direct_execute_rejected` metadata requirements to avoid false positives for `database_not_configured` rejections before SQL classification produces `operation_type`.
 - Trace-source follow-up:
-  - opened stacked worktree `/Users/cici/oncall agent/.worktrees/audit-evidence-trace-sources` on branch `codex/audit-evidence-trace-sources` because PR #1 is still open;
+  - opened stacked worktree `/Users/cici/oncall agent/.worktrees/audit-evidence-trace-sources` on branch `codex/audit-evidence-trace-sources`; PR #1 and PR #2 are now merged in the current closeout base;
   - extended `evals/enterprise/run_audit_evidence_gate.py` so the offline gate can keep using `--audit-events` for fixtures, or use `--source-kind jsonl/sqlite --path ... --trace-id ... --request-id ...` for real trace sources;
   - reused `AuditTraceExtractor` and `TraceSource` instead of writing a second JSONL/SQLite extractor;
   - added report source fields `source_kind`, `source_path`, `trace_id`, and `request_id` while keeping `audit_events_path` for compatibility;
