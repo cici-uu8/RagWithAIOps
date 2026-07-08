@@ -807,7 +807,7 @@
                                 <h3>Ops Dashboard</h3>
                                 <p class="admin-section-note">跨会话/跨用户的运维统计。只展示 trace/audit/tool/route/latency/failure，不含成本统计。</p>
                             </div>
-                            <div class="admin-header-actions">
+                            <div v-if="opsDashboard.activeTab === 'runtime'" class="admin-header-actions">
                                 <div class="admin-ops-range" aria-label="Ops Dashboard time range">
                                     <button type="button" :class="{ active: opsDashboard.timeRange === '1h' }" @click="setOpsTimeRange('1h')">1h</button>
                                     <button type="button" :class="{ active: opsDashboard.timeRange === '24h' }" @click="setOpsTimeRange('24h')">24h</button>
@@ -819,36 +819,103 @@
                             </div>
                         </div>
 
-                        <div class="admin-ops-cards">
-                            <div class="admin-ops-card">
-                                <span class="admin-muted">Total Requests</span>
-                                <strong>{{ opsDashboard.summary.total_requests }}</strong>
-                            </div>
-                            <div class="admin-ops-card">
-                                <span class="admin-muted">Success Rate</span>
-                                <strong>{{ ((opsDashboard.summary.success_rate || 0) * 100).toFixed(1) }}%</strong>
-                            </div>
-                            <div class="admin-ops-card">
-                                <span class="admin-muted">P50 Latency</span>
-                                <strong>{{ opsDashboard.summary.p50_latency_ms }} ms</strong>
-                            </div>
-                            <div class="admin-ops-card">
-                                <span class="admin-muted">P95 Latency</span>
-                                <strong>{{ opsDashboard.summary.p95_latency_ms }} ms</strong>
-                            </div>
+                        <div class="admin-tabs">
+                            <button type="button" :class="{ active: opsDashboard.activeTab === 'runtime' }" @click="setOpsDashboardTab('runtime')">
+                                运行指标
+                            </button>
+                            <button type="button" :class="{ active: opsDashboard.activeTab === 'release-gate' }" @click="setOpsDashboardTab('release-gate')">
+                                发布门禁
+                            </button>
                         </div>
 
-                        <div class="admin-ops-top-section">
+                        <div v-if="opsDashboard.activeTab === 'runtime'" class="admin-ops-runtime">
+                            <div class="admin-ops-cards">
+                                <div class="admin-ops-card">
+                                    <span class="admin-muted">Total Requests</span>
+                                    <strong>{{ opsDashboard.summary.total_requests }}</strong>
+                                </div>
+                                <div class="admin-ops-card">
+                                    <span class="admin-muted">Success Rate</span>
+                                    <strong>{{ ((opsDashboard.summary.success_rate || 0) * 100).toFixed(1) }}%</strong>
+                                </div>
+                                <div class="admin-ops-card">
+                                    <span class="admin-muted">P50 Latency</span>
+                                    <strong>{{ opsDashboard.summary.p50_latency_ms }} ms</strong>
+                                </div>
+                                <div class="admin-ops-card">
+                                    <span class="admin-muted">P95 Latency</span>
+                                    <strong>{{ opsDashboard.summary.p95_latency_ms }} ms</strong>
+                                </div>
+                            </div>
+
+                            <div class="admin-ops-top-section">
+                                <section class="admin-ops-section">
+                                    <h4>Top Users</h4>
+                                    <div v-if="(opsDashboard.summary.top_users || []).length === 0" class="ea-empty">暂无用户请求数据</div>
+                                    <div v-else class="admin-table-wrap">
+                                        <table class="ea-table">
+                                            <thead><tr><th>User ID</th><th>Count</th></tr></thead>
+                                            <tbody>
+                                                <tr v-for="user in opsDashboard.summary.top_users" :key="user.user_id">
+                                                    <td><code>{{ user.user_id }}</code></td>
+                                                    <td>{{ user.count }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+
+                                <section class="admin-ops-section">
+                                    <h4>Top Routes</h4>
+                                    <div v-if="(opsDashboard.summary.top_routes || []).length === 0" class="ea-empty">暂无 route 数据</div>
+                                    <div v-else class="admin-table-wrap">
+                                        <table class="ea-table">
+                                            <thead><tr><th>Route</th><th>Count</th></tr></thead>
+                                            <tbody>
+                                                <tr v-for="routeItem in opsDashboard.summary.top_routes" :key="routeItem.route">
+                                                    <td><code>{{ routeItem.route }}</code></td>
+                                                    <td>{{ routeItem.count }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+
+                                <section class="admin-ops-section">
+                                    <h4>Top Tools</h4>
+                                    <div v-if="(opsDashboard.summary.top_tools || []).length === 0" class="ea-empty">暂无 tool 数据</div>
+                                    <div v-else class="admin-table-wrap">
+                                        <table class="ea-table">
+                                            <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+                                            <tbody>
+                                                <tr v-for="tool in opsDashboard.summary.top_tools" :key="tool.tool">
+                                                    <td><code>{{ tool.tool }}</code></td>
+                                                    <td>{{ tool.count }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+
                             <section class="admin-ops-section">
-                                <h4>Top Users</h4>
-                                <div v-if="(opsDashboard.summary.top_users || []).length === 0" class="ea-empty">暂无用户请求数据</div>
+                                <div class="admin-card-header">
+                                    <div>
+                                        <h4>Timeline</h4>
+                                        <p class="admin-section-note">按 1h bucket 聚合 request_completed / request_failed。</p>
+                                    </div>
+                                </div>
+                                <div v-if="opsDashboard.timeline.length === 0" class="ea-empty">暂无 timeline 数据</div>
                                 <div v-else class="admin-table-wrap">
                                     <table class="ea-table">
-                                        <thead><tr><th>User ID</th><th>Count</th></tr></thead>
+                                        <thead><tr><th>Time Bucket</th><th>Total</th><th>Success</th><th>Failed</th><th>Success Rate</th></tr></thead>
                                         <tbody>
-                                            <tr v-for="user in opsDashboard.summary.top_users" :key="user.user_id">
-                                                <td><code>{{ user.user_id }}</code></td>
-                                                <td>{{ user.count }}</td>
+                                            <tr v-for="item in opsDashboard.timeline" :key="item.time_bucket">
+                                                <td>{{ shortTime(item.time_bucket) }}</td>
+                                                <td>{{ item.total }}</td>
+                                                <td>{{ item.success }}</td>
+                                                <td>{{ item.failed }}</td>
+                                                <td>{{ ((item.success_rate || 0) * 100).toFixed(1) }}%</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -856,31 +923,24 @@
                             </section>
 
                             <section class="admin-ops-section">
-                                <h4>Top Routes</h4>
-                                <div v-if="(opsDashboard.summary.top_routes || []).length === 0" class="ea-empty">暂无 route 数据</div>
-                                <div v-else class="admin-table-wrap">
-                                    <table class="ea-table">
-                                        <thead><tr><th>Route</th><th>Count</th></tr></thead>
-                                        <tbody>
-                                            <tr v-for="routeItem in opsDashboard.summary.top_routes" :key="routeItem.route">
-                                                <td><code>{{ routeItem.route }}</code></td>
-                                                <td>{{ routeItem.count }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="admin-card-header">
+                                    <div>
+                                        <h4>Failures</h4>
+                                        <p class="admin-section-note">最近失败请求，包含 failure_semantics 和 recovered 状态。</p>
+                                    </div>
                                 </div>
-                            </section>
-
-                            <section class="admin-ops-section">
-                                <h4>Top Tools</h4>
-                                <div v-if="(opsDashboard.summary.top_tools || []).length === 0" class="ea-empty">暂无 tool 数据</div>
+                                <div v-if="opsDashboard.failures.length === 0" class="ea-empty">暂无失败记录</div>
                                 <div v-else class="admin-table-wrap">
                                     <table class="ea-table">
-                                        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+                                        <thead><tr><th>Trace</th><th>User</th><th>Route</th><th>failure_semantics</th><th>recovered</th><th>Time</th></tr></thead>
                                         <tbody>
-                                            <tr v-for="tool in opsDashboard.summary.top_tools" :key="tool.tool">
-                                                <td><code>{{ tool.tool }}</code></td>
-                                                <td>{{ tool.count }}</td>
+                                            <tr v-for="failure in opsDashboard.failures" :key="failure.trace_id">
+                                                <td><code>{{ failure.trace_id }}</code></td>
+                                                <td>{{ failure.user_id }}</td>
+                                                <td><code>{{ failure.route }}</code></td>
+                                                <td><span class="ea-badge" data-tone="danger">{{ failure.failure_semantics }}</span></td>
+                                                <td><span class="ea-badge" :data-tone="failure.recovered ? 'success' : 'warning'">{{ failure.recovered ? 'true' : 'false' }}</span></td>
+                                                <td>{{ shortTime(failure.timestamp) }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -888,53 +948,69 @@
                             </section>
                         </div>
 
-                        <section class="admin-ops-section">
-                            <div class="admin-card-header">
+                        <section v-if="opsDashboard.activeTab === 'release-gate'" class="admin-release-gate-panel">
+                            <div class="admin-release-gate-summary">
                                 <div>
-                                    <h4>Timeline</h4>
-                                    <p class="admin-section-note">按 1h bucket 聚合 request_completed / request_failed。</p>
+                                    <h4>发布门禁</h4>
+                                    <p class="admin-section-note">离线发布前检查：把 AuditEvidenceVerifier、trace source 和 scorecard runner 串成一次可复跑的检查入口。</p>
+                                </div>
+                                <span class="ea-badge" data-tone="warning">离线 gate</span>
+                            </div>
+
+                            <div class="admin-release-gate-grid">
+                                <div class="admin-release-gate-card">
+                                    <span class="admin-muted">Scorecard</span>
+                                    <strong>AGENT-EVAL-PRE-RELEASE</strong>
+                                    <p class="admin-section-note">任一 gate 失败时 CLI 返回 exit code 1。</p>
+                                </div>
+                                <div class="admin-release-gate-card">
+                                    <span class="admin-muted">Runner</span>
+                                    <code>evals/enterprise/run_agent_eval_scorecard.py</code>
+                                    <p class="admin-section-note">输出 JSON / Markdown report。</p>
+                                </div>
+                                <div class="admin-release-gate-card">
+                                    <span class="admin-muted">Reports</span>
+                                    <code>evals/enterprise/reports</code>
+                                    <p class="admin-section-note">也可用 --output-dir 写到临时目录。</p>
                                 </div>
                             </div>
-                            <div v-if="opsDashboard.timeline.length === 0" class="ea-empty">暂无 timeline 数据</div>
-                            <div v-else class="admin-table-wrap">
+
+                            <div class="admin-table-wrap">
                                 <table class="ea-table">
-                                    <thead><tr><th>Time Bucket</th><th>Total</th><th>Success</th><th>Failed</th><th>Success Rate</th></tr></thead>
+                                    <thead><tr><th>Gate</th><th>来源</th><th>失败条件</th></tr></thead>
                                     <tbody>
-                                        <tr v-for="item in opsDashboard.timeline" :key="item.time_bucket">
-                                            <td>{{ shortTime(item.time_bucket) }}</td>
-                                            <td>{{ item.total }}</td>
-                                            <td>{{ item.success }}</td>
-                                            <td>{{ item.failed }}</td>
-                                            <td>{{ ((item.success_rate || 0) * 100).toFixed(1) }}%</td>
+                                        <tr>
+                                            <td>
+                                                <code>G-P0-AUDIT-EVIDENCE</code><br>
+                                                <span class="admin-muted">审计证据</span>
+                                            </td>
+                                            <td>AuditEvidenceVerifier + run_audit_evidence_gate.py</td>
+                                            <td>关键 audit event 缺 trace_id / request_id / reason / resource metadata 时失败</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <code>G-P1-TRACE-TRAJECTORY</code><br>
+                                                <span class="admin-muted">Trace 轨迹</span>
+                                            </td>
+                                            <td>run_trace_eval.py</td>
+                                            <td>required stage / tool 缺失或 forbidden tool 出现时失败</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                        </section>
 
-                        <section class="admin-ops-section">
-                            <div class="admin-card-header">
-                                <div>
-                                    <h4>Failures</h4>
-                                    <p class="admin-section-note">最近失败请求，包含 failure_semantics 和 recovered 状态。</p>
-                                </div>
+                            <pre class="admin-command-block"><code>uv run python -m evals.enterprise.run_agent_eval_scorecard \
+  --trace-evalset evals/enterprise/evalsets/chat_trace_evalset.jsonl \
+  --audit-events evals/enterprise/fixtures/audit_evidence/pass_events.jsonl \
+  --output-dir evals/enterprise/reports</code></pre>
+
+                            <div class="admin-release-gate-boundary">
+                                <span class="ea-badge">不接 CI</span>
+                                <span class="ea-badge">不改 AuditService.record()</span>
+                                <span class="ea-badge">不拦截生产链路</span>
+                                <span class="ea-badge">不改 RequestGateway / ToolGateway / DB 行为</span>
                             </div>
-                            <div v-if="opsDashboard.failures.length === 0" class="ea-empty">暂无失败记录</div>
-                            <div v-else class="admin-table-wrap">
-                                <table class="ea-table">
-                                    <thead><tr><th>Trace</th><th>User</th><th>Route</th><th>failure_semantics</th><th>recovered</th><th>Time</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="failure in opsDashboard.failures" :key="failure.trace_id">
-                                            <td><code>{{ failure.trace_id }}</code></td>
-                                            <td>{{ failure.user_id }}</td>
-                                            <td><code>{{ failure.route }}</code></td>
-                                            <td><span class="ea-badge" data-tone="danger">{{ failure.failure_semantics }}</span></td>
-                                            <td><span class="ea-badge" :data-tone="failure.recovered ? 'success' : 'warning'">{{ failure.recovered ? 'true' : 'false' }}</span></td>
-                                            <td>{{ shortTime(failure.timestamp) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <p class="admin-section-note">详细规则见 <code>docs/Agent评测门禁Scorecard.md</code>；真实 trace source 可走 jsonl / sqlite + trace_id / request_id。</p>
                         </section>
                     </section>
                 </section>

@@ -1,5 +1,22 @@
 # PROJECT_STATE
 
+## Agent Eval Dashboard Worktree Status (2026-07-08)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-dashboard` on branch `codex/agent-eval-dashboard`. It was branched from local `codex/agent-scorecard-runner` because remote fetch/auth is unavailable in this environment. GitHub PR #1, #2, and #3 were confirmed merged, but this worktree still uses the local scorecard-runner base. Local commit: `feat(admin): add agent eval release gate tab`.
+
+Current implementation goal: add a small Admin Console product entry for the existing offline Agent eval gate chain. This is UI/documentation productization only: it does not add a backend route, does not run the scorecard from the browser, does not read report files, does not attach CI, does not change `AuditService.record()`, and does not alter RequestGateway / ToolGateway / database execution / AIOps / RAG / model defaults.
+
+Implemented in this slice:
+- `static/admin-console.js`: adds `opsDashboard.activeTab`, a `releaseGate` contract object, and `setOpsDashboardTab(...)`; runtime Ops metrics loading remains unchanged and only runs on the runtime tab.
+- `static/admin-console.html`: adds an Ops Dashboard sub-tab `发布门禁` showing `AGENT-EVAL-PRE-RELEASE`, `G-P0-AUDIT-EVIDENCE`, `G-P1-TRACE-TRAJECTORY`, the aggregate CLI command, report directory, and explicit offline-only boundaries.
+- `static/admin-console.css`: adds compact release-gate panel/card/command-block styles inside the existing admin-console style system.
+- `tests/test_assistant_frontend_optimization.py`: extends the static Ops Dashboard contract test for the release-gate tab.
+- `docs/Agent评测门禁Scorecard.md`: documents the Admin Console entry and preserves the offline-only boundary.
+
+Verification: TDD red failed on missing `发布门禁` in `test_admin_console_ops_dashboard_contract`; after implementation, `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_admin_console_ops_dashboard_contract -q --no-cov` passed. `node --check static/admin-console.js` passed. `git diff --check` passed. Full `tests/test_assistant_frontend_optimization.py` was attempted but fails on a pre-existing/base mismatch: `static/styles_aiops.css` is referenced by `static/index.html` and the test, but is not tracked in this worktree/base. That missing AIOps asset is not part of this release-gate UI slice and was not restored here.
+
+Next step: push `codex/agent-eval-dashboard` and open a draft PR to `codex/agent-eval-assets` when GitHub git transport is available. The current attempt to fetch the default branch through HTTPS failed with `Failed to connect to github.com port 443`; SSH remote fetch is also unavailable in this environment. Treat `static/styles_aiops.css` as a separate baseline cleanup if full frontend-suite verification is required.
+
 ## Agent Eval Scorecard Runner Worktree Status (2026-07-07)
 
 Active worktree: `/Users/cici/oncall agent/.worktrees/agent-scorecard-runner` on branch `codex/agent-scorecard-runner`. It was branched from `codex/audit-evidence-trace-sources` because the Git remote fetch path is SSH-only in this environment and `origin` fetch failed with `Permission denied (publickey)`. PR #2 had already been merged, so this branch starts from the same content as the accepted audit evidence trace-source slice.

@@ -82,6 +82,12 @@ router_production_integration = false
 
 `G-P0-AUDIT-EVIDENCE` 当前可用离线 runner 检查审计事件 JSON / JSONL，也可以从真实 trace source 读取 JSONL / SQLite 审计记录。
 
+管理后台入口：
+
+- 位置：`/static/admin-console.html#/ops-dashboard` -> `发布门禁` tab。
+- 用途：让 reviewer / operator 在现有 Ops Dashboard 里看到 `AGENT-EVAL-PRE-RELEASE`、`G-P0-AUDIT-EVIDENCE`、`G-P1-TRACE-TRAJECTORY`、示例命令和报告目录。
+- 边界：这个 tab 只展示离线发布前检查合同，不运行 CLI、不读取报告、不接 CI、不改 `AuditService.record()`，也不拦截生产链路。
+
 聚合发布前检查入口：
 
 ```bash
