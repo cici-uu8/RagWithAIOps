@@ -598,6 +598,70 @@
     font-size: 14px;
 }
 
+.admin-release-gate-panel {
+    display: grid;
+    gap: 14px;
+}
+
+.admin-release-gate-summary,
+.admin-release-gate-card {
+    border: 1px solid var(--ea-line);
+    border-radius: var(--ea-radius-md);
+    background: #f8fafc;
+    padding: 12px;
+}
+
+.admin-release-gate-summary {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.admin-release-gate-summary h4 {
+    margin: 0 0 6px;
+    font-size: 14px;
+}
+
+.admin-release-gate-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.admin-release-gate-card {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.admin-release-gate-card strong,
+.admin-release-gate-card code {
+    overflow-wrap: anywhere;
+}
+
+.admin-command-block {
+    margin: 0;
+    overflow: auto;
+    border: 1px solid var(--ea-line);
+    border-radius: var(--ea-radius-md);
+    background: #172033;
+    color: #ffffff;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.admin-command-block code {
+    color: inherit;
+}
+
+.admin-release-gate-boundary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .admin-panel-actions {
     margin-top: 16px;
 }
@@ -658,6 +722,7 @@
     .trace-summary-grid,
     .admin-ops-cards,
     .admin-ops-top-section,
+    .admin-release-gate-grid,
     .database-catalog-layout,
     .admin-form-grid,
     .admin-form-grid-wide {

@@ -182,7 +182,29 @@
                         isLoadingSample: false,
                     },
                     opsDashboard: {
+                        activeTab: 'runtime',
                         timeRange: '24h',
+                        releaseGate: {
+                            scorecardId: 'AGENT-EVAL-PRE-RELEASE',
+                            runner: 'evals/enterprise/run_agent_eval_scorecard.py',
+                            docs: 'docs/Agent评测门禁Scorecard.md',
+                            reportDir: 'evals/enterprise/reports',
+                            command: 'uv run python -m evals.enterprise.run_agent_eval_scorecard',
+                            gates: [
+                                {
+                                    gate_id: 'G-P0-AUDIT-EVIDENCE',
+                                    title: '审计证据',
+                                    source: 'AuditEvidenceVerifier + run_audit_evidence_gate.py',
+                                    decision: '关键 audit event 缺 trace_id / request_id / reason / resource metadata 时失败',
+                                },
+                                {
+                                    gate_id: 'G-P1-TRACE-TRAJECTORY',
+                                    title: 'Trace 轨迹',
+                                    source: 'run_trace_eval.py',
+                                    decision: 'required stage / tool 缺失或 forbidden tool 出现时失败',
+                                },
+                            ],
+                        },
                         summary: {
                             total_requests: 0,
                             success_count: 0,
@@ -520,6 +542,9 @@
                     return this.loadMemoryReviewQueue(setBusy);
                 },
                 async loadOpsDashboard(setBusy = true) {
+                    if (this.opsDashboard.activeTab !== 'runtime') {
+                        return true;
+                    }
                     if (setBusy) this.busy = true;
                     this.opsDashboard.isLoading = true;
                     try {
@@ -602,6 +627,12 @@
                 async setOpsTimeRange(range) {
                     this.opsDashboard.timeRange = range;
                     await this.loadOpsDashboard();
+                },
+                async setOpsDashboardTab(tab) {
+                    this.opsDashboard.activeTab = tab;
+                    if (tab === 'runtime') {
+                        await this.loadOpsDashboard();
+                    }
                 },
                 async loadDatabaseCatalog(setBusy = true) {
                     if (setBusy) this.busy = true;
