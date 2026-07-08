@@ -1553,4 +1553,7 @@
   - `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` 通过 33/33。
   - `node --check static/js/aiops-visualizer.js && node --check static/app.js` 通过。
   - `git diff --check` 通过。
+- 提交与 PR：
+  - `fix(static): restore aiops visualizer stylesheet` 已推送到 `codex/aiops-styles-baseline`。
+  - Draft PR 已打开：https://github.com/cici-uu8/agent/pull/5。
 - 边界：只新增 `static/styles_aiops.css` 和状态记录；不改 AIOps JS、Admin Console、Agent eval gate、后端 route、CI、RAG/DB/AIOps 默认行为。

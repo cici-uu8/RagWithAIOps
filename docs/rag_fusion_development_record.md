@@ -12873,6 +12873,7 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 - 红灯复现：`uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_static_admin_console_assets_reference_existing_admin_apis -q --no-cov` 失败于 `FileNotFoundError: static/styles_aiops.css`。这说明 `static/index.html` 已经引用 `/static/styles_aiops.css`，测试也要求该文件含 `.aiops-visualizer-container`、`.aiops-flow-container`、`.aiops-flow-step-running`、`.aiops-tool-call` 等契约选择器，但文件没有进入当前 base。
 - 修复选择：没有从主 checkout 的 untracked `static/styles_aiops.css` 直接迁移，而是从历史提交 `f7c204b` 恢复已被 Git 跟踪过的 `static/styles_aiops.css`。这样本 PR 的语义是“恢复丢失 baseline 资产”，不是采纳主仓库脏状态里的未审文件。
 - 绿色验证：恢复后同一目标测试通过。完整 `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` 通过 33/33；`node --check static/js/aiops-visualizer.js && node --check static/app.js` 通过；`git diff --check` 通过。
+- 提交与 PR：`fix(static): restore aiops visualizer stylesheet` 已推送到 `codex/aiops-styles-baseline`，draft PR #5 已打开：https://github.com/cici-uu8/agent/pull/5。
 - 边界：本轮只新增 `static/styles_aiops.css` 并同步状态记录；没有修改 `static/js/aiops-visualizer.js`、`static/app.js`、Admin Console、Agent eval gate、后端 route、CI、RAG/DB/AIOps 默认行为。
 
 **追问: 为什么从历史提交恢复，而不是用主 checkout 里的 untracked 文件？**

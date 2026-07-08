@@ -11,7 +11,7 @@ Implemented in this slice:
 
 Verification: reproduced the failure first with `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_static_admin_console_assets_reference_existing_admin_apis -q --no-cov`, which failed on `FileNotFoundError: static/styles_aiops.css`. After restoring the CSS file, the same test passed. Full `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` now passes 33/33. `node --check static/js/aiops-visualizer.js && node --check static/app.js` and `git diff --check` also pass.
 
-Next step: commit this isolated baseline restore, then push/open a small PR for review. Do not add new AIOps UI behavior, new Agent eval functionality, or CI wiring in this slice.
+Next step: ask reviewer to review draft PR #5: https://github.com/cici-uu8/agent/pull/5. Do not add new AIOps UI behavior, new Agent eval functionality, or CI wiring in this slice.
 
 ## Agent Eval Dashboard Worktree Status (2026-07-08)
 
