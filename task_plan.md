@@ -10,7 +10,7 @@ Goal: 在现有 `ops-dashboard` 管理后台页面里加一个最小 `发布门�
 | Admin Console UI | completed | `static/admin-console.js/html/css` 增加 runtime/release-gate 子 tab、scorecard/gate/命令/边界展示；`node --check static/admin-console.js` 通过。 |
 | Documentation/state | completed | 更新 `docs/Agent评测门禁Scorecard.md`、`PROJECT_STATE.md`、`progress.md`、`docs/rag_fusion_development_record.md`。 |
 | Final scoped verification | completed | `node --check static/admin-console.js`; Ops Dashboard contract test; `git diff --check`. Full frontend suite currently blocked by base missing `static/styles_aiops.css` and should be handled separately. |
-| Push / draft PR | pending / external-blocked | 本地 commit 已完成；HTTPS fetch 失败于 `github.com:443` 连接不上，当前未 push / open PR。 |
+| Push / draft PR | completed | 已用 `git -c http.version=HTTP/1.1` fetch/rebase/push；draft PR: https://github.com/cici-uu8/agent/pull/4。 |
 
 ## Current Active Track: 2026-06-18 Production-Grade Mainline
 
