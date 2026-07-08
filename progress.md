@@ -1,5 +1,19 @@
 # Progress
 
+## 2026-07-08 Main Checkout Boundary Cleanup Inventory
+
+- Opened work only in `/Users/cici/oncall agent/.worktrees/main-boundary-cleanup` on branch `codex/main-boundary-cleanup`, leaving both the parent main checkout and the dirty SuperBizAgent main checkout untouched.
+- Read local instructions and state files: `AGENTS.md`, `PROJECT_STATE.md`, `task_plan.md`, `progress.md`, and `docs/主仓库边界清理任务.md`.
+- Ran read-only inventory against the dirty main checkout paths:
+  - `plan-governance-experiment/` is an independent Git repo with no commits, about 132K, containing plan-governance docs/generated assets.
+  - `super_biz_agent_py-plan-update/` is an independent Git repo on `codex/update-production-plan`, about 670M, dirty, and includes `.env`, `.venv`, `.plangraph/`, and `.playwright-cli/`.
+  - `.gitattributes`, `.github/workflows/ci.yml`, `.plangraph.ignore`, `.plangraph.yml`, `BACKLOG.md`, `GEMINI.md`, and `KIMI.md` are tracked in the clean SuperBizAgent worktree and byte-identical to the dirty main checkout versions.
+  - `CLOSEOUT.md` exists only in the dirty main checkout and is absent from the clean worktree.
+- Added `docs/主仓库边界清理盘点_20260708.md` as the inventory-only report and updated `docs/主仓库边界清理任务.md`.
+- Final doc self-check aligned the old `docs/主仓库边界清理任务.md` first-level table with the new inventory result: root config/governance files already tracked in the clean worktree are no longer described as migration candidates.
+- Boundary: no files moved, deleted, restored, checked out, stashed, cleaned, or copied from the dirty main checkout.
+- Verification passed: `git diff --check`, targeted `rg` checks for cleanup-boundary terms, and `python3` frontmatter/basic-field checks for the boundary docs.
+
 ## 2026-07-08 Agent Eval PR #1-#5 Closeout State
 
 - Opened documentation-only closeout work in `/Users/cici/oncall agent/.worktrees/agent-eval-closeout-state` on branch `codex/agent-eval-closeout-state`, leaving the dirty main checkout untouched.

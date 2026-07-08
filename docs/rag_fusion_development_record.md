@@ -12901,3 +12901,25 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: 为什么这次不继续做只读 report API？**
 
 答：只读 report API 是合理的下一步，但它已经是产品功能，不是状态收口。它需要定义报告目录、文件索引、权限、错误状态和前端刷新逻辑。如果把它混进 closeout，边界就从“记录已完成事实”变成“继续开发”，正好违背用户这次要求的“不写新功能”。
+
+## 2026-07-08 (主仓库边界清理只读盘点)
+
+- 背景：PR #1-#6 的 Agent eval gate 链路已经收口，用户明确要求下一步单独开新 worktree 做“主仓库边界清理”盘点，不碰新功能、不直接删文件。此前开发者自检也提醒：主 checkout 不是 main，根目录存在多个不该混在这里的目录/文件，必须先汇报和商量处理方式。
+- 工作区边界：本轮新开 `/Users/cici/oncall agent/.worktrees/main-boundary-cleanup`，分支 `codex/main-boundary-cleanup`，从本地 `codex/agent-eval-closeout-state` 派生。主 checkout 和父目录 checkout 均未写入。
+- 关键发现一：这里实际有两层 Git 根。父目录 `/Users/cici/oncall agent` 显示 branch `enterprise2`；SuperBizAgent 子仓库 `/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21` 显示 branch `enterprise3` 且 dirty。这解释了为什么父目录视角会把一批 SuperBizAgent 文件显示为 untracked。
+- 关键发现二：`plan-governance-experiment/` 是独立 Git repo，当前 `master` 无 commit，约 132K，只包含 plan-governance 配置、README、docs 和 generated。它不是 SuperBizAgent runtime，也不能删除；推荐 owner 确认后整体迁到独立 workspace 或 archive。
+- 关键发现三：`super_biz_agent_py-plan-update/` 是独立 Git repo，branch `codex/update-production-plan`，约 670M，包含 `.env`、`.venv`、`.plangraph/`、`.playwright-cli/` 和大量改动/未跟踪文件。它需要冻结保留并确认是否还有未迁移成果，不能直接并入当前主线。
+- 关键发现四：`.gitattributes`、`.github/workflows/ci.yml`、`.plangraph.ignore`、`.plangraph.yml`、`BACKLOG.md`、`GEMINI.md`、`KIMI.md` 在 clean worktree 中已经是 tracked 文件，并且和脏主 checkout 中对应文件 byte-identical。它们不再需要作为“待迁移文件”处理；后续只需要语义治理。
+- 关键发现五：`CLOSEOUT.md` 是列表中唯一仍只存在于脏主 checkout 的根治理文件，内容是 2026-06-25 的 12 周执行计划 beta-ready 收口索引。推荐保留为历史证据候选；如果纳入当前线，应另开 docs PR 迁到 `docs/` 并日期化命名。
+- 新增/更新文件：新增 `docs/主仓库边界清理盘点_20260708.md`；更新 `docs/主仓库边界清理任务.md`、`PROJECT_STATE.md`、`task_plan.md`、`progress.md`、`findings.md` 和本 development record。
+- 收口自检：`docs/主仓库边界清理任务.md` 的旧一级异常项表格已和新盘点结论对齐；已经在 clean worktree 跟踪且 byte-identical 的 `.gitattributes`、CI、PlanGraph、Backlog、GEMINI/KIMI 不再被描述为待迁移项，避免 reviewer 误以为本轮还要复制这些文件。
+- 风险边界：本轮没有执行 `rm`、`mv`、`git clean`、`git reset`、`git checkout -- <path>`、stash apply/pop，也没有从脏主 checkout 复制任何文件内容到运行时代码路径。所有结论都是盘点建议，不是清理动作。
+- 验证：`git diff --check` 通过；targeted `rg` 检查确认 cleanup boundary、禁止删除/移动、目标目录和 `CLOSEOUT.md` 等关键词已落入状态文件；`python3` boundary docs frontmatter/basic-field check 通过。
+
+**追问: 为什么不直接把这些目录移走？**
+
+答：`plan-governance-experiment/` 和 `super_biz_agent_py-plan-update/` 都是独立 Git repo，后者还含 `.env`、`.venv` 和大量本地状态。直接移动虽然看起来像清理，其实会改变用户本地工作区结构，也可能打断仍有价值的历史成果。正确做法是先盘点、确认 owner 决策，再单独做迁移 PR 或外部归档。
+
+**追问: 为什么有些文件在主仓库看起来 untracked，但你说 clean worktree 已经 tracked？**
+
+答：因为当前目录存在父 Git 和 SuperBizAgent 子 Git 两层边界。父目录 `/Users/cici/oncall agent` 不一定管理子仓库内部文件；而 SuperBizAgent 当前工作线已经跟踪了 `.gitattributes`、CI、PlanGraph 配置、Backlog、GEMINI/KIMI 等文件。本轮用 clean worktree 对比确认这些文件 byte-identical，所以不需要重复迁移。
