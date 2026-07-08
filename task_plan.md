@@ -1,5 +1,17 @@
 # Task Plan
 
+## Current Active Track: 2026-07-08 Agent Eval PR #1-#5 状态收口
+
+Goal: 新开 `codex/agent-eval-closeout-state` worktree，只做 PR #1-#5 的状态收口文档，把 Agent eval gate 链路记录为“离线发布前检查链已完成到可见入口”，不写新功能、不改代码、不接 CI、不改生产链路。
+
+| Phase | Status | Verify |
+|---|---|---|
+| Open isolated worktree | completed | worktree `/Users/cici/oncall agent/.worktrees/agent-eval-closeout-state`，branch `codex/agent-eval-closeout-state`，base `origin/codex/agent-eval-assets` at `2dd1118`。 |
+| Confirm PR #1-#5 merge chain | completed | `git log --oneline --merges` shows PR #1 `fac73e1`, PR #2 `2532eec`, PR #3 `4f3b2b2`, PR #4 `9443c79`, PR #5 `2dd1118` merged. |
+| Update closeout state docs | completed | Updated `PROJECT_STATE.md`, `task_plan.md`, `progress.md`, `docs/Agent评测门禁Scorecard.md`, and `docs/rag_fusion_development_record.md`; docs-only. |
+| Docs-only verification | completed | `git diff --check`, targeted `rg` checks for PR/gate/boundary terms, and `python3` Scorecard basic check passed. |
+| Commit closeout slice | completed | Commit message: `docs: close out agent eval gate chain`. |
+
 ## Current Active Track: 2026-07-08 AIOps styles baseline restore
 
 Goal: 单独恢复缺失的 `static/styles_aiops.css` baseline 资产，让现有 `AIOpsVisualizer` 静态前端契约重新通过；不混入 Agent eval dashboard、新 AIOps 功能、后端 route 或 CI 改动。

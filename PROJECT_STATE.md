@@ -1,5 +1,30 @@
 # PROJECT_STATE
 
+## Agent Eval Gate Chain Closeout (2026-07-08)
+
+Active worktree: `/Users/cici/oncall agent/.worktrees/agent-eval-closeout-state` on branch `codex/agent-eval-closeout-state`. It was branched from `origin/codex/agent-eval-assets` at merge commit `2dd1118`, after PR #1-#5 had been merged into the Agent eval assets line.
+
+Current goal: close out PR #1-#5 as documentation/state only. This slice does not add feature code, tests, frontend behavior, backend routes, CI wiring, production gates, verifier policy, model/RAG/router defaults, or runtime configuration changes.
+
+Merged PR chain now recorded as complete at the intended offline scope:
+- PR #1 `AuditEvidenceVerifier`: rules layer for `G-P0-AUDIT-EVIDENCE`; deterministic audit evidence findings; no `AuditService.record()` runtime enforcement.
+- PR #2 audit evidence trace sources: data layer for JSONL / SQLite audit sources through `AuditTraceExtractor` and `TraceSource`; supports `trace_id` / `request_id` filtering.
+- PR #3 agent eval scorecard runner: aggregation layer `evals/enterprise/run_agent_eval_scorecard.py`; composes `G-P0-AUDIT-EVIDENCE` and `G-P1-TRACE-TRAJECTORY`.
+- PR #4 Admin Console release-gate tab: visibility layer in Ops Dashboard -> `发布门禁`; shows `AGENT-EVAL-PRE-RELEASE`, both gates, CLI command, report directory, and offline-only boundaries.
+- PR #5 `static/styles_aiops.css` baseline restore: fixes the pre-existing frontend static asset gap so the full `tests/test_assistant_frontend_optimization.py` contract can pass again.
+
+Current closeout decision: the Agent eval gate chain is now a visible offline pre-release check, not a production enforcement platform. The chain is ready for reviewer/operator use as a manual release-readiness aid; it still must not be described as CI hard gating, production route gating, or a complete Agent evaluation platform.
+
+Hard boundaries that remain true:
+- No CI hard gate has been added.
+- No production API route runs the scorecard or audit gate.
+- No browser button executes local eval CLI commands.
+- No `AuditService.record()` schema or write-time validation change.
+- No RequestGateway / ToolGateway / database execution / AIOps / RAG behavior change.
+- No model training, router production integration, BGE-M3 default switch, Q-SQL production path, or LLM Judge gate.
+
+Next step: open/review this docs-only closeout PR against `codex/agent-eval-assets`. After that, handle main checkout boundary cleanup as a separate task. Any future "latest report" UX should be a separate read-only report index/query slice, not a hidden extension of this closeout.
+
 ## AIOps Styles Baseline Worktree Status (2026-07-08)
 
 Active worktree: `/Users/cici/oncall agent/.worktrees/aiops-styles-baseline` on branch `codex/aiops-styles-baseline`. It was branched from remote `origin/codex/agent-eval-assets` at PR #4 merge commit `9443c7978c5a64d5c6c844223acb3f187a1155fd`.
@@ -11,7 +36,7 @@ Implemented in this slice:
 
 Verification: reproduced the failure first with `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_static_admin_console_assets_reference_existing_admin_apis -q --no-cov`, which failed on `FileNotFoundError: static/styles_aiops.css`. After restoring the CSS file, the same test passed. Full `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` now passes 33/33. `node --check static/js/aiops-visualizer.js && node --check static/app.js` and `git diff --check` also pass.
 
-Next step: ask reviewer to review draft PR #5: https://github.com/cici-uu8/agent/pull/5. Do not add new AIOps UI behavior, new Agent eval functionality, or CI wiring in this slice.
+Closeout: PR #5 has been merged into `codex/agent-eval-assets` through merge commit `2dd1118`. Do not add new AIOps UI behavior, new Agent eval functionality, or CI wiring in this historical slice.
 
 ## Agent Eval Dashboard Worktree Status (2026-07-08)
 
@@ -28,7 +53,7 @@ Implemented in this slice:
 
 Verification: TDD red failed on missing `发布门禁` in `test_admin_console_ops_dashboard_contract`; after implementation, `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_admin_console_ops_dashboard_contract -q --no-cov` passed. `node --check static/admin-console.js` passed. `git diff --check` passed. Full `tests/test_assistant_frontend_optimization.py` was attempted but fails on a pre-existing/base mismatch: `static/styles_aiops.css` is referenced by `static/index.html` and the test, but is not tracked in this worktree/base. That missing AIOps asset is not part of this release-gate UI slice and was not restored here.
 
-Next step: PR #4 is closed. The separate `static/styles_aiops.css` baseline cleanup is now being handled in `codex/aiops-styles-baseline`.
+Closeout: PR #4 has been merged; the separate `static/styles_aiops.css` baseline cleanup was handled by PR #5 and is now also merged.
 
 ## Agent Eval Scorecard Runner Worktree Status (2026-07-07)
 
@@ -43,13 +68,13 @@ Implemented files in this slice:
 
 Verification: baseline `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_trace_eval.py -q` passed 22/22 before this slice. TDD red failed on missing `evals.enterprise.run_agent_eval_scorecard`; after implementation, `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py -q` passed 4/4. Final targeted regression `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_trace_eval.py tests/test_enterprise_verifiers.py tests/test_enterprise_database_operation_audit.py tests/test_enterprise_tool_gateway.py tests/test_enterprise_gateway_routes.py -q --no-cov` passed 61/61. `ruff check`, `compileall`, aggregate CLI smoke, and `git diff --check` passed.
 
-Next step: commit this isolated branch, then open review/PR if requested. Do not add CI integration, production route gating, a new verifier, LLM Judge, router fine-tuning, or Q-SQL work in this slice.
+Closeout: PR #3 has been merged into `codex/agent-eval-assets`. Do not add CI integration, production route gating, a new verifier, LLM Judge, router fine-tuning, or Q-SQL work in this historical slice.
 
 ## AuditEvidenceVerifier Worktree Status (2026-07-07)
 
 Active worktree: `/Users/cici/oncall agent/.worktrees/audit-evidence-verifier` on branch `codex/audit-evidence-verifier`. It was branched from `codex/agent-eval-assets` so `docs/Agent评测门禁Scorecard.md` is available as the governing design source.
 
-Trace source follow-up worktree: `/Users/cici/oncall agent/.worktrees/audit-evidence-trace-sources` on branch `codex/audit-evidence-trace-sources`. This is a stacked branch from `codex/audit-evidence-verifier` because PR #1 is still open. The follow-up goal is limited to making the offline audit evidence gate read JSONL / SQLite trace sources through `AuditTraceExtractor`; it still does not change production audit writing, CI gating, scorecard aggregation, or verifier policy.
+Trace source follow-up worktree: `/Users/cici/oncall agent/.worktrees/audit-evidence-trace-sources` on branch `codex/audit-evidence-trace-sources`. It was originally stacked from `codex/audit-evidence-verifier`; PR #1 and PR #2 are now both merged. The follow-up goal was limited to making the offline audit evidence gate read JSONL / SQLite trace sources through `AuditTraceExtractor`; it still does not change production audit writing, CI gating, scorecard aggregation, or verifier policy.
 
 Current implementation goal: turn Scorecard gate `G-P0-AUDIT-EVIDENCE` into the first deterministic verifier slice and a small offline gate runner. This is a verifier/eval asset only; it does not change `AuditService`, does not wire a production route, does not alter RequestGateway / ToolGateway / database operation behavior, and does not change any RAG / model / router default.
 
@@ -70,7 +95,7 @@ Implemented files:
 
 Verification so far: initial baseline `uv run pytest tests/test_enterprise_verifiers.py -q` failed because the fresh worktree lacked the dev extra; rerun with `uv run --extra dev pytest tests/test_enterprise_verifiers.py -q` passed baseline 4/4. After the TDD red check failed on missing `AuditEvidenceVerifier`, the green run passed 7/7. The offline runner TDD red check failed on missing `evals.enterprise.run_audit_evidence_gate`; after implementation, `tests/test_enterprise_audit_evidence_gate.py` passed 2/2. Combined governance/audit regression now passes 33/33 with existing Pydantic warnings. Fixture coverage is now locked by `test_fixture_examples_match_gate_expectations`. PR review follow-up added regression checks for direct DB event coverage and early database rejection without `operation_type`; the first red check failed on the original two review points before the verifier table was adjusted. Trace-source follow-up red checks failed on missing `source_kind` report fields and unsupported `--source-kind/--path/--trace-id`; after implementation, `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py -q` passed 7/7.
 
-Next step: run final targeted verification after trace-source docs/state updates, then decide whether to commit this stacked implementation branch. Scorecard aggregation, release-gate orchestration, CI, and production route gating remain future tasks.
+Closeout: PR #1 and PR #2 have been merged into `codex/agent-eval-assets`. Scorecard aggregation and release-gate visibility were handled later by PR #3 and PR #4; CI and production route gating remain out of scope.
 
 ## Agent Evaluation Assets Worktree Status (2026-07-07)
 
@@ -88,7 +113,7 @@ New documentation assets:
 
 Current decision: micro-finetuning and model comparison are indexed as assets only. Router 52 candidate JSONL remains a shadow candidate set in `/Users/cici/oncall agent/.worktrees/phaseA-bge-m3-smoke/llm_finetuning_workspace/`, not a reviewed training set. BGE-M3 remains `keep-shadow` evidence, not a production embedding switch.
 
-Review closeout completed and first documentation asset commit created as `9d2c6f2 docs: add agent evaluation asset index`. The next minimal direction is now the doc-only `Agent评测门禁Scorecard.md`; after that, the first code implementation candidate remains `AuditEvidenceVerifier`.
+Review closeout completed and first documentation asset commit created as `9d2c6f2 docs: add agent evaluation asset index`. The subsequent PR #1-#5 chain has now closed the intended offline gate path from scorecard rules to verifier, trace sources, aggregation, dashboard visibility, and baseline stylesheet cleanup.
 
 Main-checkout boundary cleanup is opened as a separate review-only task. Current rule: do not delete or move files; first confirm keep/migrate decisions for `plan-governance-experiment/`, `super_biz_agent_py-plan-update/`, and the listed release-root governance/config files. `AuditEvidenceVerifier` remains the next implementation candidate after boundary decisions are separated.
 
@@ -125,7 +150,7 @@ Current next step: Month1 Week3 Day1-Day2 corpus collection. Week3 Day0 top_k / 
 `SuperBizAgent` is the main oncall agent repo for RAG knowledge-base Q&A and AIOps diagnosis. The 2026-03-21 RAG / WeKnora fusion release is closed; Reviewed Oncall Pattern Memory V1 P7 layered memory has completed its first-stage closeout under the explicit Gate A.2 pre-launch product-bet boundary. P6/P6_v2 are closed with rollout YES; P7.1 L0 Evidence Store, P7.2 L1 Atom Candidate Extraction, P7.3 Conflict + Lifecycle, P7.4 L2 aggregation, P7.5 Hierarchical Retrieval, and the deterministic P7 full eval are complete. Memory work is now frozen. RAG quality audit is also complete; AIOps mainline stability has now been validated with an MCP tool discovery cache slice and a fresh P6 rerun that recovered overall back to 7/12. The post-rerun mature-project gap backlog is now split into AIOps mainline, RAG production readiness, and Runtime readiness in `docs/项目与成熟项目做法差距.md`. A later external recheck also narrowed `docs/database_operation_capability_plan.md` into a sandbox-first, read-only DB capability plan and added `docs/mature_project_practice_review_20260530.md` plus `docs/enterprise_capability_development_record.md` as durable review records. The enterprise assistant direction now has a unified layered plan in `docs/enterprise_assistant_development_plan.md`, mature reference sources are indexed in `/Users/cici/oncall agent/reference_repos/README.md`, and the plan now splits governance work from the DB sandbox branch with M1-M4 demo checkpoints.
 
 ## Current Goal
-2026-06-16/17 "项目最后优化2" execution is complete and closed. All P0/P1/P2 tasks (Memory Operator UI, Database Catalog Browser, Ops Dashboard) and database v2 Stage 1-4 are finished and verified. P3 (cost stats) and P4 (skill registry) trigger conditions are not met; both remain deferred. The project enters Maintenance mode for completed visibility layers. Closeout summary: `docs/项目最后优化2_收口总结_20260617.md`.
+Current active documentation goal is the 2026-07-08 Agent Eval Gate Chain closeout recorded at the top of this file: PR #1-#5 are merged, and this worktree only updates state docs. The older 2026-06-16/17 "项目最后优化2" execution is complete and closed. All P0/P1/P2 tasks (Memory Operator UI, Database Catalog Browser, Ops Dashboard) and database v2 Stage 1-4 are finished and verified. P3 (cost stats) and P4 (skill registry) trigger conditions are not met; both remain deferred. The project enters Maintenance mode for completed visibility layers. Closeout summary: `docs/项目最后优化2_收口总结_20260617.md`.
 
 ## Current Status
 - Architecture drift cleanup is complete for the current P0 scope. `/api/chat/clear` now runs through `ChatAdapter.clear_session(...)` and `RequestGateway(route="chat_clear")`; RAG/AIOps adapter paths pass `RequestContext` explicitly into old services while retaining legacy fallback. The decision not to move `rag_agent_service.py` / `aiops_service.py` / `knowledge_search_service.py` is recorded in `docs/架构决策_旧服务边界_20260616.md`.

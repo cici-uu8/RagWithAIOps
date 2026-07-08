@@ -12879,3 +12879,25 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: 为什么从历史提交恢复，而不是用主 checkout 里的 untracked 文件？**
 
 答：主 checkout 现在有大量未跟踪/未收口资产，直接拿 untracked 文件会把脏工作区状态带进这个 PR。`f7c204b` 中的 `static/styles_aiops.css` 是 Git 历史里已经出现过的 tracked baseline，和当前测试契约中的选择器匹配。用它恢复更容易 review，也符合“单独处理基线缺失”的边界。
+
+## 2026-07-08 (Agent Eval PR #1-#5 状态收口)
+
+- 背景：PR #1 到 PR #5 已经连续合入 `codex/agent-eval-assets`，但状态文件顶部仍保留多个“worktree 待 review / 下一步处理”的历史口径。用户要求新开 `codex/agent-eval-closeout-state` worktree，只做状态收口文档，不写新功能。
+- 工作区边界：本轮在 `/Users/cici/oncall agent/.worktrees/agent-eval-closeout-state`、分支 `codex/agent-eval-closeout-state` 处理，base 是 `origin/codex/agent-eval-assets` 的 PR #5 merge commit `2dd1118`。主 checkout 继续不动。
+- 合并链路确认：`git log --oneline --merges` 显示 PR #1 `fac73e1`、PR #2 `2532eec`、PR #3 `4f3b2b2`、PR #4 `9443c79`、PR #5 `2dd1118` 均已进入当前 base。
+- 状态收口：`PROJECT_STATE.md` 顶部新增 `Agent Eval Gate Chain Closeout (2026-07-08)`，把五个 PR 统一记录为一条离线发布前检查链：PR #1 是 `AuditEvidenceVerifier` 规则层，PR #2 是 JSONL / SQLite trace-source 数据层，PR #3 是 scorecard 聚合层，PR #4 是 Admin Console `发布门禁` 可见层，PR #5 是 `static/styles_aiops.css` 基线修复。
+- 计划同步：`task_plan.md` 新增当前 active track，明确本切片只更新状态文档，并把 open worktree、确认 merge chain、更新文档、docs-only verification、commit/PR 分成可验收阶段。
+- 进度同步：`progress.md` 新增 closeout 记录，说明本轮只改 `PROJECT_STATE.md`、`task_plan.md`、`progress.md`、`docs/Agent评测门禁Scorecard.md` 和本 development record，不改代码。
+- Scorecard 口径同步：`docs/Agent评测门禁Scorecard.md` 的状态从 `documentation_only` 调整为 `offline_gate_chain_ready`，总判定从 `documentation_scorecard_ready` 调整为 `offline_pre_release_gate_visible`。这不是提升为生产 gate，而是承认 PR #1-#5 已经把离线规则、输入、聚合和可见入口串起来。
+- 风险边界：本轮不新增 runner、不改 verifier policy、不改 `AuditService.record()`、不接 CI、不加生产 route、不让浏览器执行 CLI、不读取报告、不改 RequestGateway / ToolGateway / DB / AIOps / RAG / model / router 默认行为。
+- 小白解释：之前像是桌上有几块分开的零件：一个检查审计字段的工具、一个读真实 trace 的入口、一个总分 runner、一个后台展示页，以及一个缺失 CSS 的小修复。PR #1-#5 合并后，这些零件已经拼成“发布前自己手动跑一下、能看报告、后台知道怎么跑”的最小链路。本轮做的不是再加零件，而是给这条链贴上清楚标签：它能做什么、不能做什么、下一步别乱接到生产。
+- 为什么现在停在这里：如果继续顺手做 CI、报告查询 API 或 `ToolTrajectoryVerifier`，reviewer 就很难判断 PR #1-#5 到底是在收口，还是又开新功能。当前最稳的是把已合并事实写准，然后另开任务处理主 checkout 边界清理；以后若要做“最新 report 只读查询”，必须单独切片。
+- 验证：本轮是文档-only，`git diff --check` 通过；targeted `rg` 检查确认 PR/gate/boundary 关键字已经落在状态文件里；`python3` Scorecard frontmatter/basic-field check 通过。
+
+**追问: 这个 closeout 是不是说明 Agent 评测平台完成了？**
+
+答：不是。它说明“Agent 评测门禁的最小离线链路完成了”：能检查审计证据，能从 JSONL/SQLite trace 取数据，能和 trace trajectory 聚合成 scorecard，能在 Admin Console 看见命令和边界。它不等于完整评测平台，因为还没有 CI 强拦截、没有生产 API gate、没有最新报告查询服务，也没有 Answer/LLM Judge/router fine-tune 的成熟闭环。
+
+**追问: 为什么这次不继续做只读 report API？**
+
+答：只读 report API 是合理的下一步，但它已经是产品功能，不是状态收口。它需要定义报告目录、文件索引、权限、错误状态和前端刷新逻辑。如果把它混进 closeout，边界就从“记录已完成事实”变成“继续开发”，正好违背用户这次要求的“不写新功能”。
