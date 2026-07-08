@@ -1537,3 +1537,20 @@
   - 后续用 `git -c http.version=HTTP/1.1` 成功 fetch/rebase/push，绕过了之前 GitHub git/HTTP2 连接失败问题。
   - Draft PR 已打开：https://github.com/cici-uu8/agent/pull/4。
 - 边界：本切片没有新增后端 route，没有从浏览器运行 scorecard，没有读取报告文件，没有接 CI，没有改 `AuditService.record()` / RequestGateway / ToolGateway / DB / AIOps / RAG 默认值。
+
+## 2026-07-08 AIOps styles baseline restore
+
+- 新开 worktree：`/Users/cici/oncall agent/.worktrees/aiops-styles-baseline`，分支 `codex/aiops-styles-baseline`，从 `origin/codex/agent-eval-assets` 的 PR #4 merge commit 派生。
+- 目标：单独修复 `static/styles_aiops.css` 缺失导致的前端静态测试失败，不混入 Agent eval dashboard 或新功能。
+- 红灯复现：
+  - `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_static_admin_console_assets_reference_existing_admin_apis -q --no-cov`
+  - 失败于 `FileNotFoundError: static/styles_aiops.css`。
+- 修复：
+  - 从历史提交 `f7c204b` 恢复已跟踪过的 `static/styles_aiops.css`。
+  - 没有采用主 checkout 里的 untracked `static/styles_aiops.css`，避免把主仓库脏状态混入本切片。
+- 验证：
+  - 目标测试通过。
+  - `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` 通过 33/33。
+  - `node --check static/js/aiops-visualizer.js && node --check static/app.js` 通过。
+  - `git diff --check` 通过。
+- 边界：只新增 `static/styles_aiops.css` 和状态记录；不改 AIOps JS、Admin Console、Agent eval gate、后端 route、CI、RAG/DB/AIOps 默认行为。

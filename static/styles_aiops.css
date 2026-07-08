@@ -1,0 +1,195 @@
+.aiops-visualizer-container {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 8px 0 12px;
+}
+
+.aiops-flow-container {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d6dde8;
+    border-radius: 8px;
+    background: #f8fafc;
+    padding: 14px;
+    color: #172033;
+}
+
+.aiops-flow-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.aiops-flow-header h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.aiops-flow-header p {
+    margin: 0;
+    color: #5f6b7a;
+    font-size: 13px;
+}
+
+.aiops-flow-progress-text {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.aiops-flow-progress {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e5eaf2;
+    margin-bottom: 12px;
+}
+
+.aiops-flow-progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: #2563eb;
+    transition: width 0.3s ease;
+}
+
+.aiops-flow-steps {
+    display: grid;
+    gap: 8px;
+}
+
+.aiops-flow-step {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 10px;
+}
+
+.aiops-step-header {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.aiops-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e5eaf2;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.aiops-step-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.aiops-step-status {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.aiops-flow-step-running {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.aiops-flow-step-running .aiops-step-number {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.aiops-flow-step-completed .aiops-step-number {
+    background: #16a34a;
+    color: #ffffff;
+}
+
+.aiops-flow-step-failed {
+    border-color: #fca5a5;
+    background: #fff1f2;
+}
+
+.aiops-flow-step-failed .aiops-step-number {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.aiops-step-details {
+    margin-top: 8px;
+    padding-left: 36px;
+    display: grid;
+    gap: 6px;
+}
+
+.aiops-tool-call {
+    border: 1px solid #dbe4ef;
+    border-radius: 6px;
+    background: #f8fafc;
+    padding: 6px 8px;
+}
+
+.aiops-tool-call summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.aiops-tool-call pre {
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+
+.aiops-step-result,
+.aiops-step-error,
+.aiops-step-time {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.aiops-step-result {
+    color: #334155;
+}
+
+.aiops-step-error {
+    color: #b91c1c;
+}
+
+.aiops-step-time {
+    color: #64748b;
+}
+
+@media (max-width: 640px) {
+    .aiops-flow-container {
+        padding: 12px;
+    }
+
+    .aiops-flow-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .aiops-step-header {
+        grid-template-columns: 28px minmax(0, 1fr);
+    }
+
+    .aiops-step-status {
+        grid-column: 2;
+    }
+
+    .aiops-step-details {
+        padding-left: 0;
+    }
+}

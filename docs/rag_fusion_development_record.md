@@ -12865,3 +12865,16 @@ uv run python -m py_compile app/enterprise/database/routes.py app/main.py tests/
 **追问: 为什么不顺手恢复 `static/styles_aiops.css` 让完整前端测试过？**
 
 答：`static/styles_aiops.css` 是当前 worktree/base 缺失的 AIOps visualizer 样式资产，虽然 `static/index.html` 和测试都引用它，但这不是发布门禁 tab 的改动面。把它混进本 PR 会让 reviewer 同时审 UI gate 和 AIOps 资产恢复，边界变乱。更稳的做法是把它作为单独的 baseline cleanup，确认该文件是否应从主 checkout 的 untracked 状态迁移/提交。
+
+## 2026-07-08 (AIOps styles baseline restore)
+
+- 背景：PR #4 review 明确指出 `test_static_admin_console_assets_reference_existing_admin_apis` 在该 worktree/base 中因为缺少 `static/styles_aiops.css` 失败，但这不是 Agent eval dashboard 的功能问题。用户要求单独处理，不要混进新功能。
+- 工作区边界：本轮新开 `/Users/cici/oncall agent/.worktrees/aiops-styles-baseline`，分支 `codex/aiops-styles-baseline`，从远端 `origin/codex/agent-eval-assets` 的 PR #4 merge commit 派生。主 checkout 仍保持不动。
+- 红灯复现：`uv run --extra dev pytest tests/test_assistant_frontend_optimization.py::AssistantFrontendOptimizationTests::test_static_admin_console_assets_reference_existing_admin_apis -q --no-cov` 失败于 `FileNotFoundError: static/styles_aiops.css`。这说明 `static/index.html` 已经引用 `/static/styles_aiops.css`，测试也要求该文件含 `.aiops-visualizer-container`、`.aiops-flow-container`、`.aiops-flow-step-running`、`.aiops-tool-call` 等契约选择器，但文件没有进入当前 base。
+- 修复选择：没有从主 checkout 的 untracked `static/styles_aiops.css` 直接迁移，而是从历史提交 `f7c204b` 恢复已被 Git 跟踪过的 `static/styles_aiops.css`。这样本 PR 的语义是“恢复丢失 baseline 资产”，不是采纳主仓库脏状态里的未审文件。
+- 绿色验证：恢复后同一目标测试通过。完整 `uv run --extra dev pytest tests/test_assistant_frontend_optimization.py -q --no-cov` 通过 33/33；`node --check static/js/aiops-visualizer.js && node --check static/app.js` 通过；`git diff --check` 通过。
+- 边界：本轮只新增 `static/styles_aiops.css` 并同步状态记录；没有修改 `static/js/aiops-visualizer.js`、`static/app.js`、Admin Console、Agent eval gate、后端 route、CI、RAG/DB/AIOps 默认行为。
+
+**追问: 为什么从历史提交恢复，而不是用主 checkout 里的 untracked 文件？**
+
+答：主 checkout 现在有大量未跟踪/未收口资产，直接拿 untracked 文件会把脏工作区状态带进这个 PR。`f7c204b` 中的 `static/styles_aiops.css` 是 Git 历史里已经出现过的 tracked baseline，和当前测试契约中的选择器匹配。用它恢复更容易 review，也符合“单独处理基线缺失”的边界。
