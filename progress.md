@@ -1,5 +1,33 @@
 # Progress
 
+## 2026-07-07 Agent Eval Scorecard Runner Slice
+
+- Opened implementation work only in `/Users/cici/oncall agent/.worktrees/agent-scorecard-runner` on branch `codex/agent-scorecard-runner`, leaving the dirty main checkout untouched.
+- Started from `codex/audit-evidence-trace-sources` because it contains the already reviewed PR #2 audit trace-source runner changes; direct `git fetch origin codex/agent-eval-assets` failed in this environment due SSH public-key auth.
+- Added `evals/enterprise/run_agent_eval_scorecard.py` as an offline pre-release scorecard runner:
+  - requires one or more `--trace-evalset` inputs;
+  - requires one audit source via `--audit-events` or `--audit-source-kind/--audit-path/--audit-trace-id`;
+  - reuses `run_trace_eval(...)` for `G-P1-TRACE-TRAJECTORY`;
+  - reuses `run_audit_evidence_gate(...)` for `G-P0-AUDIT-EVIDENCE`;
+  - writes `agent_eval_scorecard_<timestamp>.json` and `.md`;
+  - returns exit code 1 if any gate fails.
+- Added `tests/test_enterprise_agent_eval_scorecard.py`:
+  - all-pass trace eval + audit evidence produces a passing scorecard;
+  - audit evidence fixture failure fails the aggregate scorecard while trace stays passed;
+  - trace eval mismatch fails the aggregate scorecard while audit evidence stays passed;
+  - missing audit source is rejected by the CLI instead of silently skipping the P0 gate.
+- Updated `docs/Agent评测门禁Scorecard.md` with the aggregate command and explicit offline-only boundary.
+- Boundary: no `AuditService.record()` change, no production route gate, no CI gate, no new verifier, no LLM Judge, no router fine-tune, no Q-SQL experiment, and no RAG / DB / AIOps / router / model default change.
+- Verification so far:
+  - baseline `uv run --extra dev pytest tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_trace_eval.py -q` passed 22/22 before implementation;
+  - TDD red failed on `ModuleNotFoundError: No module named 'evals.enterprise.run_agent_eval_scorecard'`;
+  - green check `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py -q` passed 4/4.
+  - final targeted regression `uv run --extra dev pytest tests/test_enterprise_agent_eval_scorecard.py tests/test_enterprise_audit_evidence_gate.py tests/test_enterprise_trace_eval.py tests/test_enterprise_verifiers.py tests/test_enterprise_database_operation_audit.py tests/test_enterprise_tool_gateway.py tests/test_enterprise_gateway_routes.py -q --no-cov` passed 61/61;
+  - `uv run --extra dev ruff check evals/enterprise/run_agent_eval_scorecard.py tests/test_enterprise_agent_eval_scorecard.py` passed;
+  - `uv run python -m compileall -q evals/enterprise/run_agent_eval_scorecard.py tests/test_enterprise_agent_eval_scorecard.py` passed;
+  - aggregate CLI smoke with `--trace-evalset ... --audit-events ... --no-write` returned `passed=true`;
+  - `git diff --check` passed.
+
 ## 2026-07-07 AuditEvidenceVerifier P0 Gate Slice
 
 - Opened implementation work only in `/Users/cici/oncall agent/.worktrees/audit-evidence-verifier` on branch `codex/audit-evidence-verifier`, leaving the dirty main checkout untouched.

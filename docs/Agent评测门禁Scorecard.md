@@ -44,8 +44,8 @@ status: documentation_only
 | `G-P0-PERMISSION-SCOPE` | KB scope、跨部门、数据库表列权限泄露 | `rag_mixed_54q`; `boundary_12q`; `database_safe_select_tool`; `verifier_tests` | 当前 Mixed 54q `wrong_scope_count=0`; Boundary post-fix `permission_or_scope_issue=0` | 出现 wrong scope、未授权文档/表/列/工具结果泄露 | 必须进 regression；需要时补权限 verifier。 |
 | `G-P0-SAFE-SQL` | SQL 绕过 SafeSQL 或权限边界 | `database_safe_select_tool`; `database_operations_confirmation`; `database_qsql_examples` | SafeSQL / permission / confirmation 已有测试资产；Q-SQL 只是示例证据 | SQL 直接执行绕过 `SafeSqlKernel`；未授权表列未被阻断；危险操作绕过 confirmation | 保持 `sql_blocked` 正负样本分开；不做 Q-SQL 生产生成。 |
 | `G-P0-HUMAN-REVIEW` | 高风险任务绕过人工审核或确认 | `verifier_tests`; `tests/test_enterprise_human_review.py`; `database_operations_confirmation` | Human review 和 DB confirmation 有确定性测试资产 | high-risk false negative；reject 后仍执行；需要 confirmation 的操作被直接执行 | 若缺覆盖，再补 `HumanReviewVerifier` 或 trace forbidden-tool case。 |
-| `G-P0-AUDIT-EVIDENCE` | allow / deny / block / execute 决策缺审计证据 | `audit_database_tests`; `enterprise_trace_eval`; gateway/tool tests; `run_audit_evidence_gate.py` | 第一版 `AuditEvidenceVerifier` 和离线 gate runner 已实现；未接生产入口 | P0 决策缺 `trace_id/request_id/resource_id/reason/decision metadata` 等关键字段 | 先补 fixtures 和 trace eval 接入候选，不改 `AuditService.record()`。 |
-| `G-P1-TRACE-TRAJECTORY` | 工具调用轨迹、required stages、forbidden tools 不符合预期 | `enterprise_trace_eval`; `trace_evalsets`; `aiops_trace_eval` | 当前是 `deterministic_gate_candidate`，样本量小 | 关键 trace eval 中 required tool/stage 缺失，或 forbidden tool 出现 | 先扩 scorecard 映射；必要时补 `ToolTrajectoryVerifier`。 |
+| `G-P0-AUDIT-EVIDENCE` | allow / deny / block / execute 决策缺审计证据 | `audit_database_tests`; `enterprise_trace_eval`; gateway/tool tests; `run_audit_evidence_gate.py` | `AuditEvidenceVerifier`、离线 gate runner、trace source 输入和 scorecard 聚合入口已实现；未接生产入口 | P0 决策缺 `trace_id/request_id/resource_id/reason/decision metadata` 等关键字段 | 继续保持离线发布前检查项；不改 `AuditService.record()`。 |
+| `G-P1-TRACE-TRAJECTORY` | 工具调用轨迹、required stages、forbidden tools 不符合预期 | `enterprise_trace_eval`; `trace_evalsets`; `aiops_trace_eval` | 当前是 `deterministic_gate_candidate`，已可被 scorecard runner 聚合 | 关键 trace eval 中 required tool/stage 缺失，或 forbidden tool 出现 | 先用 scorecard runner 编排；必要时再补 `ToolTrajectoryVerifier`。 |
 | `G-P1-RAG-RETRIEVAL` | RAG retrieval 质量回退、默认策略提升证据不足 | `rag_mixed_54q`; `topk_rerank_matrix`; `retrieval_mode_history` | 当前 baseline `45/54`; top_k/rerank 仅 keep-shadow / reject | 默认策略候选低于 baseline，或 source_ref/scope 回归 | 不改 `dense_only / off / false / top_k=3`。 |
 | `G-P1-ANSWER-COVERAGE` | Answer 完整性不足、过早 GA / Answer 50q | `answer_30q`; `beta_feedback`; `Boundary 12Q` | 当前 Answer 30q `18/30` 是 limitation record | 把 `18/30` 误写为成熟 Answer；真实反馈聚类到 answer_incomplete | 只从真实反馈或窄 Answer pilot 重开。 |
 | `G-SHADOW-MODEL-COMPARE` | 模型/检索候选被过早提升 | `bge_m3_shadow_54q`; `topk_rerank_matrix`; `model_comparison_overview` | BGE-M3 `38/54 keep-shadow`; rerank reject | 候选未超过 baseline 或成本/安全不满足却试图切默认 | 继续 shadow，不跑第二模型堆材料。 |
@@ -81,6 +81,22 @@ router_production_integration = false
 ## 5. 可执行命令
 
 `G-P0-AUDIT-EVIDENCE` 当前可用离线 runner 检查审计事件 JSON / JSONL，也可以从真实 trace source 读取 JSONL / SQLite 审计记录。
+
+聚合发布前检查入口：
+
+```bash
+uv run python -m evals.enterprise.run_agent_eval_scorecard \
+  --trace-evalset evals/enterprise/evalsets/chat_trace_evalset.jsonl \
+  --audit-events evals/enterprise/fixtures/audit_evidence/pass_events.jsonl \
+  --output-dir /tmp/agent_eval_scorecard_reports
+```
+
+这个入口会串联：
+
+- `G-P1-TRACE-TRAJECTORY`：调用 `run_trace_eval.py` 检查 trace evalset。
+- `G-P0-AUDIT-EVIDENCE`：调用 `run_audit_evidence_gate.py` 检查 audit evidence。
+
+任一 gate 失败时，`run_agent_eval_scorecard.py` 返回 exit code `1`。它仍然是离线发布前检查项，不接 CI、不改生产链路、不改变 `AuditService.record()`。
 
 手写 fixture / 导出文件模式：
 
