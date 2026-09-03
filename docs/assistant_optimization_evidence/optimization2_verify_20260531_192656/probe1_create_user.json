@@ -1,2 +1,0 @@
-{"detail":[{"type":"missing","loc":["body","user_id"],"msg":"Field required","input":{"username":"verify_user_192854","password":"Verify123!","department_id":"dept_1","department_name":"Department 1","roles":["user"]}}]}
-HTTP 422

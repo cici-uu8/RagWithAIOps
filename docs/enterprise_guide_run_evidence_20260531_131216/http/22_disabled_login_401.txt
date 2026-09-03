@@ -1,8 +1,0 @@
-HTTP/1.1 401 Unauthorized
-date: Sun, 31 May 2026 05:39:49 GMT
-server: uvicorn
-www-authenticate: Bearer
-content-length: 29
-content-type: application/json
-
-{"detail":"User is disabled"}

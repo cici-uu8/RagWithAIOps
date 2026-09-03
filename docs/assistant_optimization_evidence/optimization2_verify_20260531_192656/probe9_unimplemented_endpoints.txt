@@ -1,5 +1,0 @@
-404  /api/admin/scope
-404  /api/admin/resources
-405  /api/admin/grants/preview
-404  /api/admin/departments
-404  /api/admin/permission-requests

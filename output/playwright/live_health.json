@@ -1,1 +1,0 @@
-{"code":200,"message":"服务运行正常","data":{"service":"SuperBizAgent","version":"1.0.0","status":"healthy","milvus":{"status":"connected","message":"Milvus 连接正常"}}}

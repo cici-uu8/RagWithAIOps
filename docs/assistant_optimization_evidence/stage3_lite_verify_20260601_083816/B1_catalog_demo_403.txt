@@ -1,2 +1,0 @@
-{"detail":"Admin role required"}
-HTTP 403
