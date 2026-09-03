@@ -1,8 +1,0 @@
-403  GET /api/admin/users
-403  GET /api/admin/roles
-403  GET /api/admin/grants
-403  GET /api/admin/audit
-403  GET /api/admin/reviews/pending
-403  POST /api/admin/users
-403  POST /api/admin/roles
-403  POST /api/admin/grants

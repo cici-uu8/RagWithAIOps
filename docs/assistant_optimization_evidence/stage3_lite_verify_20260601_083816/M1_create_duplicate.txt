@@ -1,2 +1,0 @@
-{"detail":"Grant validation failed: duplicate_grant"}
-HTTP 400
