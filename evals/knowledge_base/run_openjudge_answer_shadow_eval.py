@@ -23,7 +23,7 @@ DEFAULT_BASELINE_REPORT = (
     "evals/knowledge_base/reports/"
     "department_rag_answer_pilot_20q_baseline_after_s5_p31_repair_20260611.json"
 )
-DEFAULT_EVALSET = "evals/knowledge_base/evalsets/department_rag_answer_pilot_20q.jsonl"
+DEFAULT_EVALSET: str | None = None
 DEFAULT_OUTPUT_JSON = (
     "evals/knowledge_base/reports/openjudge_answer_shadow_eval_20260611.json"
 )
@@ -497,7 +497,7 @@ def _not_ready_results(cases: list[dict[str, Any]], error: str) -> dict[str, lis
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run OpenJudge Answer-layer shadow eval.")
     parser.add_argument("--baseline-report", default=DEFAULT_BASELINE_REPORT)
-    parser.add_argument("--evalset", default=DEFAULT_EVALSET)
+    parser.add_argument("--evalset", required=False, default=DEFAULT_EVALSET)
     parser.add_argument("--output-json", "--output", dest="output_json", default=DEFAULT_OUTPUT_JSON)
     parser.add_argument("--output-md", default="")
     parser.add_argument("--max-concurrency", type=int, default=4)

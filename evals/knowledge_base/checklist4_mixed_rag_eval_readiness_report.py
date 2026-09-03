@@ -5,12 +5,12 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 DEFAULT_IMPORT_STATE = "data/knowledge_ingestion/current_import_state.json"
-DEFAULT_MIXED_EVALSET = "evals/knowledge_base/evalsets/department_rag_mixed_markdown_pdf_50q.jsonl"
+DEFAULT_MIXED_EVALSET: str | None = None
 
 DEFAULT_TARGETS = {
     "min_indexed_documents": 10,
@@ -43,7 +43,7 @@ def build_mixed_rag_eval_readiness_report(
     status = _status_from_gaps(gaps)
     return {
         "schema_version": "checklist4_mixed_rag_eval_readiness_v1",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "status": status,
         "ready_for_mixed_baseline": status == "ready_for_mixed_baseline",
         "targets": target_values,

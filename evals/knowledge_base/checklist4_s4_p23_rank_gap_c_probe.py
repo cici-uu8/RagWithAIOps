@@ -22,7 +22,7 @@ from evals.knowledge_base.retrieval_mode_comparison_report import (
 )
 from evals.knowledge_base.run_department_rag_eval import load_evalset
 
-DEFAULT_EVALSET_PATH = "evals/knowledge_base/evalsets/department_rag_mixed_markdown_pdf_50q.jsonl"
+DEFAULT_EVALSET_PATH = "<local-approved-evalset>"
 RANK_GAP_SAMPLE_IDS = [
     "S4M-A-012",
     "S4M-B-001",

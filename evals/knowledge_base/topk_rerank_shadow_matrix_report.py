@@ -42,7 +42,7 @@ from evals.knowledge_base.run_department_rag_eval import (
     verify_source_ref_integrity,
 )
 
-DEFAULT_EVALSET = "evals/knowledge_base/evalsets/department_rag_mixed_markdown_pdf_54q_after_c6_p2.jsonl"
+DEFAULT_EVALSET: str | None = None
 DEFAULT_OUTPUT_JSON = "evals/knowledge_base/reports/month1_topk_rerank_shadow_matrix_54q_20260618.json"
 DEFAULT_PRIOR_ANSWER_SHADOW = "evals/knowledge_base/reports/department_rag_answer_3q_top_k5_shadow_20260612.json"
 
@@ -116,7 +116,7 @@ _UNSET = _Unset()
 
 
 def build_topk_rerank_shadow_matrix_report(
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     *,
     scenarios: list[dict[str, Any]] | None = None,
     retrieval_provider: DenseRetrievalProvider | None = None,
@@ -125,6 +125,8 @@ def build_topk_rerank_shadow_matrix_report(
     external_scorer: RerankScorer | None | object = _UNSET,
     prior_answer_shadow_path: str | Path = DEFAULT_PRIOR_ANSWER_SHADOW,
 ) -> dict[str, Any]:
+    if evalset_path is None:
+        raise ValueError("evalset_path is required; provide an approved local JSONL evalset")
     cases = load_evalset(evalset_path)
     selected_scenarios = _normalize_scenarios(scenarios or DEFAULT_SCENARIOS)
     provider = retrieval_provider or _default_dense_retrieval_provider
@@ -176,7 +178,7 @@ def build_topk_rerank_shadow_matrix_report(
     }
 
 def write_topk_rerank_shadow_matrix_report(
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     *,
     output_json: str | Path = DEFAULT_OUTPUT_JSON,
     output_md: str | Path | None = None,
@@ -996,7 +998,7 @@ def _fmt_float(value: float) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run top_k / rerank shadow matrix report.")
-    parser.add_argument("--evalset", default=DEFAULT_EVALSET, help="Path to retrieval evalset JSONL.")
+    parser.add_argument("--evalset", required=True, help="Approved local retrieval evalset JSONL path.")
     parser.add_argument("--output-json", default=DEFAULT_OUTPUT_JSON, help="Output JSON report path.")
     parser.add_argument("--output-md", default="", help="Optional output Markdown report path.")
     args = parser.parse_args()

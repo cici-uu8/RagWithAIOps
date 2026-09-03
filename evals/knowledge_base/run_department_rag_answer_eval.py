@@ -33,7 +33,7 @@ ANSWER_REQUIRED_FIELDS = {
     "context_policy",
 }
 
-DEFAULT_EVALSET = "evals/knowledge_base/evalsets/department_rag_answer_pilot_20q.jsonl"
+DEFAULT_EVALSET: str | None = None
 DEFAULT_REPORT_NAME = "department_rag_answer_pilot_20q_baseline_20260611"
 LLM_TEMPERATURE = 0.0
 LLM_MAX_TOKENS = 900
@@ -152,7 +152,7 @@ def load_answer_evalset(path: str | Path) -> list[dict[str, Any]]:
 
 
 def run_department_rag_answer_eval(
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     *,
     output_dir: str | Path = "evals/knowledge_base/reports",
     report_path: str | Path | None = None,
@@ -162,6 +162,8 @@ def run_department_rag_answer_eval(
     metadata_store: KnowledgeMetadataStore | None = knowledge_metadata_store,
     answer_generator: Any | None = None,
 ) -> dict[str, Any]:
+    if evalset_path is None:
+        raise ValueError("evalset_path is required; provide an approved local JSONL evalset")
     cases = load_answer_evalset(evalset_path)
     if limit is not None:
         cases = cases[: max(0, limit)]
@@ -580,7 +582,7 @@ def _eval_context() -> RequestContext:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run S5 department RAG answer eval.")
-    parser.add_argument("--evalset", default=DEFAULT_EVALSET, help="Answer JSONL evalset path.")
+    parser.add_argument("--evalset", required=True, help="Approved local Answer JSONL evalset path.")
     parser.add_argument("--output-dir", default="evals/knowledge_base/reports")
     parser.add_argument("--report", default="", help="Optional exact output report JSON path.")
     parser.add_argument("--limit", type=int, default=None)

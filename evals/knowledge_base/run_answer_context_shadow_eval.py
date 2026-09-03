@@ -16,7 +16,7 @@ from evals.knowledge_base.answer_eval_helpers import contains_required_text
 from evals.knowledge_base.run_department_rag_answer_eval import load_answer_evalset
 from evals.knowledge_base.run_department_rag_eval import verify_source_ref_integrity
 
-DEFAULT_EVALSET = "evals/knowledge_base/evalsets/department_rag_answer_30q_after_c6_triage_fix.jsonl"
+DEFAULT_EVALSET: str | None = None
 DEFAULT_OUTPUT_JSON = "evals/knowledge_base/reports/answer_30q_context_shadow_c6a_md_004_005_20260612.json"
 DEFAULT_SAMPLE_IDS = ("C6A-MD-004", "C6A-MD-005")
 DEFAULT_TOP_KS = (3, 5, 8)
@@ -25,7 +25,7 @@ PROMOTION_TOP_K = 5
 
 
 def build_answer_context_shadow_report(
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     *,
     sample_ids: Iterable[str] = DEFAULT_SAMPLE_IDS,
     top_ks: Iterable[int] = DEFAULT_TOP_KS,
@@ -33,6 +33,9 @@ def build_answer_context_shadow_report(
     metadata_store: KnowledgeMetadataStore | None = knowledge_metadata_store,
 ) -> dict[str, Any]:
     """Run retrieval-only context coverage probes for selected Answer samples."""
+
+    if evalset_path is None:
+        raise ValueError("evalset_path is required; provide an approved local JSONL evalset")
 
     selected_ids = [str(sample_id) for sample_id in sample_ids]
     selected_top_ks = _normalize_top_ks(top_ks)
@@ -55,7 +58,7 @@ def build_answer_context_shadow_report(
 
 
 def write_answer_context_shadow_report(
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     *,
     sample_ids: Iterable[str] = DEFAULT_SAMPLE_IDS,
     top_ks: Iterable[int] = DEFAULT_TOP_KS,
@@ -281,7 +284,7 @@ def _parse_top_ks(value: str) -> list[int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--evalset", default=DEFAULT_EVALSET)
+    parser.add_argument("--evalset", required=True)
     parser.add_argument("--sample-id", action="append", dest="sample_ids")
     parser.add_argument("--top-ks", default=",".join(str(value) for value in DEFAULT_TOP_KS))
     parser.add_argument("--output-json", default=DEFAULT_OUTPUT_JSON)

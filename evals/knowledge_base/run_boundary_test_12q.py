@@ -14,7 +14,7 @@ import requests
 from app.models import RetrievalMode, RetrievalQuery
 from app.services.retrieval_service import retrieval_service
 
-DEFAULT_EVALSET = "evals/knowledge_base/evalsets/boundary_test_12q.jsonl"
+DEFAULT_EVALSET: str | None = None
 DEFAULT_OUTPUT = "evals/knowledge_base/reports"
 
 
@@ -428,7 +428,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Evalset: `{report['evalset_path']}`",
         f"- HTTP chat: `{report['scope']['http_chat_url']}`",
         f"- Retrieval mode: `{report['scope']['retrieval_mode']}`",
-        f"- Selected KB: `process_digital_dept`",
+        "- Selected KB: configured operational knowledge base",
         f"- Verdict counts: `{summary['verdict_counts']}`",
         f"- Issue counts: `{summary['issue_counts']}`",
         f"- Thresholds: `{summary['thresholds']}`",
@@ -460,7 +460,7 @@ def render_markdown(report: dict[str, Any]) -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the 12Q boundary eval.")
-    parser.add_argument("--evalset", default=DEFAULT_EVALSET)
+    parser.add_argument("--evalset", required=True)
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT)
     parser.add_argument("--base-url", default="http://127.0.0.1:9900/api")
     parser.add_argument("--username", default="admin")

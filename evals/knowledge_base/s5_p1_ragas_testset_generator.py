@@ -168,7 +168,7 @@ def generate_ragas_testset(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="S5-P1 RAGAS testset generator")
-    parser.add_argument("--output", default="evals/knowledge_base/evalsets/s5p1_ragas_candidates_40q.jsonl")
+    parser.add_argument("--output", default="evals/knowledge_base/evalsets/generated.local.jsonl")
     parser.add_argument("--target-size", type=int, default=40)
     parser.add_argument("--kb-ids", nargs="+", default=["process_digital_dept"])
     parser.add_argument("--use-openai", action="store_true", help="Use OpenAI for generation (requires OPENAI_API_KEY)")

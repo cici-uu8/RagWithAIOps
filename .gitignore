@@ -45,6 +45,11 @@ htmlcov/
 # Local evaluation and runtime artifacts
 evals/**/reports/
 evals/**/child_runs/
+# Knowledge-base evaluation corpora are supplied locally and must be approved
+# before use. Public enterprise contract evalsets remain trackable.
+evals/knowledge_base/evalsets/
+evals/**/evalsets/*.local.*
+evals/**/evalsets/*private*
 *.pid
 *.sqlite
 *.sqlite-shm

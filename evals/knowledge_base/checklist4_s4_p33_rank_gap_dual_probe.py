@@ -233,7 +233,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Checklist 4 S4-P3.3 rank-gap dual probe")
     parser.add_argument(
         "--evalset",
-        default="evals/knowledge_base/evalsets/department_rag_mixed_markdown_pdf_50q.jsonl",
+        default="<local-approved-evalset>",
     )
     parser.add_argument(
         "--output",

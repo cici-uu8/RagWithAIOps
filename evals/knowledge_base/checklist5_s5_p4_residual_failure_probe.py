@@ -62,13 +62,15 @@ RESIDUAL_SAMPLE_IDS = (
 
 def build_s5_p4_residual_failure_probe_report(
     *,
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     baseline_report_path: str | Path = DEFAULT_BASELINE_REPORT,
     retrieval_service=retrieval_service,
     metadata_store: KnowledgeMetadataStore | None = knowledge_metadata_store,
     generator_factory: Any | None = None,
     variance_runs: int = 5,
 ) -> dict[str, Any]:
+    if evalset_path is None:
+        raise ValueError("evalset_path is required; provide an approved local JSONL evalset")
     cases = load_answer_evalset(evalset_path)
     sample_by_id = {str(case["sample_id"]): case for case in cases}
     missing = [sample_id for sample_id in RESIDUAL_SAMPLE_IDS if sample_id not in sample_by_id]
@@ -172,7 +174,7 @@ def write_s5_p4_residual_failure_probe_report(
     *,
     output_json: str | Path = DEFAULT_OUTPUT_JSON,
     output_md: str | Path | None = None,
-    evalset_path: str | Path = DEFAULT_EVALSET,
+    evalset_path: str | Path | None = DEFAULT_EVALSET,
     baseline_report_path: str | Path = DEFAULT_BASELINE_REPORT,
     retrieval_service=retrieval_service,
     metadata_store: KnowledgeMetadataStore | None = knowledge_metadata_store,
@@ -1003,7 +1005,7 @@ def _summarize_chunk_ids(chunk_ids: list[str], limit: int = 8) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run S5-P4 residual answer-failure observation probes.")
-    parser.add_argument("--evalset", default=DEFAULT_EVALSET, help="Answer JSONL evalset path.")
+    parser.add_argument("--evalset", required=True, help="Approved local Answer JSONL evalset path.")
     parser.add_argument("--baseline-report", default=DEFAULT_BASELINE_REPORT)
     parser.add_argument("--output-json", default=DEFAULT_OUTPUT_JSON)
     parser.add_argument("--output-md", default="")

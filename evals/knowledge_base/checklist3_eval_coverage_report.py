@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -13,22 +13,22 @@ DEFAULT_EVALSET_SPECS = [
     {
         "coverage_id": "e1_permission_isolation",
         "eval_type": "permission",
-        "path": "evals/knowledge_base/evalsets/department_rag_permission_isolation_10q.jsonl",
+        "path": "<local-approved-evalset>",
     },
     {
         "coverage_id": "e1_scope_lock",
         "eval_type": "scope",
-        "path": "evals/knowledge_base/evalsets/department_rag_scope_lock_10q.jsonl",
+        "path": "<local-approved-evalset>",
     },
     {
         "coverage_id": "e1_citation_accuracy",
         "eval_type": "citation",
-        "path": "evals/knowledge_base/evalsets/department_rag_citation_accuracy_10q.jsonl",
+        "path": "<local-approved-evalset>",
     },
     {
         "coverage_id": "pdf_page_table_source_ref",
         "eval_type": "pdf_page_table",
-        "path": "evals/knowledge_base/evalsets/pdf_page_table_eval_current_failure_20260608.json",
+        "path": "<local-approved-evalset>",
     },
 ]
 
@@ -45,7 +45,7 @@ def build_checklist3_eval_coverage_report(
     summary = _build_summary(rows, smoke)
     gaps = _coverage_gaps(summary)
     return {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "status": "needs_expansion" if gaps else "covered",
         "summary": summary,
         "coverage_gaps": gaps,

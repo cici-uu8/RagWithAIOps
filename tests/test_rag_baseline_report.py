@@ -13,7 +13,7 @@ class RagBaselineReportTests(unittest.TestCase):
             report_path.write_text(
                 json.dumps(
                     {
-                        "evalset_path": "evals/knowledge_base/evalsets/department_rag_20q.jsonl",
+                        "evalset_path": "/tmp/approved-evalset.jsonl",
                         "generated_at": "2026-06-05T00:20:42+00:00",
                         "summary": {
                             "total": 20,

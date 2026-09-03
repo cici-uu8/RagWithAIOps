@@ -9,7 +9,7 @@
 - **AIOps 诊断**：LangGraph Plan-Execute-Replan 工作流通过 MCP 调用日志、指标、服务和历史工单工具，输出可追溯诊断报告。
 - **企业治理**：RequestContext、权限过滤、审批、MySQL 安全查询、审计事件和离线评测门禁覆盖高风险操作。
 - **异步处理**：Redis/RQ 负责 PDF/DOCX/XLSX 解析与索引任务；Docker Compose 提供 Milvus、MinIO 和 Redis 本地依赖。
-- **可观测性与评测**：JSONL/SQLite Trace、SSE 契约检查、RAG 评测和企业 Agent 评测脚本均位于 `evals/`。
+- **可观测性与评测**：JSONL/SQLite Trace、SSE 契约检查、RAG 评测和企业 Agent 评测脚本均位于 `evals/`；内部企业语料、知识库评测样本、运行轨迹和生成报告不随仓库发布。
 
 ## 技术栈
 
@@ -83,6 +83,15 @@ uv run python -m evals.enterprise.run_agent_eval_scorecard \
 ## 配置与安全
 
 所有凭据、数据库连接、日志、上传文件、向量数据和评测运行产物均应留在本地或部署环境，并已加入 `.gitignore`。复制 `.env.example` 后按需配置；生产环境必须替换默认 JWT secret，并通过密钥管理系统注入 API key。
+
+评测脚本只接受调用方明确提供的本地 evalset，例如：
+
+```bash
+uv run python -m evals.knowledge_base.run_department_rag_eval \
+  --evalset /path/to/approved-evalset.jsonl
+```
+
+评测数据格式和使用说明见 [`evals/knowledge_base/README.md`](evals/knowledge_base/README.md)。
 
 ## 许可
 

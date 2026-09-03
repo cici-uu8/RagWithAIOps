@@ -14,9 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-DEFAULT_COMPARISON_SAMPLES_PATH = (
-    "evals/knowledge_base/evalsets/retrieval_mode_comparison_samples_20260608.json"
-)
+DEFAULT_COMPARISON_SAMPLES_PATH = "<local-approved-comparison-samples>"
 DEFAULT_COMPARISON_REPORT_PATH = (
     "evals/knowledge_base/fixtures/retrieval_mode_comparison_summary.json"
 )

@@ -8,73 +8,11 @@ from app.enterprise.context import RequestContext
 from app.models import ParserEngine, RetrievalQuery, RetrievalResponse, RetrievalResult, SourceRef
 from evals.knowledge_base.run_department_rag_eval import (
     evaluate_case,
-    load_evalset,
     run_department_rag_eval,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-
 
 class KnowledgeBaseEvalsetTests(unittest.TestCase):
-    def test_department_evalsets_have_required_fields(self):
-        required = {
-            "sample_id",
-            "query",
-            "allowed_kb_ids",
-            "expected_doc_ids",
-            "expected_answer_keywords",
-            "scope",
-        }
-        for relative_path in (
-            "evals/knowledge_base/evalsets/department_rag_20q.jsonl",
-            "evals/knowledge_base/evalsets/department_rag_18q_current_scope_20260608.jsonl",
-            "evals/knowledge_base/evalsets/department_rag_retrieval_content_recall_20q.jsonl",
-            "evals/knowledge_base/evalsets/department_rag_unscoped_4q.jsonl",
-        ):
-            cases = load_evalset(REPO_ROOT / relative_path)
-            self.assertGreaterEqual(len(cases), 1)
-            for case in cases:
-                self.assertTrue(required.issubset(case.keys()), case)
-                self.assertIsInstance(case["allowed_kb_ids"], list)
-                self.assertIsInstance(case["expected_doc_ids"], list)
-                self.assertIsInstance(case["expected_answer_keywords"], list)
-
-    def test_current_scope_evalset_excludes_out_of_scope_environmental_cases(self):
-        cases = load_evalset(
-            REPO_ROOT / "evals/knowledge_base/evalsets/department_rag_18q_current_scope_20260608.jsonl"
-        )
-
-        self.assertEqual(len(cases), 18)
-        sample_ids = {case["sample_id"] for case in cases}
-        self.assertNotIn("RAG-12", sample_ids)
-        self.assertNotIn("RAG-13", sample_ids)
-        self.assertIn("RAG-16", sample_ids)
-        self.assertIn("RAG-17", sample_ids)
-
-    def test_system_capability_evalsets_have_ten_cases_each(self):
-        evalsets = {
-            "evals/knowledge_base/evalsets/department_rag_permission_isolation_10q.jsonl": {
-                "expected_failure"
-            },
-            "evals/knowledge_base/evalsets/department_rag_scope_lock_10q.jsonl": {
-                "retrieved_must_not_contain_kb"
-            },
-            "evals/knowledge_base/evalsets/department_rag_citation_accuracy_10q.jsonl": {
-                "citation_must_resolvable",
-                "expected_source_ref_fields",
-            },
-        }
-
-        for relative_path, expected_optional_fields in evalsets.items():
-            cases = load_evalset(REPO_ROOT / relative_path)
-            self.assertEqual(len(cases), 10, relative_path)
-            sample_ids = {case["sample_id"] for case in cases}
-            self.assertEqual(len(sample_ids), 10, relative_path)
-            for case in cases:
-                self.assertTrue(expected_optional_fields.issubset(case), case)
-                self.assertIn(case["scope"], {"scoped", "auto"})
-                self.assertIn(case["retrieval_mode"], {"sparse_only", "dense_only", "hybrid"})
-
     def test_evaluate_case_outputs_chapter_10_required_fields_when_no_results(self):
         case = {
             "sample_id": "RAG-X",
