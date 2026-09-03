@@ -1,6 +1,0 @@
-  limit=1 → HTTP 200 → 1 events
-  limit=3 → HTTP 200 → 3 events
-  limit=5 → HTTP 200 → 5 events
-  limit=10 → HTTP 200 → 10 events
-  limit=50 → HTTP 200 → 50 events
-  limit=600 → HTTP 422 → err events

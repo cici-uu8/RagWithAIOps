@@ -115,9 +115,7 @@ TOKEN_THRESHOLDS = {
     "full_doc": {"abs_max": None, "rel_max": 1.5, "abs_pass_required": False},
 }
 
-ARTIFACT_BASE = Path(
-    "/Users/cici/oncall agent/pdf_eval/outputs/postprocessed/mineru/expanded_corpus"
-)
+ARTIFACT_BASE = Path(__file__).resolve().parents[2] / "data" / "mineru" / "expanded_corpus"
 TARGETS = [
     ("manuals", "h3c_campus_switch_installation_guide_cn",
      "h3c_campus_switch_installation_guide_cn.pdf"),

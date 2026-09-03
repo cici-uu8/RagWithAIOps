@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_ROOT="/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21"
+PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 cd "$PROJECT_ROOT" || {
   echo "无法进入项目目录: $PROJECT_ROOT"

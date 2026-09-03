@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 
-REPO_ROOT = Path("/Users/cici/oncall agent/super_biz_agent_py-release-2026-03-21")
+REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -50,7 +50,7 @@ from app.services.vector_store_manager import vector_store_manager
 
 config.milvus_host = "127.0.0.1"
 
-ARTIFACT_BASE = Path("/Users/cici/oncall agent/pdf_eval/outputs/postprocessed/mineru/expanded_corpus")
+ARTIFACT_BASE = Path(__file__).resolve().parents[2] / "data" / "mineru" / "expanded_corpus"
 TARGETS = [
     ("manuals", "h3c_campus_switch_installation_guide_cn", "h3c_campus_switch_installation_guide_cn.pdf"),
     ("manuals", "h3c_mc101_mc102_user_manual_cn", "h3c_mc101_mc102_user_manual_cn.pdf"),

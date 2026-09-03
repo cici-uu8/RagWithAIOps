@@ -1,2 +1,0 @@
-{"detail":"Grant validation failed: resource_exists"}
-HTTP 400

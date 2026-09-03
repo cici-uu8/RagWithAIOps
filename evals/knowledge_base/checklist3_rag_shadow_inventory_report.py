@@ -18,7 +18,7 @@ DEFAULT_COMPARISON_SAMPLES_PATH = (
     "evals/knowledge_base/evalsets/retrieval_mode_comparison_samples_20260608.json"
 )
 DEFAULT_COMPARISON_REPORT_PATH = (
-    "evals/knowledge_base/reports/retrieval_mode_comparison_after_pdf_retry_20260608.json"
+    "evals/knowledge_base/fixtures/retrieval_mode_comparison_summary.json"
 )
 REQUIRED_RETRIEVAL_MODES = ["dense_only", "sparse_only", "hybrid", "hybrid_rerank"]
 REQUIRED_COMPARISON_MODES = ["dense_only", "sparse_only", "hybrid", "hybrid_rerank"]

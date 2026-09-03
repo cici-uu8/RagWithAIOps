@@ -1,6 +1,0 @@
-- generic [ref=e4]:
-  - heading "企业助手管理后台" [level=1] [ref=e5]
-  - paragraph [ref=e6]: 正在校验管理员身份...
-  - generic [ref=e7]:
-    - button "返回聊天页" [ref=e8] [cursor=pointer]
-    - button "重新检查" [ref=e9] [cursor=pointer]

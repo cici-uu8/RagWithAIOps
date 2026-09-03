@@ -97,9 +97,7 @@ DEFAULT_TOP_CHUNKS_PER_DOC = 1
 DEFAULT_OVERSAMPLE = 4
 CATEGORIES = ["same_doc_redundant", "cross_doc_already", "reverse_control"]
 
-ARTIFACT_BASE = Path(
-    "/Users/cici/oncall agent/pdf_eval/outputs/postprocessed/mineru/expanded_corpus"
-)
+ARTIFACT_BASE = Path(__file__).resolve().parents[2] / "data" / "mineru" / "expanded_corpus"
 TARGETS = [
     ("manuals", "h3c_campus_switch_installation_guide_cn",
      "h3c_campus_switch_installation_guide_cn.pdf"),
