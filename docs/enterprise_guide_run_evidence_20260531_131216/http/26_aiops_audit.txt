@@ -1,8 +1,0 @@
-request_started|aiops|allowed||
-routing_decision|aiops|shadow|AIOps route or incident-diagnosis intent detected|
-permission_checked|permission|denied|default_deny|
-permission_checked|permission|denied|default_deny|
-permission_checked|permission|denied|default_deny|
-permission_checked|permission|denied|default_deny|
-rag_retrieval|rag|allowed||
-verification_result|verifier|allowed|passed|
