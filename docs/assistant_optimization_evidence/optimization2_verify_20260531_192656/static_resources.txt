@@ -1,6 +1,0 @@
-200  /static/admin-console.html
-200  /static/admin-console.js
-200  /static/admin-console.css
-200  /static/enterprise-ui.css
-200  /static/index.html
-200  /static/app.js
