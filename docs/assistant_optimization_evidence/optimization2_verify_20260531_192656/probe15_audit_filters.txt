@@ -1,4 +1,0 @@
-200  /api/admin/audit?user_id=user_admin&limit=3  → 34 events
-200  /api/admin/audit?trace_id=nonexistent&limit=3  → 0 events
-200  /api/admin/audit?event_type=permission_checked&limit=2  → 262 events
-200  /api/admin/audit?decision=denied&limit=3  → 432 events

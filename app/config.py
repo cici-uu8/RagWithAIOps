@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
 
     # 应用配置
-    app_name: str = "SuperBizAgent"
+    app_name: str = "RagWithAIOps"
     app_version: str = "1.0.0"
     debug: bool = False
     host: str = "0.0.0.0"
@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     enterprise_mysql_allowlist_json: str = ""
 
     # MinerU 解析配置
-    mineru_cli_path: str = "/Users/cici/oncall agent/pdf_eval/env/.venv/bin/mineru"
+    mineru_cli_path: str = "mineru"
     mineru_api_url: str = ""
     mineru_method: str = "auto"
     mineru_backend: str = "pipeline"
@@ -104,7 +104,7 @@ class Settings(BaseSettings):
     mineru_enable_formula: bool = True
     mineru_enable_table: bool = True
     mineru_mplconfigdir: str = "/private/tmp/mpl"
-    mineru_postprocess_script_path: str = "/Users/cici/oncall agent/pdf_eval/scripts/mineru_postprocess.py"
+    mineru_postprocess_script_path: str = ""
 
     # 异步文档处理队列配置
     document_processing_redis_url: str = "redis://localhost:6379/0"

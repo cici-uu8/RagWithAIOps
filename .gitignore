@@ -8,6 +8,8 @@ venv/
 # Environment
 .env
 .env.local
+.env.*
+!.env.example
 
 # IDE
 .vscode/
@@ -24,6 +26,8 @@ dist/
 # Logs
 *.log
 logs/
+uploads/
+volumes/
 
 # Coverage
 htmlcov/
@@ -37,6 +41,16 @@ htmlcov/
 .gemini/
 .kimi/
 .playwright-cli/
+
+# Local evaluation and runtime artifacts
+evals/**/reports/
+evals/**/child_runs/
+*.pid
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+mcp_*.log
+server.log
 
 # Project state files
 DEVELOPMENT_LOG.md

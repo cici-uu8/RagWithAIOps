@@ -1,7 +1,0 @@
-HTTP/1.1 200 OK
-date: Sun, 31 May 2026 05:38:52 GMT
-server: uvicorn
-content-length: 333
-content-type: application/json
-
-{"code":200,"message":"success","data":{"users":[{"user_id":"user_admin","username":"admin","department_id":"system","department_name":"System","roles":["admin"],"is_active":true},{"user_id":"user_demo_dept1","username":"demo_user_dept1","department_id":"dept_1","department_name":"Department 1","roles":["user"],"is_active":true}]}}

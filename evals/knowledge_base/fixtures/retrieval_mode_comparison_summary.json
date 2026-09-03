@@ -1,0 +1,9 @@
+{
+  "fixture_kind": "sanitized_comparison_summary",
+  "source": "local shadow comparison",
+  "summary": {
+    "not_ready_count": 0,
+    "wrong_scope_count": 0,
+    "citation_incomplete_count": 0
+  }
+}
