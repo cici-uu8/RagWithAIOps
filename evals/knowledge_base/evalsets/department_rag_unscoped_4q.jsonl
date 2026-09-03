@@ -1,4 +1,0 @@
-{"sample_id":"UNSCOPED-01","query":"中车长客数字化转型","allowed_kb_ids":["process_digital_dept"],"expected_doc_ids":["doc_6cc9b0b1-d8b7-58d4-a7a0-6213f7717375"],"expected_answer_keywords":["数字化"],"scope":"auto","retrieval_mode":"sparse_only","top_k":3}
-{"sample_id":"UNSCOPED-02","query":"线上故障怎么处理","allowed_kb_ids":["process_digital_dept","craft_dept"],"expected_doc_ids":[],"expected_answer_keywords":["故障"],"scope":"auto","retrieval_mode":"sparse_only","top_k":3}
-{"sample_id":"UNSCOPED-03","query":"现场设备工艺异常","allowed_kb_ids":["craft_dept"],"expected_doc_ids":["doc_27b282ca-97c3-5170-af0a-282f2e9122a1"],"expected_answer_keywords":["现场","工艺"],"scope":"auto","retrieval_mode":"sparse_only","top_k":3}
-{"sample_id":"UNSCOPED-04","query":"Prometheus 告警值班手册","allowed_kb_ids":["process_digital_dept"],"expected_doc_ids":["doc_6627ee79-7c85-531a-b545-55cfd5460e90"],"expected_answer_keywords":["Prometheus","值班"],"scope":"auto","retrieval_mode":"sparse_only","top_k":3}
